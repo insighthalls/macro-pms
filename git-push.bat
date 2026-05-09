@@ -1,5 +1,5 @@
 @echo off
-set GITHUB_USER=YOUR-GITHUB-USERNAME
+set GITHUB_USER=insighthalls
 cd /d "C:\Users\Administrator\Downloads\MACRO PMS"
 git remote add origin https://github.com/%GITHUB_USER%/macro-pms.git
 git branch -M main

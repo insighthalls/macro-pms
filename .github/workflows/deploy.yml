@@ -7,18 +7,26 @@ on:
 
 jobs:
   backend:
-    name: Backend · deploy to Render
+    name: Backend · deploy to Vercel
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Trigger Render deploy
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Vercel deploy — backend
         env:
-          RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_BACKEND }}
         run: |
-          if [ -z "$RENDER_HOOK" ]; then
-            echo "RENDER_DEPLOY_HOOK secret not set; skipping."; exit 0;
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "VERCEL_TOKEN not set; skipping."; exit 0;
           fi
-          curl -fsSL -X POST "$RENDER_HOOK" -H 'Content-Type: application/json' -d '{}'
+          npm i -g vercel@latest
+          cd backend-slice
+          vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+          vercel build --prod --token "$VERCEL_TOKEN"
+          vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
 
   frontend:
     name: Frontend · deploy to Vercel
@@ -28,11 +36,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
-      - name: Vercel deploy
+      - name: Vercel deploy — frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_FRONTEND }}
         run: |
           if [ -z "$VERCEL_TOKEN" ]; then
             echo "VERCEL_TOKEN not set; skipping."; exit 0;
