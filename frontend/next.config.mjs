@@ -17,8 +17,11 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   async rewrites() {
-    // Proxy /api/* to backend-slice in dev so we don't need CORS.
-    const backend = process.env.BACKEND_URL || 'http://localhost:4000';
+    // Prefer explicit env var, otherwise fall back to production backend.
+    const backend =
+      process.env.BACKEND_URL ||
+      process.env.NEXT_PUBLIC_API_BASE ||
+      'https://macro-pms-backend.vercel.app';
     return [
       { source: '/api/:path*', destination: `${backend}/v1/:path*` },
     ];
