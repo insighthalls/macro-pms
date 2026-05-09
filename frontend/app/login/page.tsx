@@ -8,7 +8,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login, loading, error } = useAuth();
   const [email, setEmail]       = useState('t.phiri@macro.org');
-  const [password, setPassword] = useState('Password123!');
+  const [password, setPassword] = useState('password123');
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -73,7 +73,7 @@ export default function LoginPage() {
           </Button>
 
           <p className="mt-6 text-2xs text-ink-soft">
-            Demo · <span className="font-mono">t.phiri@macro.org</span> / <span className="font-mono">Password123!</span>
+            Demo · <span className="font-mono">t.phiri@macro.org</span> / <span className="font-mono">password123</span>
           </p>
         </form>
       </div>
