@@ -20,13 +20,13 @@ router.get('/', async (req, res) => {
   else where['projId'] = { in: req.auth!.projects };
   if (req.auth!.role === 'PROJECT_OFFICER') where['raisedById'] = req.auth!.sub;
   const rows = await db.paymentVoucher.findMany({ where, orderBy: { createdAt: 'desc' }, take: 200 });
-  ok(res, rows);
+  res.json(ok(rows));
 });
 
 router.get('/:id', async (req, res) => {
-  const pv = await db.paymentVoucher.findUnique({ where: { id: req.params.id } });
+  const pv = await db.paymentVoucher.findUnique({ where: { id: req.params.id! } });
   if (!pv || !req.auth!.projects.includes(pv.projId)) throw NotFound();
-  ok(res, pv);
+  res.json(ok(pv));
 });
 
 const Item = z.object({ description: z.string(), qty: z.number().nonnegative(), unitPrice: z.union([z.number(), z.string()]) });
@@ -61,26 +61,25 @@ router.post('/', requireRole('PROJECT_OFFICER'), async (req, res) => {
     await audit(tx as never, { whoId: req.auth!.sub, entity: 'PV', entityId: id, action: 'submit', note: p.data.title });
     return created;
   });
-  ok(res, pv, 201);
+  res.status(201).json(ok(pv));
 });
 
-router.post('/:id/gfo-review', requireRole('GRANT_FINANCE_OFFICER'), async (req, res) => {
-  ok(res, await transition({ pvId: req.params.id, to: 'GFO_REVIEWED', actor: req.auth!, patch: { threeWayMatchOk: !!req.body?.threeWayMatchOk } }));
-});
+router.post('/:id/gfo-review', requireRole('GRANT_FINANCE_OFFICER'), async (req, res) =>
+  res.json(ok(await transition({ pvId: req.params.id!, to: 'GFO_REVIEWED', actor: req.auth!, patch: { threeWayMatchOk: !!req.body?.threeWayMatchOk } }))));
 router.post('/:id/fm-approve', requireRole('FINANCE_MANAGER'), async (req, res) =>
-  ok(res, await transition({ pvId: req.params.id, to: 'FM_APPROVED', actor: req.auth! })));
+  res.json(ok(await transition({ pvId: req.params.id!, to: 'FM_APPROVED', actor: req.auth! }))));
 router.post('/:id/ed-approve', requireRole('EXECUTIVE_DIRECTOR'), async (req, res) =>
-  ok(res, await transition({ pvId: req.params.id, to: 'ED_APPROVED', actor: req.auth! })));
+  res.json(ok(await transition({ pvId: req.params.id!, to: 'ED_APPROVED', actor: req.auth! }))));
 router.post('/:id/schedule', requireRole('GRANT_FINANCE_OFFICER'), async (req, res) =>
-  ok(res, await transition({ pvId: req.params.id, to: 'SCHEDULED', actor: req.auth! })));
+  res.json(ok(await transition({ pvId: req.params.id!, to: 'SCHEDULED', actor: req.auth! }))));
 router.post('/:id/mark-paid', requireRole('GRANT_FINANCE_OFFICER'), async (req, res) => {
   const eftRef = String(req.body?.eftRef ?? '');
   if (!eftRef) throw ValidationFailed({ eftRef: 'required' });
-  ok(res, await transition({ pvId: req.params.id, to: 'PAID', actor: req.auth!, patch: { eftRef, paidOn: new Date() }, note: `EFT ${eftRef}` }));
+  res.json(ok(await transition({ pvId: req.params.id!, to: 'PAID', actor: req.auth!, patch: { eftRef, paidOn: new Date() }, note: `EFT ${eftRef}` })));
 });
 router.post('/:id/return', requireRole('GRANT_FINANCE_OFFICER', 'FINANCE_MANAGER'), async (req, res) => {
   const note = String(req.body?.note ?? 'Returned without comment');
-  ok(res, await transition({ pvId: req.params.id, to: 'RETURNED', actor: req.auth!, note, patch: { returnReason: note } }));
+  res.json(ok(await transition({ pvId: req.params.id!, to: 'RETURNED', actor: req.auth!, note, patch: { returnReason: note } })));
 });
 
 export default router;

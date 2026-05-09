@@ -20,13 +20,13 @@ router.get('/', async (req, res) => {
   if (!ownerId && !raisedById) {
     where['OR'] = [{ ownerId: req.auth!.sub }, { raisedById: req.auth!.sub }];
   }
-  ok(res, await db.actionPoint.findMany({ where, orderBy: [{ status: 'asc' }, { dueDate: 'asc' }], take: 200 }));
+  res.json(ok(await db.actionPoint.findMany({ where, orderBy: [{ status: 'asc' }, { dueDate: 'asc' }], take: 200 })));
 });
 
 router.get('/:id', async (req, res) => {
-  const ap = await db.actionPoint.findUnique({ where: { id: req.params.id } });
+  const ap = await db.actionPoint.findUnique({ where: { id: req.params.id! } });
   if (!ap) throw NotFound();
-  ok(res, ap);
+  res.json(ok(ap));
 });
 
 const Create = z.object({
@@ -51,11 +51,11 @@ router.post('/', async (req, res) => {
     await audit(tx as never, { whoId: req.auth!.sub, entity: 'AP', entityId: id, action: 'create', note: p.data.title });
     return created;
   });
-  ok(res, ap, 201);
+  res.status(201).json(ok(ap));
 });
 
 const setStatus = (status: 'OPEN'|'IN_PROGRESS'|'CLOSED'|'REOPENED') => async (req: import('express').Request, res: import('express').Response) => {
-  const ap = await db.actionPoint.findUnique({ where: { id: req.params.id } });
+  const ap = await db.actionPoint.findUnique({ where: { id: req.params.id! } });
   if (!ap) throw NotFound();
   if (status === 'CLOSED' && ap.ownerId !== req.auth!.sub && ap.raisedById !== req.auth!.sub)
     throw RuleViolation('not_owner', 'Only the owner or raiser can close.');
@@ -68,7 +68,7 @@ const setStatus = (status: 'OPEN'|'IN_PROGRESS'|'CLOSED'|'REOPENED') => async (r
     await audit(tx as never, { whoId: req.auth!.sub, entity: 'AP', entityId: ap.id, action: status.toLowerCase(), note });
     return u;
   });
-  ok(res, updated);
+  res.json(ok(updated));
 };
 
 router.post('/:id/start',   setStatus('IN_PROGRESS'));

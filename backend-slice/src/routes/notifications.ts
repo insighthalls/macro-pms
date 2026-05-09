@@ -23,7 +23,7 @@ r.get('/stream', async (req, res, next) => {
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders?.();
     res.write(`: connected\n\n`);
-    svc.subscribe(auth.userId, res);
+    svc.subscribe(auth.sub, res);
 
     // Heartbeat so proxies don't time out
     const hb = setInterval(() => res.write(`: hb\n\n`), 25_000);
@@ -37,17 +37,17 @@ r.get('/', async (req, res, next) => {
   try {
     const unreadOnly = req.query.unreadOnly === '1';
     const limit = req.query.limit ? Number(req.query.limit) : 50;
-    res.json(ok(await svc.listForUser(req.auth!.userId, { unreadOnly, limit })));
+    res.json(ok(await svc.listForUser(req.auth!.sub, { unreadOnly, limit })));
   } catch (e) { next(e); }
 });
 
 const ReadIds = z.object({ ids: z.array(z.string()).min(1) });
 r.post('/read', async (req, res, next) => {
-  try { res.json(ok(await svc.markRead(req.auth!.userId, ReadIds.parse(req.body).ids))); } catch (e) { next(e); }
+  try { res.json(ok(await svc.markRead(req.auth!.sub, ReadIds.parse(req.body).ids))); } catch (e) { next(e); }
 });
 
 r.post('/read-all', async (req, res, next) => {
-  try { res.json(ok(await svc.markAllRead(req.auth!.userId))); } catch (e) { next(e); }
+  try { res.json(ok(await svc.markAllRead(req.auth!.sub))); } catch (e) { next(e); }
 });
 
 export default r;

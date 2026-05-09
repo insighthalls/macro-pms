@@ -16,6 +16,9 @@ import { HttpError } from './lib/errors.js';
 export function buildApp() {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
+  // Serialise BigInt as string in all res.json() calls (amounts are stored as BigInt)
+  app.set('json replacer', (_key: string, val: unknown) =>
+    typeof val === 'bigint' ? val.toString() : val);
 
   app.get('/health', (_req, res) => res.json({ ok: true }));
 

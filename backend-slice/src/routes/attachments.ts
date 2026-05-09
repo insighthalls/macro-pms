@@ -38,7 +38,7 @@ r.post('/', async (req, res, next) => {
   try {
     const b = Register.parse(req.body);
     const row = await db.attachment.create({
-      data: { ...b, bucket: b.bucket || storage.STORAGE_BUCKET, uploadedBy: req.auth!.userId },
+      data: { ...b, bucket: b.bucket || storage.STORAGE_BUCKET, uploadedBy: req.auth!.sub },
     });
     res.status(201).json(ok(row));
   } catch (e) { next(e); }
@@ -57,7 +57,7 @@ r.get('/', async (req, res, next) => {
 /** Download URL — client redirects or fetches blob. */
 r.get('/:id/url', async (req, res, next) => {
   try {
-    const a = await db.attachment.findUnique({ where: { id: req.params.id } });
+    const a = await db.attachment.findUnique({ where: { id: req.params.id! } });
     if (!a) { res.status(404).json({ error: 'not found' }); return; }
     const sig = await storage.signDownload(a.path);
     res.json(ok({ ...sig, filename: a.filename }));
@@ -66,7 +66,7 @@ r.get('/:id/url', async (req, res, next) => {
 
 r.delete('/:id', async (req, res, next) => {
   try {
-    const a = await db.attachment.findUnique({ where: { id: req.params.id } });
+    const a = await db.attachment.findUnique({ where: { id: req.params.id! } });
     if (!a) { res.status(404).end(); return; }
     await storage.removeObject(a.path);
     await db.attachment.delete({ where: { id: a.id } });

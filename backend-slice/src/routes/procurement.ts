@@ -17,15 +17,15 @@ router.get('/', async (req, res) => {
   if (vendorId) where['vendorId'] = vendorId;
   if (projId) where['projId'] = projId;
   else where['projId'] = { in: req.auth!.projects };
-  ok(res, await db.purchaseRequisition.findMany({ where, orderBy: { createdAt: 'desc' }, take: 200 }));
+  res.json(ok(await db.purchaseRequisition.findMany({ where, orderBy: { createdAt: 'desc' }, take: 200 })));
 });
 
-router.get('/vendors', async (_req, res) => ok(res, await db.vendor.findMany({ orderBy: { name: 'asc' } })));
+router.get('/vendors', async (_req, res) => res.json(ok(await db.vendor.findMany({ orderBy: { name: 'asc' } }))));
 
 router.get('/:id', async (req, res) => {
-  const pr = await db.purchaseRequisition.findUnique({ where: { id: req.params.id } });
+  const pr = await db.purchaseRequisition.findUnique({ where: { id: req.params.id! } });
   if (!pr || !req.auth!.projects.includes(pr.projId)) throw NotFound();
-  ok(res, pr);
+  res.json(ok(pr));
 });
 
 const Create = z.object({
@@ -44,29 +44,29 @@ router.post('/', requireRole('PROJECT_OFFICER', 'PROCUREMENT_OFFICER'), async (r
     await audit(tx as never, { whoId: req.auth!.sub, entity: 'PR', entityId: id, action: 'submit', note: p.data.title });
     return created;
   });
-  ok(res, pr, 201);
+  res.status(201).json(ok(pr));
 });
 
 router.post('/:id/open-rfq', requireRole('PROCUREMENT_OFFICER'), async (req, res) => {
   const deadline = req.body?.rfqDeadline ? new Date(String(req.body.rfqDeadline)) : null;
-  ok(res, await transition({ prId: req.params.id, to: 'RFQ_OPEN', actor: req.auth!, patch: { rfqDeadline: deadline } }));
+  res.json(ok(await transition({ prId: req.params.id!, to: 'RFQ_OPEN', actor: req.auth!, patch: { rfqDeadline: deadline } })));
 });
-router.post('/:id/evaluate',  requireRole('PROCUREMENT_OFFICER'), async (req, res) => {
+router.post('/:id/evaluate', requireRole('PROCUREMENT_OFFICER'), async (req, res) => {
   const vendorId = String(req.body?.winningVendorId ?? '');
   if (!vendorId) throw ValidationFailed({ winningVendorId: 'required' });
-  ok(res, await transition({ prId: req.params.id, to: 'RFQ_EVALUATED', actor: req.auth!, patch: { vendorId } }));
+  res.json(ok(await transition({ prId: req.params.id!, to: 'RFQ_EVALUATED', actor: req.auth!, patch: { vendorId } })));
 });
 router.post('/:id/issue-lpo', requireRole('PROCUREMENT_OFFICER'), async (req, res) => {
   const lpoRef = String(req.body?.lpoRef ?? '');
   if (!lpoRef) throw ValidationFailed({ lpoRef: 'required' });
-  ok(res, await transition({ prId: req.params.id, to: 'LPO_ISSUED', actor: req.auth!, patch: { lpoRef } }));
+  res.json(ok(await transition({ prId: req.params.id!, to: 'LPO_ISSUED', actor: req.auth!, patch: { lpoRef } })));
 });
 router.post('/:id/record-grn', requireRole('PROCUREMENT_OFFICER'), async (req, res) => {
   const grnRef = String(req.body?.grnRef ?? '');
   if (!grnRef) throw ValidationFailed({ grnRef: 'required' });
-  ok(res, await transition({ prId: req.params.id, to: 'GRN_RECEIVED', actor: req.auth!, patch: { grnRef, grnReceivedOn: new Date() } }));
+  res.json(ok(await transition({ prId: req.params.id!, to: 'GRN_RECEIVED', actor: req.auth!, patch: { grnRef, grnReceivedOn: new Date() } })));
 });
 router.post('/:id/close', requireRole('PROCUREMENT_OFFICER'), async (req, res) =>
-  ok(res, await transition({ prId: req.params.id, to: 'CLOSED', actor: req.auth! })));
+  res.json(ok(await transition({ prId: req.params.id!, to: 'CLOSED', actor: req.auth! }))));
 
 export default router;

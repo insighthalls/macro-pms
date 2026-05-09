@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import type { PrismaClient, EntityKind } from '@prisma/client';
 import { db } from '../lib/db.js';
+import type { AuthClaims } from '../lib/auth.js';
 
 /**
  * Hash-chained audit log. Each entry's hash is sha256 over the previous
@@ -43,6 +44,18 @@ export async function record(
       userAgent: args.userAgent,
     },
   });
+}
+
+/** Convenience wrapper matching the positional call-style used in eft-batches. */
+export async function writeAudit(
+  tx: PrismaClient | Parameters<Parameters<PrismaClient['$transaction']>[0]>[0],
+  who: AuthClaims,
+  entity: EntityKind,
+  entityId: string,
+  action: string,
+  note?: string,
+): Promise<void> {
+  return record(tx, { whoId: who.sub, entity, entityId, action, note });
 }
 
 export async function verifyChain(): Promise<{ ok: true } | { ok: false; brokenAt: string }> {

@@ -9,6 +9,7 @@ export class HttpError extends Error {
   }
 }
 
+export const BadRequest         = (m = 'Bad request')                   => new HttpError(400, 'bad_request', m);
 export const Unauthorized       = (m = 'Authentication required')        => new HttpError(401, 'unauthenticated', m);
 export const Forbidden          = (m = 'Access denied')                  => new HttpError(403, 'forbidden', m);
 export const NotFound           = (m = 'Not found')                      => new HttpError(404, 'not_found', m);

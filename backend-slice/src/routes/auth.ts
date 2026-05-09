@@ -14,12 +14,12 @@ router.post('/login', async (req, res) => {
   const parsed = Login.safeParse(req.body);
   if (!parsed.success) throw ValidationFailed(Object.fromEntries(parsed.error.issues.map((i) => [i.path.join('.'), i.message])));
   const result = await login(parsed.data.email, parsed.data.password);
-  ok(res, result);
+  res.json(ok(result));
 });
 
 router.get('/me', requireAuth, async (req, res) => {
   const u = await db.user.findUnique({ where: { id: req.auth!.sub } });
-  ok(res, {
+  res.json(ok({
     id: u!.id,
     fullName: u!.fullName,
     role: u!.role,
@@ -27,7 +27,7 @@ router.get('/me', requireAuth, async (req, res) => {
     region: u!.region,
     initials: u!.initials,
     projects: req.auth!.projects,
-  });
+  }));
 });
 
 export default router;

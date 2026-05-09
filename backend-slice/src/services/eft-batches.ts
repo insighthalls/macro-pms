@@ -41,7 +41,7 @@ export async function createBatch(input: { projId: string; pvIds: string[] }, wh
         id,
         projId: input.projId,
         totalAmount: BigInt(total),
-        createdById: who.userId,
+        createdById: who.sub,
         items: { create: pvs.map((p) => ({ pvId: p.id, amount: p.netAmount })) },
       },
       include: { items: true },

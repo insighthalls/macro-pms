@@ -32,14 +32,14 @@ router.get('/', async (req, res) => {
     orderBy: { createdAt: 'desc' },
     take: 200,
   });
-  ok(res, rows);
+  res.json(ok(rows));
 });
 
 router.get('/:id', async (req, res) => {
-  const ar = await db.advanceRequest.findUnique({ where: { id: req.params.id } });
+  const ar = await db.advanceRequest.findUnique({ where: { id: req.params.id! } });
   if (!ar) throw NotFound();
   if (!req.auth!.projects.includes(ar.projId)) throw NotFound();
-  ok(res, ar);
+  res.json(ok(ar));
 });
 
 // ---------- create (PO only) ----------
@@ -90,23 +90,23 @@ router.post('/', requireRole('PROJECT_OFFICER'), async (req, res) => {
     });
     return created;
   });
-  ok(res, ar, 201);
+  res.status(201).json(ok(ar));
 });
 
 // ---------- transitions ----------
 router.post('/:id/recommend', requireRole('HEAD_OF_PROGRAMS'), async (req, res) => {
-  const ar = await transition({ arId: req.params.id, to: 'HOP_RECOMMENDED', actor: req.auth!, note: req.body?.note });
-  ok(res, ar);
+  const ar = await transition({ arId: req.params.id!, to: 'HOP_RECOMMENDED', actor: req.auth!, note: req.body?.note });
+  res.json(ok(ar));
 });
 
 router.post('/:id/fm-approve', requireRole('FINANCE_MANAGER'), async (req, res) => {
-  const ar = await transition({ arId: req.params.id, to: 'FM_APPROVED', actor: req.auth! });
-  ok(res, ar);
+  const ar = await transition({ arId: req.params.id!, to: 'FM_APPROVED', actor: req.auth! });
+  res.json(ok(ar));
 });
 
 router.post('/:id/ed-approve', requireRole('EXECUTIVE_DIRECTOR'), async (req, res) => {
-  const ar = await transition({ arId: req.params.id, to: 'ED_APPROVED', actor: req.auth! });
-  ok(res, ar);
+  const ar = await transition({ arId: req.params.id!, to: 'ED_APPROVED', actor: req.auth! });
+  res.json(ok(ar));
 });
 
 const Disburse = z.object({
@@ -117,19 +117,19 @@ router.post('/:id/disburse', requireRole('GRANT_FINANCE_OFFICER'), async (req, r
   const parsed = Disburse.safeParse(req.body);
   if (!parsed.success) throw ValidationFailed(Object.fromEntries(parsed.error.issues.map((i) => [i.path.join('.'), i.message])));
   const ar = await transition({
-    arId: req.params.id,
+    arId: req.params.id!,
     to: 'DISBURSED',
     actor: req.auth!,
     patch: { eftRef: parsed.data.eftRef, disbursedOn: new Date(parsed.data.disbursedOn) },
     note: `EFT ${parsed.data.eftRef}`,
   });
-  ok(res, ar);
+  res.json(ok(ar));
 });
 
 router.post('/:id/return', requireRole('HEAD_OF_PROGRAMS', 'FINANCE_MANAGER'), async (req, res) => {
   const note = (req.body?.note as string) || 'Returned without comment';
-  const ar = await transition({ arId: req.params.id, to: 'RETURNED', actor: req.auth!, note, patch: { returnReason: note } });
-  ok(res, ar);
+  const ar = await transition({ arId: req.params.id!, to: 'RETURNED', actor: req.auth!, note, patch: { returnReason: note } });
+  res.json(ok(ar));
 });
 
 const Liquidate = z.object({
@@ -140,7 +140,7 @@ router.post('/:id/submit-liquidation', requireRole('PROJECT_OFFICER'), async (re
   const parsed = Liquidate.safeParse(req.body);
   if (!parsed.success) throw ValidationFailed(Object.fromEntries(parsed.error.issues.map((i) => [i.path.join('.'), i.message])));
   const ar = await transition({
-    arId: req.params.id,
+    arId: req.params.id!,
     to: 'LIQUIDATION_PENDING',
     actor: req.auth!,
     patch: {
@@ -148,12 +148,12 @@ router.post('/:id/submit-liquidation', requireRole('PROJECT_OFFICER'), async (re
       varianceNote: parsed.data.varianceNote,
     },
   });
-  ok(res, ar);
+  res.json(ok(ar));
 });
 
 router.post('/:id/accept-liquidation', requireRole('FINANCE_MANAGER'), async (req, res) => {
-  const ar = await transition({ arId: req.params.id, to: 'LIQUIDATED', actor: req.auth! });
-  ok(res, ar);
+  const ar = await transition({ arId: req.params.id!, to: 'LIQUIDATED', actor: req.auth! });
+  res.json(ok(ar));
 });
 
 export default router;
