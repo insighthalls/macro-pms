@@ -23,7 +23,6 @@ jobs:
             echo "VERCEL_TOKEN not set; skipping."; exit 0;
           fi
           npm i -g vercel@latest
-          cd backend-slice
           vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
           vercel build --prod --token "$VERCEL_TOKEN"
           vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
@@ -46,7 +45,6 @@ jobs:
             echo "VERCEL_TOKEN not set; skipping."; exit 0;
           fi
           npm i -g vercel@latest
-          cd frontend
           vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
           vercel build --prod --token "$VERCEL_TOKEN"
           vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
