@@ -7,38 +7,29 @@ on:
 
 jobs:
   backend:
-    name: Backend - deploy to Render
+    name: Backend - deploy to Vercel (hook)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
-      - name: Trigger Render deploy hook
+      - name: Trigger backend deploy hook
         env:
-          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          VERCEL_DEPLOY_HOOK_BACKEND: ${{ secrets.VERCEL_DEPLOY_HOOK_BACKEND }}
         run: |
-          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
-            echo "RENDER_DEPLOY_HOOK not set; failing."
+          if [ -z "$VERCEL_DEPLOY_HOOK_BACKEND" ]; then
+            echo "VERCEL_DEPLOY_HOOK_BACKEND not set; failing."
             exit 1
           fi
-          curl --fail --show-error --silent --request POST "$RENDER_DEPLOY_HOOK"
+          curl --fail --show-error --silent --request POST "$VERCEL_DEPLOY_HOOK_BACKEND"
 
   frontend:
-    name: Frontend - deploy to Vercel
+    name: Frontend - deploy to Vercel (hook)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20' }
-      - name: Vercel deploy - frontend
-        working-directory: frontend
+      - name: Trigger frontend deploy hook
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_FRONTEND }}
+          VERCEL_DEPLOY_HOOK_FRONTEND: ${{ secrets.VERCEL_DEPLOY_HOOK_FRONTEND }}
         run: |
-          if [ -z "$VERCEL_TOKEN" ]; then
-            echo "VERCEL_TOKEN not set; skipping."; exit 0;
+          if [ -z "$VERCEL_DEPLOY_HOOK_FRONTEND" ]; then
+            echo "VERCEL_DEPLOY_HOOK_FRONTEND not set; failing."
+            exit 1
           fi
-          npm i -g vercel@latest
-          vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
-          vercel build --prod --token "$VERCEL_TOKEN"
-          vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+          curl --fail --show-error --silent --request POST "$VERCEL_DEPLOY_HOOK_FRONTEND"
