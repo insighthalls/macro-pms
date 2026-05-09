@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS · Administrator / M&E</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/macro-styles.css" />
+</head>
+<body>
+<div class="app" id="app"></div>
+<script src="shared/macro-core.js"></script>
+<script src="shared/macro-shell.js"></script>
+<script>
+const ME='U-ADM';
+const VIEWS=[
+  {id:'overview', icon:'home',  label:'Overview'},
+  {id:'audit',    icon:'shield',label:'Audit log'},
+  {id:'aps',      icon:'pin',   label:'Action points'},
+  {id:'users',    icon:'users', label:'Users & roles'},
+  {id:'projects', icon:'flag',  label:'Projects'},
+  {id:'config',   icon:'cog',   label:'System config'},
+];
+let currentView='overview';
+
+function render(){
+  const apOpen=MACRO.list('aps',a=>a.stage!=='Closed').length;
+  const items=VIEWS.map(v=>Object.assign({},v, v.id==='aps'?{badge:apOpen||null,badgeQ:true}:{}));
+  document.getElementById('app').innerHTML=
+    UI.sidebar({userId:ME,label:'Administrator · M&E',cls:'adm'},items,currentView,'v4.0 · Sandbox')+
+    `<div class="main">${UI.topbar({},['Admin',label(currentView)],'COR')}<div class="page">${pageBody()}</div></div>`;
+  UI.bindNav(id=>{currentView=id;render();});
+  bindActions();
+}
+function label(id){return (VIEWS.find(v=>v.id===id)||{}).label||'';}
+function pageBody(){return ({overview:viewOverview,audit:viewAudit,aps:viewAps,users:viewUsers,projects:viewProjects,config:viewConfig}[currentView]||(()=>'')) ();}
+
+function viewOverview(){
+  const me=MACRO.user(ME);
+  const allAR=MACRO.list('ars'), allPV=MACRO.list('pvs'), allPR=MACRO.list('prs'), allAP=MACRO.list('aps');
+  const audit=MACRO.list('audit')||[];
+  return `
+    <div class="hello"><div class="hello-card">
+      <div><h1>System overview · ${me.name}</h1>
+        <div class="sub">All workflows, all roles, all projects. ${audit.length} ledger events recorded.</div></div>
+      <div class="hello-stats">
+        <div class="hs"><div class="v">${MACRO.USERS.length}</div><div class="l">Users</div></div>
+        <div class="hs"><div class="v">${MACRO.PROJECTS.length}</div><div class="l">Projects</div></div>
+        <div class="hs"><div class="v">${audit.length}</div><div class="l">Audit events</div></div>
+      </div></div></div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="l">Activities</div><div class="v">${MACRO.list('activities').length}</div></div>
+      <div class="kpi blue"><div class="l">Advance requests</div><div class="v">${allAR.length}</div><div class="s">${allAR.filter(r=>!['Liquidated','Rejected'].includes(r.stage)).length} in flight</div></div>
+      <div class="kpi"><div class="l">Vouchers</div><div class="v">${allPV.length}</div><div class="s">${allPV.filter(r=>r.stage==='Posted').length} posted</div></div>
+      <div class="kpi amber"><div class="l">PRs</div><div class="v">${allPR.length}</div><div class="s">${allPR.filter(r=>!['Closed','Cancelled'].includes(r.stage)).length} open</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h"><h3>Recent activity</h3><div class="right"><span class="pill">${audit.length} events</span></div></div>
+        <div>${(audit.slice(0,8)||[]).map(a=>auditRow(a)).join('')}</div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Open action points</h3><div class="right"><span class="pill">${MACRO.list('aps',a=>a.stage!=='Closed').length}</span></div></div>
+        <div>${MACRO.list('aps',a=>a.stage!=='Closed').slice(0,6).map(apRow).join('')||`<div class="empty">All clear.</div>`}</div>
+      </div>
+    </div>
+  `;
+}
+
+function auditRow(a){
+  const u=MACRO.user(a.who); const initial=u?u.init:'•';
+  return `<div class="ix" style="grid-template-columns:42px 1fr auto"><div class="ico" style="background:var(--gray-bg);color:var(--gray)">${initial}</div>
+    <div><div class="t">${a.action.toUpperCase()} · <span class="mono" style="color:var(--blue)">${a.id}</span></div>
+      <div class="m"><span>${u?u.name+' · '+u.role:a.who}</span><span>·</span><span>${a.note||''}</span></div></div>
+    <span class="muted small">${MACRO.fmt.since(a.at)}</span></div>`;
+}
+
+function apRow(a){
+  return `<div class="ix"><div class="ico">AP</div>
+    <div><div class="t">${a.title}</div>
+      <div class="m"><span class="ref mono">${a.id}</span><span>·</span>${UI.pill(a.priority, a.priority==='High'?'red':a.priority==='Medium'?'amber':'gray')}<span>owner ${(MACRO.user(a.owner)||{}).name||a.owner}</span><span>due ${MACRO.fmt.until(a.due)}</span></div></div>
+    ${UI.pill(a.stage, MACRO.stageTone('AP',a.stage))}</div>`;
+}
+
+function viewAudit(){
+  const audit=MACRO.list('audit')||[];
+  return `<div class="page-head"><h1 class="page-title">Audit log</h1>
+    <div class="actions"><button class="btn">Export · CSV</button></div></div>
+    <div class="card">
+      <div class="qa">
+        <label>Filter</label>
+        <select id="f-entity"><option value="">All entity types</option><option>AR</option><option>PV</option><option>PR</option><option>AP</option><option>DIP</option></select>
+        <select id="f-actor"><option value="">All actors</option>${MACRO.USERS.map(u=>`<option value="${u.id}">${u.name}</option>`).join('')}</select>
+        <input id="f-q" placeholder="Search…" class="grow"/>
+      </div>
+      <table class="tbl"><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Entity</th><th>Ref</th><th>Note</th></tr></thead><tbody id="audit-body">
+        ${audit.map(a=>auditTr(a)).join('')||`<tr><td colspan="6" class="empty">No events.</td></tr>`}
+      </tbody></table>
+    </div>
+    <script>
+      (function(){
+        const ent=document.getElementById('f-entity'),act=document.getElementById('f-actor'),q=document.getElementById('f-q'),body=document.getElementById('audit-body');
+        function apply(){const all=MACRO.list('audit')||[];const e=ent.value,a=act.value,Q=q.value.toLowerCase();
+          body.innerHTML=all.filter(x=>(!e||x.entity===e)&&(!a||x.who===a)&&(!Q||(x.id+' '+x.note+' '+x.action).toLowerCase().includes(Q))).map(a=>{
+            const u=MACRO.user(a.who);
+            return '<tr><td class="muted small">'+MACRO.fmt.since(a.at)+'</td><td>'+(u?u.name:a.who)+'</td><td><span class="pill blue">'+a.action+'</span></td><td>'+a.entity+'</td><td class="ref">'+a.id+'</td><td class="muted">'+(a.note||'')+'</td></tr>';
+          }).join('') || '<tr><td colspan="6" class="empty">No matches.</td></tr>';
+        }
+        [ent,act].forEach(x=>x.addEventListener('change',apply));
+        q.addEventListener('input',apply);
+      })();
+    <\/script>`;
+}
+function auditTr(a){
+  const u=MACRO.user(a.who);
+  return `<tr><td class="muted small">${MACRO.fmt.since(a.at)}</td><td>${u?u.name:a.who}</td><td>${UI.pill(a.action,'blue')}</td><td>${a.entity}</td><td class="ref">${a.id}</td><td class="muted">${a.note||''}</td></tr>`;
+}
+
+function viewAps(){
+  const all=MACRO.list('aps');
+  return `<div class="page-head"><h1 class="page-title">Action points</h1>
+    <div class="actions"><button class="btn primary" data-act="ap-new">New action point</button></div></div>
+    <div class="kpis">
+      <div class="kpi"><div class="l">Total</div><div class="v">${all.length}</div></div>
+      <div class="kpi amber"><div class="l">Open</div><div class="v">${all.filter(a=>a.stage==='Open').length}</div></div>
+      <div class="kpi blue"><div class="l">In progress</div><div class="v">${all.filter(a=>a.stage==='In Progress').length}</div></div>
+      <div class="kpi green"><div class="l">Resolved/Closed</div><div class="v">${all.filter(a=>a.stage==='Resolved'||a.stage==='Closed').length}</div></div>
+    </div>
+    <div class="card"><table class="tbl"><thead><tr><th>Ref</th><th>Title</th><th>Owner</th><th>Source</th><th>Priority</th><th>Due</th><th>Stage</th><th></th></tr></thead><tbody>
+      ${all.map(a=>`<tr><td><span class="ref">${a.id}</span></td><td>${a.title}</td>
+        <td>${(MACRO.user(a.owner)||{}).name||a.owner}</td><td>${a.source}</td>
+        <td>${UI.pill(a.priority,a.priority==='High'?'red':a.priority==='Medium'?'amber':'gray')}</td>
+        <td>${MACRO.fmt.until(a.due)}</td>
+        <td>${UI.pill(a.stage,MACRO.stageTone('AP',a.stage))}</td>
+        <td>${a.stage==='Resolved'?`<button class="btn sm primary" data-act="ap-close" data-id="${a.id}">Close</button>`:''}</td>
+      </tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+function viewUsers(){
+  return `<div class="page-head"><h1 class="page-title">Users &amp; roles</h1>
+    <div class="actions"><button class="btn primary">Invite user</button></div></div>
+    <div class="card"><table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Region</th><th>Email</th><th>Default project</th><th>Status</th></tr></thead><tbody>
+      ${MACRO.USERS.map(u=>`<tr><td><div class="row"><div style="width:30px;height:30px;border-radius:50%;background:var(--blue-50);color:var(--blue);display:grid;place-items:center;font-weight:800;font-size:11px">${u.init}</div><b>${u.name}</b></div></td>
+        <td>${u.role}</td><td>${u.region}</td><td class="mono small">${u.email}</td>
+        <td>${u.proj==='ALL'?'All projects':u.proj==='—'?'—':(MACRO.project(u.proj)||{}).code||u.proj}</td>
+        <td>${UI.pill('Active','green')}</td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+function viewProjects(){
+  return `<div class="page-head"><h1 class="page-title">Projects</h1></div>
+    <div class="card"><table class="tbl"><thead><tr><th>Code</th><th>Name</th><th>Donor</th><th>Period</th><th class="num">Budget</th><th class="num">Spent</th><th>Burn</th></tr></thead><tbody>
+      ${MACRO.PROJECTS.map(p=>{const pct=Math.round(p.spent/p.budget*100);
+        return `<tr><td><span class="row"><span style="width:14px;height:14px;border-radius:50%;background:${p.color};display:inline-block"></span><b>${p.code}</b></span></td>
+          <td>${p.name}</td><td>${p.donor}</td><td>${p.period}</td>
+          <td class="num">${MACRO.fmt.mwk(p.budget)}</td><td class="num">${MACRO.fmt.mwk(p.spent)}</td>
+          <td>${UI.pill(pct+'%', pct>=85?'amber':'green')}</td></tr>`;
+      }).join('')}
+    </tbody></table></div>`;
+}
+
+function viewConfig(){
+  return `<div class="page-head"><h1 class="page-title">System configuration</h1></div>
+    <div class="grid-3">
+      <div class="card"><div class="card-b"><b>Currency &amp; formatting</b><div class="muted small" style="margin-top:6px">MWK · ISO 4217 · 2dp · sign suffix</div></div></div>
+      <div class="card"><div class="card-b"><b>Withholding tax</b><div class="muted small" style="margin-top:6px">Goods 3% · Services 10% · Rent 15%</div></div></div>
+      <div class="card"><div class="card-b"><b>Approval thresholds</b><div class="muted small" style="margin-top:6px">PO &lt;5M · HoP &lt;15M · FM &lt;50M · ED ≥50M</div></div></div>
+      <div class="card"><div class="card-b"><b>DSA rates</b><div class="muted small" style="margin-top:6px">Grade A–D × 4 location bands</div></div></div>
+      <div class="card"><div class="card-b"><b>Feature flags</b><div class="muted small" style="margin-top:6px">14 flags · 9 enabled in prod</div></div></div>
+      <div class="card"><div class="card-b"><b>Data archival</b><div class="muted small" style="margin-top:6px">Hot 90d · Warm 1y · Cold 7y</div></div></div>
+    </div>
+    <div class="card" style="margin-top:18px"><div class="card-b" style="text-align:center">
+      <p class="muted">Sandbox controls</p>
+      <button class="btn red" data-act="reset-all">Reset all PMS data to factory seed</button>
+    </div></div>`;
+}
+
+function bindActions(){
+  document.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',async()=>{
+    const act=b.getAttribute('data-act'),id=b.getAttribute('data-id');
+    if (act==='ap-close'){
+      MACRO.update('aps',id,{stage:'Closed'}); MACRO.audit('AP',id,'close',ME,'Closed');
+      UI.toast(id+' closed','green'); render();
+    } else if (act==='ap-new'){
+      const m=UI.modal({title:'New action point',body:`
+        <div class="fld"><label>Title</label><input id="ap-t" placeholder="What needs doing?"/></div>
+        <div class="fld-row"><div class="fld"><label>Owner</label><select id="ap-o">${MACRO.USERS.map(u=>`<option value="${u.id}">${u.name} · ${u.role}</option>`).join('')}</select></div>
+        <div class="fld"><label>Priority</label><select id="ap-p"><option>High</option><option selected>Medium</option><option>Low</option></select></div></div>
+        <div class="fld-row"><div class="fld"><label>Due</label><input id="ap-d" type="date"/></div>
+        <div class="fld"><label>Source</label><input id="ap-s" placeholder="e.g. Internal Audit"/></div></div>`,
+        footer:`<button class="btn" data-close>Cancel</button><button class="btn primary" id="ap-ok">Create</button>`});
+      m.el.querySelector('#ap-ok').addEventListener('click',()=>{
+        const seq=(MACRO.state().seq.ap||488)+1;
+        const id='AP-'+String(seq).padStart(4,'0');
+        MACRO.create('aps',{id,title:m.el.querySelector('#ap-t').value||'Untitled',owner:m.el.querySelector('#ap-o').value,priority:m.el.querySelector('#ap-p').value,due:m.el.querySelector('#ap-d').value||new Date().toISOString().slice(0,10),source:m.el.querySelector('#ap-s').value||'M&E',stage:'Open',linkType:'',linkId:''});
+        MACRO.state().seq.ap=seq; MACRO.save();
+        MACRO.audit('AP',id,'create',ME,'Created'); m.close(); UI.toast(id+' created','green'); render();
+      });
+    } else if (act==='reset-all'){
+      const c=await UI.confirm({title:'Reset everything?',body:'Wipes all role workspaces back to seed data.',ok:'Reset',tone:'red'});
+      if (!c.ok) return;
+      MACRO.reset(); localStorage.removeItem('macro_po_state_v1'); UI.toast('All data reset','green'); render();
+    }
+  }));
+}
+MACRO.subscribe(()=>render());
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS · Executive Director</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/macro-styles.css" />
+</head>
+<body>
+<div class="app" id="app"></div>
+<script src="shared/macro-core.js"></script>
+<script src="shared/macro-shell.js"></script>
+<script>
+const ME='U-ED';
+const VIEWS=[
+  {id:'dash',     icon:'home',  label:'Org dashboard'},
+  {id:'queue',    icon:'inbox', label:'Sign-off queue'},
+  {id:'projects', icon:'flag',  label:'Projects portfolio'},
+  {id:'variance', icon:'chart', label:'Donor variance'},
+  {id:'aps',      icon:'pin',   label:'Action points'},
+];
+let currentView='dash';
+
+function counts(){
+  return {
+    arQ: MACRO.list('ars',r=>r.stage==='FM Approved').length,
+    pvQ: MACRO.list('pvs',r=>r.stage==='FM Approved').length,
+    aps: MACRO.list('aps',a=>a.owner===ME && a.stage!=='Closed').length
+  };
+}
+function render(){
+  const c=counts();
+  const items=VIEWS.map(v=>Object.assign({},v,
+    v.id==='queue'?{badge:(c.arQ+c.pvQ)||null}:
+    v.id==='aps'?{badge:c.aps||null,badgeQ:true}:{}));
+  document.getElementById('app').innerHTML=
+    UI.sidebar({userId:ME,label:'Executive Director · HQ',cls:'ed'},items,currentView,'v4.0 · Sandbox')+
+    `<div class="main">${UI.topbar({},['Executive',label(currentView)],'IMP')}<div class="page">${pageBody()}</div></div>`;
+  UI.bindNav(id=>{currentView=id;render();});
+  bindActions();
+}
+function label(id){return (VIEWS.find(v=>v.id===id)||{}).label||'';}
+function pageBody(){return ({dash:viewDash,queue:viewQueue,projects:viewProjects,variance:viewVariance,aps:viewAps}[currentView]||(()=>'')) ();}
+
+function viewDash(){
+  const me=MACRO.user(ME);
+  const c=counts();
+  const orgBudget=MACRO.PROJECTS.reduce((s,p)=>s+p.budget,0);
+  const orgSpent =MACRO.PROJECTS.reduce((s,p)=>s+p.spent,0);
+  return `
+    <div class="hello"><div class="hello-card purple">
+      <div><h1>Hi ${me.name.split(' ')[0]} — ${c.arQ+c.pvQ} item${c.arQ+c.pvQ===1?'':'s'} for executive sign-off.</h1>
+        <div class="sub">All projects · ${MACRO.PROJECTS.length} active grants · MK ${(orgBudget/1e9).toFixed(2)}B portfolio.</div></div>
+      <div class="hello-stats">
+        <div class="hs ${c.arQ?'warn':'good'}"><div class="v">${c.arQ}</div><div class="l">ARs to sign</div></div>
+        <div class="hs ${c.pvQ?'warn':'good'}"><div class="v">${c.pvQ}</div><div class="l">Vouchers to sign</div></div>
+        <div class="hs"><div class="v">${Math.round(orgSpent/orgBudget*100)}%</div><div class="l">Burn rate</div></div>
+      </div></div></div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="l">Portfolio budget</div><div class="v">${MACRO.fmt.short(orgBudget)}</div><div class="s">across ${MACRO.PROJECTS.length} grants</div></div>
+      <div class="kpi blue"><div class="l">Spent YTD</div><div class="v">${MACRO.fmt.short(orgSpent)}</div></div>
+      <div class="kpi green"><div class="l">Available</div><div class="v">${MACRO.fmt.short(orgBudget-orgSpent)}</div></div>
+      <div class="kpi amber"><div class="l">Open ARs</div><div class="v">${MACRO.list('ars',r=>!['Liquidated','Rejected'].includes(r.stage)).length}</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h"><h3>Sign-off queue</h3><div class="right"><span class="pill">${c.arQ+c.pvQ}</span></div></div>
+        <div>${[...MACRO.list('ars',r=>r.stage==='FM Approved').slice(0,3).map(arRow), ...MACRO.list('pvs',r=>r.stage==='FM Approved').slice(0,3).map(pvRow)].join('')||empty('Nothing waiting on you.')}</div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Project burn</h3></div>
+        <div style="padding:14px 18px">${MACRO.PROJECTS.map(p=>{
+          const pct=Math.round(p.spent/p.budget*100), tone=pct>=85?'amber':'green';
+          return `<div style="margin-bottom:14px"><div class="row" style="justify-content:space-between;margin-bottom:5px"><b>${p.code}</b><span class="mono small">${MACRO.fmt.short(p.spent)} / ${MACRO.fmt.short(p.budget)} · <b style="color:var(--${tone})">${pct}%</b></span></div><div class="shimmer-bar"><div class="${tone}" style="width:${pct}%"></div></div><div class="muted small" style="margin-top:3px">${p.donor} · ${p.period}</div></div>`;
+        }).join('')}</div>
+      </div>
+    </div>
+  `;
+}
+
+function arRow(r){
+  return `<div class="ix"><div class="ico">AR</div>
+    <div><div class="t">${r.title}</div>
+      <div class="m"><span class="ref mono">${r.id}</span><span>·</span><span class="mono">${r.dip}</span><span>·</span><b>${MACRO.fmt.mwk(r.amount)}</b><span>·</span><span>FM-approved ${MACRO.fmt.since(r.submitted)}</span></div>
+    </div>
+    <div class="row">
+      <button class="btn sm" data-act="ar-reject" data-id="${r.id}">Reject</button>
+      <button class="actbtn green" data-act="ar-approve" data-id="${r.id}">Sign off</button>
+    </div></div>`;
+}
+function pvRow(r){
+  return `<div class="ix"><div class="ico">PV</div>
+    <div><div class="t">${r.title}</div>
+      <div class="m"><span class="ref mono">${r.id}</span><span>·</span><span>${r.payee}</span><span>·</span><b>${MACRO.fmt.mwk(r.gross)}</b></div>
+    </div>
+    <div class="row">
+      <button class="btn sm" data-act="pv-reject" data-id="${r.id}">Reject</button>
+      <button class="actbtn green" data-act="pv-approve" data-id="${r.id}">Sign off</button>
+    </div></div>`;
+}
+
+function viewQueue(){
+  const ars=MACRO.list('ars',r=>r.stage==='FM Approved');
+  const pvs=MACRO.list('pvs',r=>r.stage==='FM Approved');
+  return `<div class="page-head"><h1 class="page-title">Sign-off queue</h1></div>
+    <div class="card" style="margin-bottom:18px"><div class="card-h"><h3>Advance requests</h3></div><div>${ars.map(arRow).join('')||empty('No ARs.')}</div></div>
+    <div class="card"><div class="card-h"><h3>Vouchers</h3></div><div>${pvs.map(pvRow).join('')||empty('No vouchers.')}</div></div>`;
+}
+
+function viewProjects(){
+  return `<div class="page-head"><h1 class="page-title">Projects portfolio</h1></div>
+    <div class="grid-3">${MACRO.PROJECTS.map(p=>{
+      const pct=Math.round(p.spent/p.budget*100), tone=pct>=85?'amber':'green';
+      const arsP=MACRO.list('ars',r=>r.proj===p.id).length;
+      return `<div class="card"><div class="card-b">
+        <div class="row"><div style="width:42px;height:42px;border-radius:10px;background:${p.color};color:#fff;display:grid;place-items:center;font-weight:800">${p.code.slice(0,2)}</div>
+          <div><b>${p.name}</b><div class="muted small">${p.donor}</div></div></div>
+        <div class="kvs" style="margin-top:14px">
+          <dt>Budget</dt><dd class="mono">${MACRO.fmt.mwk(p.budget)}</dd>
+          <dt>Spent</dt><dd class="mono">${MACRO.fmt.mwk(p.spent)}</dd>
+          <dt>Period</dt><dd>${p.period}</dd>
+          <dt>ARs</dt><dd>${arsP}</dd>
+        </div>
+        <div style="margin-top:12px"><div class="shimmer-bar"><div class="${tone}" style="width:${pct}%"></div></div><div class="muted small" style="margin-top:4px">${pct}% utilised</div></div>
+      </div></div>`;
+    }).join('')}</div>`;
+}
+function viewVariance(){
+  return `<div class="page-head"><h1 class="page-title">Donor variance</h1></div>
+    <div class="card"><table class="tbl"><thead><tr><th>Project</th><th>Donor</th><th class="num">Budget</th><th class="num">Committed</th><th class="num">Spent</th><th class="num">Variance</th><th>Status</th></tr></thead><tbody>
+      ${MACRO.PROJECTS.map(p=>{
+        const cmt=p.spent*0.06, varc=p.budget-p.spent-cmt, pct=p.spent/p.budget*100;
+        const tone=pct>=85?'amber':pct<40?'red':'green';
+        return `<tr><td><b>${p.code}</b></td><td>${p.donor}</td>
+          <td class="num">${MACRO.fmt.mwk(p.budget)}</td><td class="num">${MACRO.fmt.mwk(cmt)}</td>
+          <td class="num">${MACRO.fmt.mwk(p.spent)}</td><td class="num">${MACRO.fmt.mwk(varc)}</td>
+          <td>${UI.pill(pct>=85?'On track · burn':pct<40?'Slow burn':'On track', tone)}</td></tr>`;
+      }).join('')}
+    </tbody></table></div>`;
+}
+function viewAps(){
+  const aps=MACRO.list('aps',a=>a.owner===ME);
+  return `<div class="page-head"><h1 class="page-title">Action points</h1></div>
+    <div class="card"><table class="tbl"><thead><tr><th>Ref</th><th>Title</th><th>Source</th><th>Priority</th><th>Due</th><th>Stage</th><th></th></tr></thead><tbody>
+      ${aps.map(a=>`<tr><td><span class="ref">${a.id}</span></td><td>${a.title}</td><td>${a.source}</td>
+        <td>${UI.pill(a.priority,a.priority==='High'?'red':'amber')}</td><td>${MACRO.fmt.until(a.due)}</td>
+        <td>${UI.pill(a.stage,MACRO.stageTone('AP',a.stage))}</td>
+        <td>${a.stage==='Closed'?'':`<button class="btn sm" data-act="ap-resolve" data-id="${a.id}">Resolve</button>`}</td></tr>`).join('')||`<tr><td colspan="7" class="empty">No items.</td></tr>`}
+    </tbody></table></div>`;
+}
+
+function empty(m){return `<div class="empty"><div class="ico">✓</div>${m}</div>`;}
+
+function bindActions(){
+  document.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',async()=>{
+    const act=b.getAttribute('data-act'),id=b.getAttribute('data-id');
+    if (act==='ar-approve'){
+      MACRO.transition('AR','ars',id,'ed-approve',ME,'Signed off by ED');
+      MACRO.notify('U-GFO', id+' signed off — disburse', id);
+      UI.toast(id+' signed off → GFO','green'); render();
+    } else if (act==='ar-reject'){
+      const c=await UI.confirm({title:'Reject AR',body:'This will permanently reject this advance request.',note:'Reason',ok:'Reject',tone:'red'});
+      if (!c.ok) return;
+      MACRO.transition('AR','ars',id,'reject',ME,c.note||'Rejected',{rejectedBy:ME,rejectReason:c.note||''});
+      const r=MACRO.get('ars',id); MACRO.notify(r.requestedBy, id+' rejected by ED', id);
+      UI.toast(id+' rejected','red'); render();
+    } else if (act==='pv-approve'){
+      MACRO.transition('PV','pvs',id,'ed-approve',ME,'Signed off by ED');
+      MACRO.notify('U-GFO', id+' signed off — pay & post', id);
+      UI.toast(id+' signed off → GFO','green'); render();
+    } else if (act==='pv-reject'){
+      const c=await UI.confirm({title:'Reject voucher',body:'This will permanently reject this voucher.',note:'Reason',ok:'Reject',tone:'red'});
+      if (!c.ok) return;
+      MACRO.transition('PV','pvs',id,'reject',ME,c.note||'Rejected',{rejectedBy:ME,rejectReason:c.note||''});
+      UI.toast(id+' rejected','red'); render();
+    } else if (act==='ap-resolve'){
+      MACRO.update('aps',id,{stage:'Resolved'}); MACRO.audit('AP',id,'resolve',ME,'Resolved');
+      UI.toast(id+' resolved','green'); render();
+    }
+  }));
+}
+
+MACRO.subscribe(()=>render());
+render();
+</script>
+</body>
+</html>

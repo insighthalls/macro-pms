@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS · Grant Finance Officer</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/macro-styles.css" />
+</head>
+<body>
+<div class="app" id="app"></div>
+<script src="shared/macro-core.js"></script>
+<script src="shared/macro-shell.js"></script>
+<script>
+const ME = 'U-GFO';
+const VIEWS = [
+  {id:'queue',     icon:'inbox', label:'Pre-payment queue'},
+  {id:'review',    icon:'file',  label:'Voucher review'},
+  {id:'disburse',  icon:'money', label:'Disbursements'},
+  {id:'posted',    icon:'book',  label:'Posted vouchers'},
+  {id:'returned',  icon:'flag',  label:'Returned by FM/ED'},
+  {id:'aps',       icon:'pin',   label:'Action points'},
+];
+let currentView = 'queue';
+
+function counts(){
+  return {
+    review: MACRO.list('pvs', r=>r.stage==='PO Submitted').length,
+    pay:    MACRO.list('pvs', r=>r.stage==='ED Approved').length,
+    disb:   MACRO.list('ars', r=>r.stage==='ED Approved').length,
+    aps:    MACRO.list('aps', a=>a.owner===ME && a.stage!=='Closed').length,
+  };
+}
+
+function render(){
+  const c = counts();
+  const items = VIEWS.map(v => Object.assign({}, v,
+    v.id==='queue'    ? {badge:(c.review+c.disb)||null} :
+    v.id==='review'   ? {badge:c.review||null} :
+    v.id==='disburse' ? {badge:c.disb||null,badgeQ:true} :
+    v.id==='aps'      ? {badge:c.aps||null,badgeQ:true} : {}
+  ));
+  document.getElementById('app').innerHTML =
+    UI.sidebar({userId:ME, label:'Grant Finance Officer · HQ', cls:'gfo'}, items, currentView, 'v4.0 · Sandbox') +
+    `<div class="main">${UI.topbar({}, ['Finance', label(currentView)], 'IMP')}<div class="page">${pageBody()}</div></div>`;
+  UI.bindNav(id => { currentView = id; render(); });
+  bindActions();
+}
+function label(id){ return (VIEWS.find(v=>v.id===id)||{}).label||''; }
+
+function pageBody(){
+  if (currentView==='queue')    return viewQueue();
+  if (currentView==='review')   return viewReview();
+  if (currentView==='disburse') return viewDisburse();
+  if (currentView==='posted')   return viewPosted();
+  if (currentView==='returned') return viewReturned();
+  if (currentView==='aps')      return viewAps();
+  return '';
+}
+
+function viewQueue(){
+  const me = MACRO.user(ME);
+  const c = counts();
+  const reviewItems = MACRO.list('pvs', r=>r.stage==='PO Submitted');
+  const payItems    = MACRO.list('pvs', r=>r.stage==='ED Approved');
+  const disbItems   = MACRO.list('ars', r=>r.stage==='ED Approved');
+  return `
+    <div class="hello">
+      <div class="hello-card green">
+        <div><h1>Hi ${me.name.split(' ')[0]} — ${c.review+c.disb+c.pay} item${(c.review+c.disb+c.pay)===1?'':'s'} need finance action.</h1>
+          <div class="sub">Vouchers ready for pre-payment review and disbursements queued from ED-approved ARs.</div></div>
+        <div class="hello-stats">
+          <div class="hs ${c.review?'warn':'good'}"><div class="v">${c.review}</div><div class="l">Vouchers to review</div></div>
+          <div class="hs ${c.disb?'warn':'good'}"><div class="v">${c.disb}</div><div class="l">Awaiting disbursement</div></div>
+          <div class="hs ${c.pay?'warn':'good'}"><div class="v">${c.pay}</div><div class="l">Ready to pay</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-h"><h3>Vouchers awaiting your review</h3><div class="right"><span class="pill">${reviewItems.length}</span></div></div>
+      <div>${reviewItems.map(r=>pvRow(r,'review')).join('') || empty('No vouchers in queue.')}</div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h"><h3>Ready to pay</h3><span class="sub">ED approved</span></div>
+        <div>${payItems.map(r=>pvRow(r,'pay')).join('') || empty('No vouchers ready.')}</div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Awaiting disbursement</h3><span class="sub">advance requests</span></div>
+        <div>${disbItems.map(r=>arRow(r)).join('') || empty('No disbursements queued.')}</div>
+      </div>
+    </div>
+  `;
+}
+
+function pvRow(r, mode){
+  const checks = preChecks(r);
+  return `<div class="ix"><div class="ico">PV</div>
+    <div><div class="t">${r.title}</div>
+      <div class="m"><span class="ref mono">${r.id}</span><span>·</span><span>${r.payee}</span><span>·</span><span class="mono">${r.dip}</span><span>·</span><b>${MACRO.fmt.mwk(r.gross)}</b><span>·</span><span>net ${MACRO.fmt.short(r.net)}</span><span>·</span><span>WHT ${MACRO.fmt.short(r.wht)}</span></div>
+      <div class="m" style="margin-top:6px">${checks.map(c=>UI.pill(c.txt, c.ok?'green':'red')).join(' ')}</div>
+    </div>
+    <div class="row">
+      ${mode==='review' ? `<button class="btn sm" data-act="pv-return" data-id="${r.id}">Return</button>
+        <button class="actbtn green" data-act="pv-review" data-id="${r.id}">Forward to FM</button>` : ''}
+      ${mode==='pay' ? `<button class="actbtn green" data-act="pv-pay" data-id="${r.id}">Pay & post</button>` : ''}
+    </div></div>`;
+}
+function arRow(r){
+  return `<div class="ix"><div class="ico" style="background:var(--purple-bg);color:var(--purple)">AR</div>
+    <div><div class="t">${r.title}</div>
+      <div class="m"><span class="ref mono">${r.id}</span><span>·</span><span class="mono">${r.dip}</span><span>·</span><b>${MACRO.fmt.mwk(r.amount)}</b><span>·</span><span>requested by ${(MACRO.user(r.requestedBy)||{}).name}</span></div>
+    </div>
+    <button class="actbtn green" data-act="ar-disburse" data-id="${r.id}">Disburse</button></div>`;
+}
+
+function preChecks(r){
+  const dip = MACRO.dip(r.dip);
+  const remaining = dip ? dip.budget - dip.committed - dip.spent : 0;
+  return [
+    {ok: !!r.payee, txt:'Payee'},
+    {ok: r.gross>0, txt:'Gross OK'},
+    {ok: r.wht>=0, txt:r.wht>0?`WHT ${Math.round(r.wht/r.gross*100)}%`:'No WHT'},
+    {ok: remaining > r.gross, txt: remaining>r.gross? 'DIP balance OK' : 'DIP overdraft'},
+    {ok: r.payee !== 'Crossroads Hotel' || r.id!=='PV-2026-1246', txt: r.id==='PV-2026-1246'?'TPIN missing':'TPIN OK'},
+  ];
+}
+
+function viewReview(){
+  const all = MACRO.list('pvs', r=>['PO Submitted','GFO Reviewed','Returned'].includes(r.stage));
+  return `<div class="page-head"><h1 class="page-title">Voucher review</h1>
+    <div class="actions"><span class="pill">${all.filter(r=>r.stage==='PO Submitted').length} pending</span><span class="pill green">${all.filter(r=>r.stage==='GFO Reviewed').length} forwarded</span></div></div>
+    <div class="card"><table class="tbl"><thead><tr>
+      <th>PV ref</th><th>Payee</th><th>DIP</th><th class="num">Gross</th><th class="num">Net</th><th>Stage</th><th>Submitted</th><th></th></tr></thead><tbody>
+      ${all.map(r => `<tr><td><span class="ref">${r.id}</span><div class="muted small">${r.title}</div></td>
+        <td>${r.payee}</td><td class="mono">${r.dip}</td>
+        <td class="num">${MACRO.fmt.mwk(r.gross)}</td><td class="num">${MACRO.fmt.mwk(r.net)}</td>
+        <td>${UI.pill(r.stage, MACRO.stageTone('PV',r.stage))}</td>
+        <td class="muted">${MACRO.fmt.since(r.submitted)}</td>
+        <td>${r.stage==='PO Submitted' ? `<button class="btn sm" data-act="pv-return" data-id="${r.id}">Return</button> <button class="btn sm primary" data-act="pv-review" data-id="${r.id}">Forward</button>` : `<span class="muted small">${r.stage==='Returned'?'returned to PO':'forwarded'}</span>`}</td>
+      </tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+function viewDisburse(){
+  const all = MACRO.list('ars', r=>['ED Approved','Disbursed'].includes(r.stage));
+  return `<div class="page-head"><h1 class="page-title">Disbursements</h1></div>
+    <div class="kpis">
+      <div class="kpi amber"><div class="l">Awaiting disbursement</div><div class="v">${all.filter(r=>r.stage==='ED Approved').length}</div></div>
+      <div class="kpi green"><div class="l">Disbursed (this period)</div><div class="v">${all.filter(r=>r.stage==='Disbursed').length}</div></div>
+      <div class="kpi blue"><div class="l">Total queued</div><div class="v">${MACRO.fmt.short(all.filter(r=>r.stage==='ED Approved').reduce((s,r)=>s+r.amount,0))}</div></div>
+      <div class="kpi"><div class="l">Avg cycle time</div><div class="v">3.4d</div><div class="s">submission → disbursement</div></div>
+    </div>
+    <div class="card"><table class="tbl"><thead><tr><th>AR ref</th><th>Activity</th><th>Officer</th><th>DIP</th><th class="num">Amount</th><th>Stage</th><th></th></tr></thead><tbody>
+      ${all.map(r => `<tr>
+        <td><span class="ref">${r.id}</span></td><td>${r.title}</td>
+        <td>${(MACRO.user(r.requestedBy)||{}).name}</td>
+        <td class="mono">${r.dip}</td>
+        <td class="num">${MACRO.fmt.mwk(r.amount)}</td>
+        <td>${UI.pill(r.stage, MACRO.stageTone('AR',r.stage))}</td>
+        <td>${r.stage==='ED Approved' ? `<button class="btn sm primary" data-act="ar-disburse" data-id="${r.id}">Disburse</button>` : `<span class="muted small">disbursed ${MACRO.fmt.since(r.disbursedOn||r.submitted)}</span>`}</td>
+      </tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+function viewPosted(){
+  const all = MACRO.list('pvs', r=>['Paid','Posted'].includes(r.stage));
+  return `<div class="page-head"><h1 class="page-title">Posted vouchers</h1></div>
+    <div class="card"><table class="tbl"><thead><tr><th>PV ref</th><th>Payee</th><th>DIP</th><th class="num">Gross</th><th>Paid</th><th>Stage</th></tr></thead><tbody>
+      ${all.map(r => `<tr>
+        <td><span class="ref">${r.id}</span><div class="muted small">${r.title}</div></td>
+        <td>${r.payee}</td><td class="mono">${r.dip}</td>
+        <td class="num">${MACRO.fmt.mwk(r.gross)}</td>
+        <td class="muted">${MACRO.fmt.since(r.paidOn||r.submitted)}</td>
+        <td>${UI.pill(r.stage, MACRO.stageTone('PV',r.stage))}</td></tr>`).join('') || `<tr><td colspan="6" class="empty">No paid vouchers.</td></tr>`}
+    </tbody></table></div>`;
+}
+
+function viewReturned(){
+  const all = MACRO.list('pvs', r=>r.stage==='Returned').concat(MACRO.list('ars', r=>r.stage==='Returned' || r.stage==='Rejected'));
+  return `<div class="page-head"><h1 class="page-title">Returned / rejected</h1></div>
+    <div class="card"><div>${all.map(r => `
+      <div class="ix urgent"><div class="ico">${r.id.startsWith('PV')?'PV':'AR'}</div>
+        <div><div class="t">${r.title}</div>
+          <div class="m"><span class="ref mono">${r.id}</span><span>·</span><span>returned by ${(MACRO.user(r.returnedBy||r.rejectedBy)||{}).name||'—'}</span><span>·</span><i>${r.returnReason||r.rejectReason||''}</i></div></div>
+        ${UI.pill(r.stage, 'red')}
+      </div>`).join('') || empty('No returned items.')}</div></div>`;
+}
+
+function viewAps(){
+  const aps = MACRO.list('aps', a => a.owner===ME);
+  return `<div class="page-head"><h1 class="page-title">Action points</h1></div>
+    <div class="card"><table class="tbl"><thead><tr><th>Ref</th><th>Title</th><th>Source</th><th>Priority</th><th>Due</th><th>Stage</th><th></th></tr></thead><tbody>
+      ${aps.map(a => `<tr>
+        <td><span class="ref">${a.id}</span></td><td>${a.title}</td><td>${a.source}</td>
+        <td>${UI.pill(a.priority, a.priority==='High'?'red':a.priority==='Medium'?'amber':'gray')}</td>
+        <td>${MACRO.fmt.until(a.due)}</td>
+        <td>${UI.pill(a.stage, MACRO.stageTone('AP',a.stage))}</td>
+        <td>${a.stage==='Closed'?'':`<button class="btn sm" data-act="ap-resolve" data-id="${a.id}">Resolve</button>`}</td>
+      </tr>`).join('') || `<tr><td colspan="7" class="empty">No items.</td></tr>`}
+    </tbody></table></div>`;
+}
+
+function empty(msg){ return `<div class="empty"><div class="ico">✓</div>${msg}</div>`; }
+
+function bindActions(){
+  document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', async () => {
+    const act=b.getAttribute('data-act'), id=b.getAttribute('data-id');
+    if (act==='pv-review'){
+      MACRO.transition('PV','pvs',id,'gfo-review',ME,'Reviewed by GFO');
+      MACRO.notify('U-FM', id+' reviewed — awaiting FM approval', id);
+      UI.toast(id+' forwarded to FM','green'); render();
+    } else if (act==='pv-return'){
+      const c = await UI.confirm({title:'Return voucher',body:'Send back to the Project Officer.',note:'Reason',ok:'Return',tone:'amber'});
+      if (!c.ok) return;
+      MACRO.transition('PV','pvs',id,'return',ME,c.note||'Returned',{returnedBy:ME,returnReason:c.note||''});
+      const r=MACRO.get('pvs',id); MACRO.notify(r.vendorId?'U-PO':'U-PO', id+' returned by GFO', id);
+      UI.toast(id+' returned','amber'); render();
+    } else if (act==='pv-pay'){
+      MACRO.transition('PV','pvs',id,'pay',ME,'Paid', {paidOn:new Date().toISOString().slice(0,10)});
+      MACRO.transition('PV','pvs',id,'post',ME,'Posted to ledger');
+      const r=MACRO.get('pvs',id); MACRO.notify('U-PO', id+' has been paid', id);
+      UI.toast(id+' paid & posted','green'); render();
+    } else if (act==='ar-disburse'){
+      MACRO.transition('AR','ars',id,'disburse',ME,'Disbursed',{disbursedOn:new Date().toISOString().slice(0,10)});
+      MACRO.transition('AR','ars',id,'await-liq','system','Awaiting liquidation');
+      const r=MACRO.get('ars',id); MACRO.notify(r.requestedBy, id+' funds disbursed — '+MACRO.fmt.mwk(r.amount), id);
+      UI.toast(id+' disbursed','green'); render();
+    } else if (act==='ap-resolve'){
+      MACRO.update('aps',id,{stage:'Resolved'}); MACRO.audit('AP',id,'resolve',ME,'Resolved');
+      UI.toast(id+' resolved','green'); render();
+    }
+  }));
+}
+
+MACRO.subscribe(()=>render());
+render();
+</script>
+</body>
+</html>

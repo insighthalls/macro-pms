@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: macro
+      POSTGRES_PASSWORD: macro
+      POSTGRES_DB: macro_pms
+    ports:
+      - "5433:5432"
+    volumes:
+      - macro_pms_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U macro"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://macro:macro@db:5432/macro_pms?schema=public
+      JWT_SECRET: dev-only-change-me
+      PORT: 4000
+    ports:
+      - "4000:4000"
+    command: sh -c "npx prisma migrate deploy && npx prisma db seed && node dist/index.js"
+
+volumes:
+  macro_pms_data:

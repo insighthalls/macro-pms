@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS · Sign in / Role Picker</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/macro-styles.css" />
+<style>
+  body{background:linear-gradient(135deg,#0E1A2B 0%,#1F4E79 60%,#2E75B6 100%);min-height:100vh}
+  .wrap{min-height:100vh;display:grid;grid-template-rows:auto 1fr auto;color:#fff}
+  .top{padding:22px 36px;display:flex;align-items:center;gap:14px}
+  .top .brand-mark{width:40px;height:40px;background:#fff;color:var(--blue);border-radius:10px;display:grid;place-items:center;font-weight:900;font-size:15px}
+  .top .nm{font-weight:800;font-size:15px;letter-spacing:.02em}
+  .top .sb{font-size:11px;opacity:.7;letter-spacing:.1em;text-transform:uppercase}
+  .lead{padding:36px 36px 14px;max-width:1180px;margin:0 auto;width:100%}
+  .lead h1{margin:0;font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+  .lead p{margin:10px 0 0;font-size:14.5px;opacity:.82;max-width:680px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:18px 36px 26px;max-width:1180px;margin:0 auto;width:100%}
+  .card2{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px;transition:.2s;cursor:pointer;text-decoration:none;color:#fff;backdrop-filter:blur(8px)}
+  .card2:hover{transform:translateY(-2px);background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.32)}
+  .card2 .av{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:14px;color:#3a2400}
+  .card2 b{font-size:15px;font-weight:700}
+  .card2 .role{font-size:12px;opacity:.78;letter-spacing:.04em;text-transform:uppercase}
+  .card2 .desc{font-size:12.5px;opacity:.78;line-height:1.45}
+  .card2 .meta{margin-top:auto;display:flex;gap:6px;flex-wrap:wrap}
+  .card2 .pill2{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.14);color:#fff}
+  .lead .pills{margin-top:14px;display:flex;gap:6px;flex-wrap:wrap}
+  .lead .pills span{font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.12);color:#fff}
+  .foot{padding:18px 36px 26px;max-width:1180px;margin:0 auto;width:100%;display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between;color:rgba(255,255,255,.6);font-size:12px}
+  .foot a{color:#fff;text-decoration:underline;text-decoration-color:rgba(255,255,255,.3)}
+  .reset-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:7px 14px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer}
+  .reset-btn:hover{background:rgba(255,255,255,.18)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand-mark">M</div>
+    <div><div class="nm">MACRO PMS</div><div class="sb">Project Management System · v4.0</div></div>
+    <div style="margin-left:auto" class="row">
+      <button class="reset-btn" id="reset">Reset all data</button>
+    </div>
+  </div>
+
+  <div>
+    <div class="lead">
+      <h1>Sign in to your workspace</h1>
+      <p>One platform, eight role-tuned interfaces. Every advance request, voucher, and procurement requisition flows through the same shared ledger — submit on one role, watch it appear in the next role's queue in real time.</p>
+      <div class="pills">
+        <span>17 modules</span><span>5 active projects</span><span>MWK ledger</span><span>FSM-driven workflows</span><span>End-to-end audit trail</span>
+      </div>
+    </div>
+    <div class="grid">
+      <a class="card2" href="Project Officer.html">
+        <div class="av" style="background:linear-gradient(135deg,#FFD479,#E8881C)">TP</div>
+        <div class="role">Project Officer · KP</div>
+        <b>Tendai Phiri</b>
+        <div class="desc">Activity execution: SOWs, advance requests, liquidations, action points.</div>
+        <div class="meta"><span class="pill2">My Day</span><span class="pill2">New activity</span><span class="pill2">Liquidations</span></div>
+      </a>
+      <a class="card2" href="Head of Programs.html">
+        <div class="av" style="background:linear-gradient(135deg,#FFC4D6,#B42318);color:#fff">CB</div>
+        <div class="role">Head of Programs</div>
+        <b>Chimwemwe Banda</b>
+        <div class="desc">SOW recommendations, programme oversight, procurement requisitions.</div>
+        <div class="meta"><span class="pill2">Recommend ARs</span><span class="pill2">Approve PRs</span></div>
+      </a>
+      <a class="card2" href="Grant Finance Officer.html">
+        <div class="av" style="background:linear-gradient(135deg,#9be0b4,#1E7E48);color:#0a2a18">DN</div>
+        <div class="role">Grant Finance Officer</div>
+        <b>Dalitso Nkhata</b>
+        <div class="desc">Voucher pre-payment review, WTEC checks, disbursement & posting.</div>
+        <div class="meta"><span class="pill2">Voucher review</span><span class="pill2">Pay & post</span></div>
+      </a>
+      <a class="card2" href="Finance Manager.html">
+        <div class="av" style="background:linear-gradient(135deg,#A0C4FF,#1F4E79);color:#fff">RM</div>
+        <div class="role">Finance Manager</div>
+        <b>Ruth Mwale</b>
+        <div class="desc">AR & voucher final approvals, budget reallocation, variance review.</div>
+        <div class="meta"><span class="pill2">Approval queue</span><span class="pill2">Budget</span></div>
+      </a>
+      <a class="card2" href="Executive Director.html">
+        <div class="av" style="background:linear-gradient(135deg,#E2C4FF,#5A2BB1);color:#fff">EP</div>
+        <div class="role">Executive Director</div>
+        <b>Eleanor Phiri</b>
+        <div class="desc">Final sign-off on high-value items, org dashboard, donor variance.</div>
+        <div class="meta"><span class="pill2">Sign-off</span><span class="pill2">Org KPIs</span></div>
+      </a>
+      <a class="card2" href="Procurement Officer.html">
+        <div class="av" style="background:linear-gradient(135deg,#FFE2A0,#A6791A);color:#3a2400">WL</div>
+        <div class="role">Procurement Officer</div>
+        <b>Watson Lungu</b>
+        <div class="desc">RFQs, quote evaluation, LPO issuance, vendor master.</div>
+        <div class="meta"><span class="pill2">PR pipeline</span><span class="pill2">Vendors</span></div>
+      </a>
+      <a class="card2" href="Admin.html">
+        <div class="av" style="background:linear-gradient(135deg,#C4D4FF,#3B4A5E);color:#fff">FM</div>
+        <div class="role">Administrator / M&amp;E</div>
+        <b>Florence Mhone</b>
+        <div class="desc">Users &amp; roles, audit log, action points, system configuration.</div>
+        <div class="meta"><span class="pill2">Audit</span><span class="pill2">Action points</span></div>
+      </a>
+      <a class="card2" href="Vendor Portal.html">
+        <div class="av" style="background:linear-gradient(135deg,#C4FFE2,#1E7E48);color:#0a2a18">SS</div>
+        <div class="role">Vendor · Self-service</div>
+        <b>Sunbird Stationers</b>
+        <div class="desc">Submit invoices, track payment status, manage vendor profile.</div>
+        <div class="meta"><span class="pill2">My invoices</span><span class="pill2">Payment status</span></div>
+      </a>
+      <a class="card2" href="Controls.html">
+        <div class="av" style="background:linear-gradient(135deg,#FFD4D4,#B42318);color:#fff">⚙</div>
+        <div class="role">Controls &amp; Compliance</div>
+        <b>Tier 1 + 2 controls</b>
+        <div class="desc">Three-way match · overdraft justification · Rule 50 block · WTEC/MoA expiry · approval matrix.</div>
+        <div class="meta"><span class="pill2">5 controls</span><span class="pill2">Demo</span></div>
+      </a>
+      <a class="card2" href="Governance.html">
+        <div class="av" style="background:linear-gradient(135deg,#A0C4FF,#1F4E79);color:#fff">📊</div>
+        <div class="role">Governance · Tier 3 + 4</div>
+        <b>Budget · APs · Revisions</b>
+        <div class="desc">Live budget dashboard with green/amber/red bars · cross-project Action Points register · Budget revision form (FM only).</div>
+        <div class="meta"><span class="pill2">Budget bars</span><span class="pill2">APs</span><span class="pill2">BR form</span></div>
+      </a>
+      <a class="card2" href="Automation.html">
+        <div class="av" style="background:linear-gradient(135deg,#a8b8ff,#3F4D9C);color:#fff">⚙</div>
+        <div class="role">Automation · Tier 4</div>
+        <b>Bulk · Recurring · Versions · Simulator</b>
+        <div class="desc">Bulk-approve voucher queues, schedule recurring transactions, browse document version history with diff, and stress-test approval-matrix changes before activating.</div>
+        <div class="meta"><span class="pill2">Bulk</span><span class="pill2">Recurring</span><span class="pill2">Diff</span><span class="pill2">Simulator</span></div>
+      </a>
+      <a class="card2" href="Mobile Companion.html">
+        <div class="av" style="background:linear-gradient(135deg,#1F4E79,#0a1f3a);color:#fff">📱</div>
+        <div class="role">Mobile companion · Tier 4</div>
+        <b>Field officer phone app</b>
+        <div class="desc">Offline-first companion: capture receipts via OCR, scan attendance with GPS, approve with biometric, all syncing back to the desktop workspace.</div>
+        <div class="meta"><span class="pill2">Offline-first</span><span class="pill2">OCR</span><span class="pill2">Biometric</span></div>
+      </a>
+      <a class="card2" href="EFT Batch.html">
+        <div class="av" style="background:linear-gradient(135deg,#9be0b4,#1E7E48);color:#0a2a18">💸</div>
+        <div class="role">EFT Batch · Tier 3</div>
+        <b>Bundle &amp; pay vouchers</b>
+        <div class="desc">GFO-only screen to bundle approved vouchers into ISO 20022 EFT files, lock vouchers, and mark Paid on bank confirmation.</div>
+        <div class="meta"><span class="pill2">pacs.008</span><span class="pill2">Lock &amp; pay</span></div>
+      </a>
+      <a class="card2" href="frontend/README.md">
+        <div class="av" style="background:linear-gradient(135deg,#A9C4DF,#1F4E79);color:#fff">⚛</div>
+        <div class="role">Frontend migration · Session 1</div>
+        <b>Next.js 15 + Tailwind on Vercel</b>
+        <div class="desc">Refactor port of the Project Officer workspace (My Day + Advance Requests) wired to the backend-slice API. Typed contracts, React Query, design-token Tailwind config, Zustand auth, Supabase client ready for cutover.</div>
+        <div class="meta"><span class="pill2">App Router</span><span class="pill2">React Query</span><span class="pill2">Vercel + Supabase</span></div>
+      </a>
+      <a class="card2" href="backend/README.md">
+        <div class="av" style="background:linear-gradient(135deg,#ffd28a,#7a4e1f);color:#fff">⚙</div>
+        <div class="role">Backend handoff · for developers</div>
+        <b>OpenAPI · DDL · Prisma · workflows</b>
+        <div class="desc">Production spec package for engineers building the real backend: OpenAPI 3, Postgres DDL, Prisma schema, JWT/RBAC matrix, state machines, sample curl flows, and seed data — all derived from this prototype.</div>
+        <div class="meta"><span class="pill2">openapi.yaml</span><span class="pill2">schema.sql</span><span class="pill2">prisma.schema</span><span class="pill2">auth.md</span></div>
+      </a>
+      <a class="card2" href="Voucher Bundle.html?pv=PV-2026-1241">
+        <div class="av" style="background:linear-gradient(135deg,#D4D4FF,#1F4E79);color:#fff">📑</div>
+        <div class="role">Voucher Bundle · sample</div>
+        <b>PV-2026-1241</b>
+        <div class="desc">Cover · AR · checklist · SoW · PV · EFT · attendance · narrative · expense · liquidation. Print-ready.</div>
+        <div class="meta"><span class="pill2">10 documents</span><span class="pill2">Print / PDF</span></div>
+      </a>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div>Tip: open two roles in separate tabs and watch a record move through both queues live.</div>
+    <div>© 2026 MACRO Malawi · <a href="#" onclick="alert('See Project Officer › My Day for the demo workspace.')">Demo notes</a></div>
+  </div>
+</div>
+
+<script src="shared/macro-core.js"></script>
+<script>
+  document.getElementById('reset').addEventListener('click', () => {
+    if (confirm('Reset all PMS data to factory seed? Your test entries will be lost.')) {
+      MACRO.reset();
+      localStorage.removeItem('macro_po_state_v1');
+      alert('Done — all role workspaces have been reset.');
+    }
+  });
+</script>
+</body>
+</html>

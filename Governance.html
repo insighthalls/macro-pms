@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS · Governance</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/macro-styles.css" />
+<style>
+  .tabs{display:flex;gap:4px;background:#fff;padding:6px;border-radius:12px;border:1px solid var(--line);margin-bottom:18px;width:fit-content}
+  .tabs button{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--ink-3)}
+  .tabs button.active{background:var(--blue);color:#fff}
+  .pane{display:none}.pane.active{display:block}
+  .dip-row{display:grid;grid-template-columns:160px 1fr 110px 110px 110px 1fr 90px;gap:12px;padding:14px 16px;align-items:center;border-bottom:1px solid var(--line-2);font-size:13px}
+  .dip-row.head{background:#fafbfc;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700;border-bottom:1px solid var(--line)}
+  .dip-row .nm{font-weight:600}.dip-row .nm small{display:block;color:var(--ink-3);font-weight:500;font-size:11px;margin-top:2px}
+  .ap-row{display:grid;grid-template-columns:90px 36px 1fr 130px 130px 110px 110px 100px;gap:10px;padding:11px 16px;align-items:center;border-bottom:1px solid var(--line-2);font-size:13px}
+  .ap-row.head{background:#fafbfc;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700;border-bottom:1px solid var(--line)}
+  .ap-row .pri{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+  .ap-row .pri.High{background:var(--red)}.ap-row .pri.Medium{background:var(--amber)}.ap-row .pri.Low{background:var(--gray)}
+  .br-form{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .br-form .full{grid-column:1/-1}
+  .fld label{display:block;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px}
+  .fld input,.fld select,.fld textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:inherit;font-size:13.5px;background:#fff}
+  .fld textarea{min-height:90px;resize:vertical}
+  .br-table{width:100%;border-collapse:collapse;font-size:13px}
+  .br-table th,.br-table td{padding:9px 12px;border-bottom:1px solid var(--line-2);text-align:left}
+  .br-table th{background:#fafbfc;font-size:11px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+  .br-table td input{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;font-size:13px;text-align:right;font-family:"JetBrains Mono",monospace}
+  .br-table td.num,.br-table th.num{text-align:right;font-family:"JetBrains Mono",monospace}
+  .upload-zone{border:2px dashed var(--line);border-radius:10px;padding:24px;text-align:center;color:var(--ink-3);font-size:13px;background:#fafbfc;cursor:pointer}
+  .upload-zone.has{border-color:var(--green);background:var(--green-bg);color:var(--green)}
+  .donut{width:160px;height:160px;border-radius:50%;background:conic-gradient(var(--green) 0% 67%, var(--amber) 67% 84%, var(--red) 84% 100%);position:relative;flex:0 0 auto}
+  .donut::after{content:"";position:absolute;inset:18px;background:#fff;border-radius:50%}
+  .donut .ctr{position:absolute;inset:0;display:grid;place-items:center;text-align:center;z-index:2}
+  .donut .ctr b{display:block;font-size:22px;font-weight:800;letter-spacing:-.01em}
+  .donut .ctr span{font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em}
+  .legend{display:flex;flex-direction:column;gap:8px;font-size:12.5px}
+  .legend .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:middle}
+  .ap-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script src="shared/macro-core.js"></script>
+<script src="shared/macro-shell.js"></script>
+<script>
+const ME='U-FM';
+const VIEWS=[
+  {id:'budget', icon:'chart', label:'Budget dashboard'},
+  {id:'aps',    icon:'flag',  label:'Action Points register'},
+  {id:'rev',    icon:'edit',  label:'Budget revision'},
+];
+let v='budget';
+const REV={lines:[]};
+
+function render(){
+  document.getElementById('app').innerHTML=
+    UI.sidebar({userId:ME,label:'Finance Manager · Governance',cls:'fm'},VIEWS,v,'Tier 3+4 · Reporting & Governance')+
+    `<div class="main">${UI.topbar({userId:ME},['Governance', (VIEWS.find(x=>x.id===v)||{}).label],'IMP')}<div class="page">
+      <div class="tabs">${VIEWS.map(x=>`<button data-tab="${x.id}" class="${v===x.id?'active':''}">${x.label}</button>`).join('')}</div>
+      <div class="pane ${v==='budget'?'active':''}">${paneBudget()}</div>
+      <div class="pane ${v==='aps'?'active':''}">${paneAPs()}</div>
+      <div class="pane ${v==='rev'?'active':''}">${paneRev()}</div>
+    </div></div>`;
+  UI.bindNav(id=>{v=id;render();});
+  bindLocal();
+}
+
+function utilTone(pct){
+  if (pct >= 100) return 'red';
+  if (pct >= 85)  return 'amber';
+  return 'green';
+}
+
+function paneBudget(){
+  const dips=MACRO.DIP.slice();
+  // approx FY elapsed % — for IMPACT KP Oct 2024–Sep 2027, today 8 May 2026 ≈ 56%
+  const PLAN_PCT = 56;
+
+  let totalBudget=0,totalCommitted=0,totalSpent=0;
+  dips.forEach(d=>{totalBudget+=d.budget;totalCommitted+=d.committed;totalSpent+=d.spent;});
+  const orgPct = Math.round(((totalCommitted+totalSpent)/totalBudget)*100);
+
+  const rows=dips.map(d=>{
+    const used=d.committed+d.spent;
+    const pct=Math.round((used/d.budget)*100);
+    const tone=utilTone(pct);
+    const variance=pct-PLAN_PCT;
+    const proj=MACRO.project(d.proj);
+    return {d,used,pct,tone,variance,proj};
+  });
+
+  const greenN=rows.filter(r=>r.tone==='green').length;
+  const amberN=rows.filter(r=>r.tone==='amber').length;
+  const redN=rows.filter(r=>r.tone==='red').length;
+
+  return `<div class="page-head"><h1 class="page-title">Budget dashboard</h1>
+    <div class="actions"><button class="btn">Export to Excel</button><a class="btn primary" href="Reports.html">Donor reports</a></div></div>
+  <p class="page-sub" style="margin-bottom:18px">DIP-line utilisation across all active projects. Status colour reflects committed + spent vs approved budget. Plan marker (◆) shows time-elapsed budget at ${PLAN_PCT}% of grant period.</p>
+
+  <div class="card" style="margin-bottom:14px"><div class="card-b" style="display:flex;gap:30px;align-items:center;padding:18px">
+    <div class="donut"><div class="ctr"><b>${orgPct}%</b><span>org-wide utilisation</span></div></div>
+    <div class="legend">
+      <div><span class="sw" style="background:var(--green)"></span><b>${greenN} lines</b> · healthy (&lt; 85% used)</div>
+      <div><span class="sw" style="background:var(--amber)"></span><b>${amberN} lines</b> · watch (85–99% used)</div>
+      <div><span class="sw" style="background:var(--red)"></span><b>${redN} lines</b> · overdraft / over budget</div>
+      <div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px"><b style="font-family:'JetBrains Mono',monospace">MK ${(totalBudget/1e9).toFixed(2)}B</b> total approved · <b style="font-family:'JetBrains Mono',monospace">MK ${((totalCommitted+totalSpent)/1e9).toFixed(2)}B</b> committed + spent</div>
+    </div>
+    <div style="flex:1"></div>
+    <div style="text-align:right">
+      <div class="muted small">Time-elapsed budget</div>
+      <div style="font-size:30px;font-weight:800;font-family:'JetBrains Mono',monospace">${PLAN_PCT}%</div>
+      <div class="muted small">of grant period · plan baseline</div>
+    </div>
+  </div></div>
+
+  <div class="kpis">
+    <div class="kpi green"><div class="l">Healthy lines</div><div class="v">${greenN}</div><div class="s">tracking under plan</div></div>
+    <div class="kpi amber"><div class="l">Watch lines</div><div class="v">${amberN}</div><div class="s">≥85% utilised</div></div>
+    <div class="kpi red"><div class="l">Overdraft / over plan</div><div class="v">${redN}</div><div class="s">action required</div></div>
+    <div class="kpi"><div class="l">Total monitored</div><div class="v">${rows.length}</div><div class="s">DIP lines · 5 projects</div></div>
+  </div>
+
+  <div class="card">
+    <div class="dip-row head"><div>DIP code</div><div>Description · Project</div><div class="num">Approved</div><div class="num">Used</div><div class="num">Remaining</div><div>Utilisation</div><div>Status</div></div>
+    ${rows.map(r=>{
+      const remaining=r.d.budget-r.used;
+      const planMark=Math.min(99,PLAN_PCT);
+      return `<div class="dip-row">
+        <div class="ref mono">${r.d.code}</div>
+        <div class="nm">${r.d.label}<small>${r.proj?r.proj.name:r.d.proj}</small></div>
+        <div class="num">${MACRO.fmt.short(r.d.budget)}</div>
+        <div class="num">${MACRO.fmt.short(r.used)}</div>
+        <div class="num" style="color:${remaining<0?'var(--red)':'var(--ink-2)'}">${remaining<0?'(':''}${MACRO.fmt.short(Math.abs(remaining))}${remaining<0?')':''}</div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;margin-bottom:4px"><span>${r.pct}%</span><span class="muted" style="font-weight:500">vs plan ${r.variance>=0?'+':''}${r.variance}%</span></div>
+          <div class="bbar ${r.tone}"><i style="width:${Math.min(100,r.pct)}%"></i><span class="plan" style="left:${planMark}%"></span></div>
+        </div>
+        <div>${r.tone==='red'?UI.pill('Overdraft','red'):r.tone==='amber'?UI.pill('Watch','amber'):UI.pill('Healthy','green')}</div>
+      </div>`;
+    }).join('')}
+  </div>
+
+  <p class="muted small" style="margin-top:10px;text-align:right">Updated live · sourced from <span class="mono">DIP[]</span> and posted vouchers.</p>`;
+}
+
+function paneAPs(){
+  const today=new Date('2026-05-08');
+  const aps=MACRO.list('aps');
+  const open=aps.filter(a=>a.stage==='Open'||a.stage==='In Progress');
+  const overdue=open.filter(a=>new Date(a.due)<today);
+  const closed=aps.filter(a=>a.stage==='Closed'||a.stage==='Resolved');
+
+  // group by project link
+  const projectFor = (ap) => {
+    if (ap.linkType==='AR'){const r=MACRO.get('ars',ap.linkId);return r?r.proj:'—';}
+    if (ap.linkType==='PV'){const r=MACRO.get('pvs',ap.linkId);return r?r.proj:'—';}
+    if (ap.linkType==='PR'){const r=MACRO.get('prs',ap.linkId);return r?r.proj:'—';}
+    if (ap.linkType==='ACT'){const r=MACRO.get('activities',ap.linkId);return r?r.proj:'—';}
+    if (ap.linkType==='DIP'){const r=MACRO.dip(ap.linkId);return r?r.proj:'—';}
+    return 'COR';
+  };
+
+  return `<div class="page-head"><h1 class="page-title">Action Points register</h1>
+    <div class="actions"><button class="btn">Export</button><button class="btn primary">+ New action point</button></div></div>
+  <p class="page-sub" style="margin-bottom:14px">Cross-project register of internal-audit findings, donor-mission queries, and management directives. Each AP has an owner, due date, and link to source record. Overdue items escalate to the next supervisor automatically.</p>
+
+  <div class="ap-summary">
+    <div class="kpi"><div class="l">All open</div><div class="v">${open.length}</div></div>
+    <div class="kpi red"><div class="l">Overdue</div><div class="v">${overdue.length}</div><div class="s">escalated to supervisor</div></div>
+    <div class="kpi amber"><div class="l">Due ≤7 days</div><div class="v">${open.filter(a=>{const d=new Date(a.due)-today;return d>=0&&d<=7*86400000;}).length}</div></div>
+    <div class="kpi blue"><div class="l">In progress</div><div class="v">${open.filter(a=>a.stage==='In Progress').length}</div></div>
+    <div class="kpi green"><div class="l">Resolved + closed</div><div class="v">${closed.length}</div><div class="s">last 90 days</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-h"><h3>Open action points (${open.length})</h3>
+      <div class="actions"><span class="pill blue">All projects</span><span class="pill">All sources</span><span class="pill">All owners</span></div></div>
+    <div class="ap-row head"><div>Ref</div><div></div><div>Title</div><div>Project</div><div>Source</div><div>Owner</div><div>Due</div><div>Status</div></div>
+    ${open.sort((a,b)=>new Date(a.due)-new Date(b.due)).map(a=>{
+      const u=MACRO.user(a.owner);
+      const proj=projectFor(a);
+      const days=Math.round((new Date(a.due)-today)/86400000);
+      const isOverdue=days<0;
+      const isEscalated=days<-7;
+      return `<div class="ap-row">
+        <div class="ref mono">${a.id}</div>
+        <div><span class="pri ${a.priority}"></span></div>
+        <div><b>${a.title}</b>${a.linkId?`<div class="muted small">linked → <span class="mono">${a.linkId}</span></div>`:''}</div>
+        <div><span class="pill" style="background:${(MACRO.project(proj)||{}).color||'#5B6679'};color:#fff">${proj}</span></div>
+        <div class="muted small">${a.source}</div>
+        <div>${u?u.name.split(' ').map(n=>n[0]).join(''):'—'} · ${u?u.role:''}</div>
+        <div>${isOverdue?UI.pill(Math.abs(days)+'d overdue','red'):UI.pill(days===0?'today':days===1?'tomorrow':'in '+days+'d',days<=2?'amber':'blue')}</div>
+        <div>${UI.pill(a.stage,a.stage==='In Progress'?'blue':'amber')}${isEscalated?'<div class="muted small" style="color:var(--red);font-weight:700;margin-top:3px">↑ ESCALATED</div>':''}</div>
+      </div>`;
+    }).join('')}
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h3>Resolved &amp; closed (${closed.length})</h3></div>
+    <div class="ap-row head"><div>Ref</div><div></div><div>Title</div><div>Project</div><div>Source</div><div>Owner</div><div>Closed</div><div>Stage</div></div>
+    ${closed.map(a=>{const u=MACRO.user(a.owner);const proj=projectFor(a);return `<div class="ap-row" style="opacity:.7">
+      <div class="ref mono">${a.id}</div>
+      <div><span class="pri ${a.priority}"></span></div>
+      <div>${a.title}</div>
+      <div><span class="pill">${proj}</span></div>
+      <div class="muted small">${a.source}</div>
+      <div>${u?u.name.split(' ').map(n=>n[0]).join(''):'—'}</div>
+      <div class="muted small">${MACRO.fmt.full(a.due)}</div>
+      <div>${UI.pill(a.stage,'green')}</div>
+    </div>`;}).join('')}
+  </div>`;
+}
+
+function paneRev(){
+  // Default revision lines: a few from IMPACT KP
+  if (REV.lines.length===0){
+    REV.lines=[
+      {dip:'DIP-2.4.1',from:41_200_000,to:55_200_000,reason:'Increased peer-led case finding requirement based on Q1 yield exceeding plan by 17%'},
+      {dip:'DIP-2.4.2',from:33_500_000,to:25_500_000,reason:'Reallocation to DIP-2.4.1; Q1 underspend confirmed'},
+      {dip:'DIP-4.1.1',from:36_400_000,to:30_400_000,reason:'Workshop schedule rationalised; one regional convening cancelled'},
+    ];
+  }
+  const totalDelta=REV.lines.reduce((s,l)=>s+(l.to-l.from),0);
+  return `<div class="page-head"><h1 class="page-title">Budget revision</h1>
+    <div class="actions"><button class="btn">Save draft</button><button class="btn primary" data-act="submit-rev">Submit to ED for approval</button></div></div>
+  <p class="page-sub" style="margin-bottom:14px">Reallocate funds across DIP lines within a project, subject to donor authorisation. Net change must equal zero unless donor has approved a budget increase. Authorisation document must be uploaded.</p>
+
+  <div class="kpis">
+    <div class="kpi"><div class="l">Project</div><div class="v" style="font-size:18px">IMPACT KP</div><div class="s">DREAMS Plus · PEPFAR/USAID</div></div>
+    <div class="kpi"><div class="l">Lines affected</div><div class="v">${REV.lines.length}</div></div>
+    <div class="kpi ${totalDelta===0?'green':'red'}"><div class="l">Net change (MK)</div><div class="v">${totalDelta>=0?'+':''}${totalDelta.toLocaleString()}</div><div class="s">${totalDelta===0?'balanced':'must be zero — adjust lines'}</div></div>
+    <div class="kpi amber"><div class="l">Required approvals</div><div class="v">2</div><div class="s">FM ✓ · ED pending</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Revision details</h3></div><div class="card-b">
+    <div class="br-form">
+      <div class="fld"><label>Revision reference</label><input value="BR-2026-0007" readonly style="font-family:'JetBrains Mono',monospace" /></div>
+      <div class="fld"><label>Project</label><select><option>IMPACT KP — DREAMS Plus</option><option>LINK RISE — TB &amp; HIV Continuum</option><option>AGYW Plus</option></select></div>
+      <div class="fld"><label>Effective date</label><input type="date" value="2026-06-01" /></div>
+      <div class="fld"><label>Donor authorisation reference</label><input placeholder="e.g. PEPFAR-COP26-AMD-04" value="PEPFAR-COP26-AMD-04" /></div>
+      <div class="fld full"><label>Justification (visible to donor)</label><textarea>Q1 2026 program data shows peer-led case finding (DIP-2.4.1) is yielding 17% above target whilst index-testing field operations (DIP-2.4.2) is tracking 15% under plan. We propose reallocating MK 14M from underperforming line into the higher-performing intervention, partly offset by rationalising one regional convening (DIP-4.1.1). Net project budget unchanged.</textarea></div>
+    </div>
+  </div></div>
+
+  <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Line-by-line changes</h3>
+    <button class="btn sm">+ Add line</button></div>
+    <table class="br-table"><thead><tr>
+      <th>DIP code</th><th>Description</th><th class="num">Current (MK)</th><th class="num">Revised (MK)</th><th class="num">Δ (MK)</th><th class="num">Δ %</th><th></th>
+    </tr></thead><tbody>
+    ${REV.lines.map((l,i)=>{const dip=MACRO.dip(l.dip)||{};const delta=l.to-l.from;const pct=l.from?Math.round((delta/l.from)*100):0;return `<tr>
+      <td><span class="ref mono">${l.dip}</span></td>
+      <td>${dip.label||'—'}</td>
+      <td class="num">${l.from.toLocaleString()}</td>
+      <td class="num"><input value="${l.to.toLocaleString()}" data-line="${i}" /></td>
+      <td class="num" style="color:${delta>=0?'var(--green)':'var(--red)'}">${delta>=0?'+':''}${delta.toLocaleString()}</td>
+      <td class="num" style="color:${delta>=0?'var(--green)':'var(--red)'}">${pct>=0?'+':''}${pct}%</td>
+      <td><button class="btn sm" style="color:var(--red)">×</button></td>
+    </tr>`;}).join('')}
+    <tr style="background:#fafbfc;font-weight:700">
+      <td colspan="4" style="text-align:right">NET CHANGE</td>
+      <td class="num" style="color:${totalDelta===0?'var(--green)':'var(--red)'}">${totalDelta>=0?'+':''}${totalDelta.toLocaleString()}</td>
+      <td colspan="2">${totalDelta===0?UI.pill('Balanced','green'):UI.pill('Adjust to zero','red')}</td>
+    </tr>
+    </tbody></table>
+  </div>
+
+  <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Donor authorisation document <span class="muted small" style="font-weight:500">· required</span></h3></div><div class="card-b">
+    <div class="upload-zone has" id="dropzone">
+      <div style="font-size:24px">📎</div>
+      <div style="margin-top:6px;font-weight:700">PEPFAR-COP26-AMD-04.pdf · 1.4 MB</div>
+      <div style="margin-top:4px">Signed authorisation letter from donor · uploaded ${MACRO.fmt.full('2026-05-04')}</div>
+      <div style="margin-top:8px"><button class="btn sm">Replace file</button></div>
+    </div>
+  </div></div>
+
+  <div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Approval timeline</h3></div><div class="card-b">
+    ${UI.timeline([
+      {label:'Drafted by Finance Manager', who:'U-FM', at:'2026-05-04', done:true, action:'submit'},
+      {label:'Donor authorisation received', who:'U-FM', at:'2026-05-06', done:true, note:'PEPFAR-COP26-AMD-04 signed and on file', action:'approve'},
+      {label:'FM submits to ED', who:'U-FM', done:false},
+      {label:'ED final approval', who:'U-ED', done:false},
+      {label:'System applies new ceilings to DIP lines', done:false}
+    ])}
+  </div></div>`;
+}
+
+function bindLocal(){
+  document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{v=b.dataset.tab;render();}));
+  document.querySelectorAll('input[data-line]').forEach(inp=>{
+    inp.addEventListener('change',e=>{
+      const i=+inp.dataset.line;
+      const val=parseInt(inp.value.replace(/[^0-9]/g,''),10)||0;
+      REV.lines[i].to=val;render();
+    });
+  });
+  const sub=document.querySelector('[data-act="submit-rev"]');
+  if (sub) sub.addEventListener('click',async()=>{
+    const totalDelta=REV.lines.reduce((s,l)=>s+(l.to-l.from),0);
+    if (totalDelta!==0){UI.toast('Net change must equal zero before submission','red');return;}
+    const r=await UI.confirm({title:'Submit budget revision',body:'BR-2026-0007 will be sent to Executive Director for final approval. New DIP ceilings take effect on approval.',ok:'Submit',tone:'primary'});
+    if (!r.ok) return;
+    MACRO.audit('BR','BR-2026-0007','submit',ME,'Budget revision submitted to ED');
+    MACRO.notify('U-ED','BR-2026-0007 awaiting your approval (3 lines)','BR-2026-0007');
+    UI.toast('BR-2026-0007 submitted · ED notified','green');
+  });
+}
+MACRO.subscribe(()=>render());
+render();
+</script>
+</body>
+</html>

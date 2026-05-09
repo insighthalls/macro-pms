@@ -1,0 +1,65 @@
+# MACRO PMS — Render Blueprint (Infrastructure as Code)
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Usage:
+#   1. Push this repo to GitHub.
+#   2. In Render → New + → Blueprint → connect repo → Render reads this file.
+#   3. Fill in the three "sync: false" secrets when prompted (SUPABASE_URL,
+#      SUPABASE_SERVICE_ROLE_KEY, CORS_ORIGIN).
+#   4. After the first deploy, run migrations from your laptop (see deployment guide).
+
+databases:
+  - name: macro-pms-prod
+    databaseName: macro_pms
+    user: macro
+    plan: starter          # upgrade to standard for 30-day backup retention
+    region: oregon         # change to match your Vercel region if desired
+
+services:
+  - type: web
+    name: macro-pms-api
+    runtime: node
+    region: oregon
+    plan: starter
+    rootDir: backend-slice
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: node dist/index.js
+    healthCheckPath: /health
+    autoDeploy: false      # CI triggers deploy via deploy hook; Render won't auto-deploy on push
+
+    envVars:
+      # Wired automatically from the database above
+      - key: DATABASE_URL
+        fromDatabase:
+          name: macro-pms-prod
+          property: connectionString
+
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: "4000"
+
+      # JWT — Render generates a secure random value; rotate every 90 days
+      - key: JWT_SECRET
+        generateValue: true
+
+      - key: JWT_ACCESS_TTL_MIN
+        value: "15"
+
+      - key: JWT_REFRESH_TTL_DAYS
+        value: "14"
+
+      - key: STORAGE_BUCKET
+        value: macro-attachments
+
+      # Fill these in when Render prompts you during Blueprint setup
+      - key: SUPABASE_URL
+        sync: false
+
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+      # e.g. https://pms.macro.org  (your Vercel frontend domain)
+      - key: CORS_ORIGIN
+        sync: false

@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS · Voucher Bundle</title>
+<meta name="viewport" content="width=1280" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/macro-styles.css" />
+<style>
+  body{background:#3a4252}
+  .vb-shell{max-width:920px;margin:24px auto;padding:0 24px 60px;display:flex;flex-direction:column;gap:18px}
+  .vb-bar{display:flex;align-items:center;gap:12px;background:#fff;padding:12px 18px;border-radius:12px;border:1px solid var(--line);position:sticky;top:14px;z-index:5;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+  .vb-bar .pv-ref{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:14px;color:var(--blue)}
+  .vb-bar .toc{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+  .vb-bar .toc a{font-size:11px;padding:4px 9px;border:1px solid var(--line);border-radius:99px;color:var(--ink-2);font-weight:600}
+  .vb-bar .toc a:hover{border-color:var(--blue);color:var(--blue)}
+  .doc{background:#fff;border-radius:6px;box-shadow:0 8px 32px rgba(0,0,0,.22);padding:54px 64px;font-size:12.5px;color:#1a1a1a;line-height:1.55;position:relative;overflow:hidden}
+  .doc + .doc{margin-top:8px}
+  .doc h2{font-size:18px;font-weight:800;letter-spacing:-.01em;margin:0 0 4px;color:#0E1A2B;text-transform:uppercase}
+  .doc h3{font-size:13.5px;font-weight:700;margin:18px 0 8px;color:#0E1A2B;border-bottom:1px solid #e2e2e2;padding-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+  .doc .sub{color:#6a6a6a;font-size:11.5px;margin-bottom:18px;letter-spacing:.04em;text-transform:uppercase}
+  .doc table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px}
+  .doc th,.doc td{padding:6px 8px;text-align:left;border-bottom:1px solid #ededed;vertical-align:top}
+  .doc th{background:#f3f4f6;font-weight:700;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:#3B4A5E}
+  .doc td.num,.doc th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:"JetBrains Mono",monospace}
+  .doc .kv{display:grid;grid-template-columns:170px 1fr;row-gap:5px;column-gap:10px;font-size:12px}
+  .doc .kv dt{color:#6a6a6a;font-weight:500}
+  .doc .kv dd{margin:0;font-weight:600}
+  .stamp{position:absolute;top:32px;right:48px;border:3px solid #1E7E48;color:#1E7E48;padding:6px 18px;font-weight:900;font-size:18px;letter-spacing:.18em;border-radius:4px;transform:rotate(-6deg);opacity:.85;font-family:"JetBrains Mono",monospace}
+  .stamp.draft{border-color:#A6791A;color:#A6791A}
+  .stamp.paid{border-color:#1F4E79;color:#1F4E79}
+  .signrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-top:24px}
+  .sig{border-top:1px solid #1a1a1a;padding-top:6px;font-size:11px}
+  .sig .nm{font-weight:700;font-size:12.5px}
+  .sig .role{color:#6a6a6a;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em}
+  .sig .dt{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:#3B4A5E;margin-top:2px}
+  .doc-num{position:absolute;bottom:18px;right:48px;font-family:"JetBrains Mono",monospace;font-size:10px;color:#9aa1ad;letter-spacing:.08em}
+  .corner-ref{position:absolute;top:32px;left:48px;font-family:"JetBrains Mono",monospace;font-size:10px;color:#9aa1ad;letter-spacing:.08em;text-transform:uppercase}
+  .pgbreak{page-break-before:always}
+  .ovr-box{background:#FFF8E1;border:1px solid #A6791A;border-radius:6px;padding:12px 14px;margin:14px 0;font-size:11.5px}
+  .ovr-box b{color:#A6791A;text-transform:uppercase;letter-spacing:.06em;font-size:10.5px;display:block;margin-bottom:4px}
+  .doc-title-block{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #0E1A2B;padding-bottom:10px;margin-bottom:14px}
+  .doc-title-block .org{font-size:14.5px;font-weight:800;letter-spacing:-.01em}
+  .doc-title-block .ot{font-size:10.5px;color:#6a6a6a;text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+  .doc-title-block .right{text-align:right}
+  .checklist{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+  .checklist li{display:flex;gap:8px;font-size:11.5px;align-items:center}
+  .checklist .b{width:14px;height:14px;border:1.5px solid #1E7E48;background:#1E7E48;color:#fff;display:grid;place-items:center;font-size:9px;border-radius:3px;font-weight:900}
+  .narrative{background:#fafbfc;border:1px solid #ededed;border-radius:4px;padding:10px 12px;font-size:11.5px;color:#3B4A5E;line-height:1.55}
+  .small-note{font-size:10.5px;color:#9aa1ad;font-style:italic;margin-top:6px}
+  .att-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed #e2e2e2;font-size:11.5px}
+  .att-row .nm{font-weight:600}
+  .att-row .meta{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:#6a6a6a}
+  @media print{
+    body{background:#fff}
+    .vb-shell{margin:0;padding:0;max-width:none}
+    .vb-bar{display:none}
+    .doc{box-shadow:none;border-radius:0;padding:24mm 22mm;page-break-after:always}
+    .doc + .doc{margin-top:0}
+  }
+</style>
+</head>
+<body>
+<script src="shared/macro-core.js"></script>
+<script>
+  const params=new URLSearchParams(location.search);
+  const PV_ID=params.get('pv')||'PV-2026-1241'; // default to a Paid voucher for demo
+  const pv=MACRO.get('pvs',PV_ID)||MACRO.list('pvs')[0];
+  const proj=MACRO.project(pv.proj)||{};
+  const dipRow=MACRO.dip(pv.dip)||{};
+  const vendor=MACRO.list('vendors',v=>v.id===pv.vendorId)[0]||{name:pv.payee,tpin:'—'};
+  const isFinal=['ED Approved','Paid','Posted'].includes(pv.stage);
+  const isPaid=['Paid','Posted'].includes(pv.stage);
+  const stamp=isPaid?{cls:'paid',text:'PAID'}:isFinal?{cls:'',text:'FINAL'}:{cls:'draft',text:'DRAFT'};
+  const FY=new Date().getFullYear();
+  const today=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const sigRow=(role,who,dt)=>`<div class="sig"><div class="nm">${who.name}</div><div class="role">${role}</div><div class="dt">Signed ${dt}</div></div>`;
+  const sigGFO=MACRO.user('U-GFO'),sigFM=MACRO.user('U-FM'),sigED=MACRO.user('U-ED');
+  const isOverdraft=dipRow.budget && (dipRow.committed+dipRow.spent+pv.gross>dipRow.budget);
+  const isProc=pv.title.toLowerCase().match(/print|venue|hire|fuel|consum|stationery|service|generator|reagent/);
+  const bundleKind=isProc?'Procurement':'Activity';
+
+  const docs=bundleKind==='Activity'? [
+    {n:'00',t:'Cover Sheet'},
+    {n:'01',t:'Approved Advance Request Form'},
+    {n:'02',t:'Advance Request Checklist'},
+    {n:'03',t:'Scope of Work'},
+    {n:'04',t:'Payment Voucher'},
+    {n:'05',t:'Bank EFT Confirmation'},
+    {n:'06',t:'Attendance Sheets (AM / PM)'},
+    {n:'07',t:'Activity / Narrative Report'},
+    {n:'08',t:'Expense Report'},
+    {n:'09',t:'Advance Liquidation Checklist'}
+  ] : [
+    {n:'00',t:'Cover Sheet'},
+    {n:'01',t:'Maintenance / Service Request'},
+    {n:'02',t:'Request for Quotes'},
+    {n:'03',t:'Supplier Quotations'},
+    {n:'04',t:'IPC Meeting Minutes'},
+    {n:'05',t:'COI Declarations'},
+    {n:'06',t:'Bid Analysis Table'},
+    {n:'07',t:'Local Purchase Order'},
+    {n:'08',t:'Vendor Tax Invoice & WTEC'},
+    {n:'09',t:'Goods Received Note'},
+    {n:'10',t:'Payment Voucher'},
+    {n:'11',t:'Bank EFT Confirmation'}
+  ];
+
+  function shellTop(){
+    return `<div class="vb-bar">
+      <a class="btn" href="javascript:history.back()">← Back</a>
+      <div><div style="font-size:10.5px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase;font-weight:600">Voucher Bundle · ${bundleKind}</div>
+      <div class="pv-ref">${pv.id} · ${vendor.name} · MK ${(pv.gross||0).toLocaleString()}</div></div>
+      <span class="pill ${stamp.cls==='paid'?'green':stamp.cls==='draft'?'amber':'blue'}">${stamp.text}</span>
+      <div class="toc">${docs.map((d,i)=>`<a href="#d${i}">${d.n}</a>`).join('')}</div>
+      <button class="btn primary" onclick="window.print()">Print / Save PDF</button>
+    </div>`;
+  }
+
+  function docCover(i){
+    return `<section class="doc" id="d${i}">
+      <span class="corner-ref">${pv.id} · BUNDLE COVER</span>
+      <span class="stamp ${stamp.cls}">${stamp.text}</span>
+      <div class="doc-title-block">
+        <div><div class="org">Malawi AIDS Counselling and Resource Organisation</div>
+          <div class="ot">Voucher Bundle · ${bundleKind} · ${proj.code||pv.proj}</div></div>
+        <div class="right"><div class="org" style="font-family:'JetBrains Mono',monospace;color:var(--blue)">${pv.id}</div>
+          <div class="ot">${proj.donor||''}</div></div>
+      </div>
+      <h2>Transaction Summary</h2>
+      <dl class="kv">
+        <dt>Voucher number</dt><dd class="mono">${pv.id}</dd>
+        <dt>Project</dt><dd>${proj.name||pv.proj}</dd>
+        <dt>Project a/c</dt><dd class="mono">1970000376337</dd>
+        <dt>DIP / Budget line</dt><dd><span class="mono">${pv.dip}</span> · ${dipRow.label||''}</dd>
+        <dt>Payee</dt><dd>${vendor.name}</dd>
+        <dt>Vendor TPIN</dt><dd class="mono">${vendor.tpin||'—'}</dd>
+        <dt>Narration</dt><dd>${pv.title}</dd>
+        <dt>Procurement category</dt><dd>${bundleKind==='Procurement'?'Standard procurement':'Activity advance'}</dd>
+        <dt>Submitted</dt><dd>${MACRO.fmt.full(pv.submitted)}</dd>
+        <dt>Stage</dt><dd><b>${pv.stage}</b></dd>
+        ${pv.paidOn?`<dt>Paid on</dt><dd>${MACRO.fmt.full(pv.paidOn)} · EFT-${(2025000+Math.floor(Math.random()*999))}</dd>`:''}
+      </dl>
+      <h3>Amount</h3>
+      <table>
+        <thead><tr><th>Component</th><th class="num">Amount (MK)</th></tr></thead>
+        <tbody>
+          <tr><td>Gross</td><td class="num">${(pv.gross||0).toLocaleString()}</td></tr>
+          <tr><td>Withholding tax</td><td class="num">(${(pv.wht||0).toLocaleString()})</td></tr>
+          <tr><td><b>Net payable</b></td><td class="num"><b>${(pv.net||0).toLocaleString()}</b></td></tr>
+        </tbody>
+      </table>
+      ${isOverdraft?`<div class="ovr-box"><b>Overdraft justification recorded</b>This transaction was approved despite ${pv.dip} being projected to exceed its approved budget by approximately MK ${Math.max(0,(dipRow.committed||0)+(dipRow.spent||0)+(pv.gross||0)-(dipRow.budget||0)).toLocaleString()}. Approver justification: <i>"Reallocation pending donor approval; activity is mission-critical and was committed under prior MoU. Funds offset by underspend on DIP-2.4.2 noted in May variance review."</i> — R. Mwale, Finance Manager.</div>`:''}
+      <h3>Bundle Contents (${docs.length-1} supporting documents)</h3>
+      <table>
+        <thead><tr><th style="width:60px">#</th><th>Document</th><th style="width:100px">Status</th></tr></thead>
+        <tbody>${docs.slice(1).map((d,i)=>`<tr><td class="mono">${d.n}</td><td>${d.t}</td><td><span style="font-size:10.5px;color:#1E7E48;font-weight:700">✓ ATTACHED</span></td></tr>`).join('')}</tbody>
+      </table>
+      <p class="small-note">Generated ${today} · System integrity hash: SHA-256 7f4e:8a1d:c0bf:…:${pv.id.slice(-4)}</p>
+      <div class="doc-num">cover · 1 of ${docs.length}</div>
+    </section>`;
+  }
+
+  function docAR(i){
+    const ar=MACRO.list('ars',a=>a.id==='AR-2026-0180')[0]||{id:'AR-2026-0180',amount:pv.gross,title:pv.title,dip:pv.dip,proj:pv.proj,submitted:pv.submitted};
+    return `<section class="doc" id="d${i}"><span class="corner-ref">${ar.id} · ADVANCE REQUEST</span><span class="stamp">FINAL</span>
+      <div class="doc-title-block"><div><div class="org">Malawi AIDS Counselling and Resource Organisation</div><div class="ot">Advance Request Form · Activity Funds</div></div>
+        <div class="right"><div class="org" style="font-family:'JetBrains Mono',monospace;color:var(--blue)">${ar.id}</div><div class="ot">${proj.code||pv.proj}</div></div></div>
+      <dl class="kv">
+        <dt>Activity</dt><dd>${ar.title}</dd>
+        <dt>DIP code</dt><dd class="mono">${ar.dip}</dd>
+        <dt>Requested by</dt><dd>Tendai Phiri · Project Officer</dd>
+        <dt>Submitted</dt><dd>${MACRO.fmt.full(ar.submitted)}</dd>
+      </dl>
+      <h3>Itemised Budget</h3>
+      <table><thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Days</th><th class="num">Unit (MK)</th><th class="num">Total (MK)</th></tr></thead>
+        <tbody>
+          <tr><td>DSA · field officers (Grade B, Lilongwe)</td><td class="num">6</td><td class="num">3</td><td class="num">42,000</td><td class="num">756,000</td></tr>
+          <tr><td>DSA · peer educators (Grade D)</td><td class="num">12</td><td class="num">3</td><td class="num">22,000</td><td class="num">792,000</td></tr>
+          <tr><td>Transport · field rotation</td><td class="num">1</td><td class="num">3</td><td class="num">120,000</td><td class="num">360,000</td></tr>
+          <tr><td>Refreshments · briefing sessions</td><td class="num">18</td><td class="num">3</td><td class="num">3,500</td><td class="num">189,000</td></tr>
+          <tr><td>Stationery & job aids</td><td class="num">1</td><td class="num">1</td><td class="num">${(((ar.amount||pv.gross)-2097000)).toLocaleString()}</td><td class="num">${((ar.amount||pv.gross)-2097000).toLocaleString()}</td></tr>
+          <tr><th colspan="4" style="text-align:right">TOTAL</th><th class="num">${(ar.amount||pv.gross).toLocaleString()}</th></tr>
+        </tbody></table>
+      <div class="signrow">${sigRow('Requested by · Project Officer',MACRO.user('U-PO'),MACRO.fmt.full(ar.submitted))}${sigRow('Recommended by · Head of Programs',MACRO.user('U-HOP'),today)}${sigRow('Approved by · Executive Director',sigED,today)}</div>
+      <div class="doc-num">advance request · 2 of ${docs.length}</div></section>`;
+  }
+
+  function docChecklist(i){
+    const items=['SoW on record and approved','Activity dates within grant period','DIP code valid and active','No outstanding unretired advance for requester','All checklist items in pre-advance form ticked','Itemised budget totals match SoW','Activity not previously advanced','Bank account on file','Risk register reviewed (if value ≥ MK 5M)','Per diem rates per Schedule A','Transport quotes attached (if vehicle hire)','Director sign-off captured'];
+    return `<section class="doc" id="d${i}"><span class="corner-ref">PRE-ADVANCE CHECKLIST</span><span class="stamp">FINAL</span>
+      <div class="doc-title-block"><div><div class="org">Malawi AIDS Counselling and Resource Organisation</div><div class="ot">Advance Request Checklist</div></div>
+        <div class="right"><div class="org" style="font-family:'JetBrains Mono',monospace;color:var(--blue)">${pv.id}</div></div></div>
+      <p style="font-size:11.5px;color:#3B4A5E">All items below have been verified by the Grant Finance Officer prior to advance disbursement.</p>
+      <ul class="checklist">${items.map(t=>`<li><span class="b">✓</span><span>${t}</span></li>`).join('')}</ul>
+      <div class="signrow">${sigRow('Verified by · Grant Finance Officer',sigGFO,today)}${sigRow('Approved by · Finance Manager',sigFM,today)}<div></div></div>
+      <div class="doc-num">checklist · 3 of ${docs.length}</div></section>`;
+  }
+
+  function docSOW(i){
+    return `<section class="doc" id="d${i}"><span class="corner-ref">SCOPE OF WORK</span><span class="stamp">FINAL</span>
+      <div class="doc-title-block"><div><div class="org">Malawi AIDS Counselling and Resource Organisation</div><div class="ot">Scope of Work</div></div>
+        <div class="right"><div class="org" style="font-family:'JetBrains Mono',monospace;color:var(--blue)">${pv.id}</div></div></div>
+      <dl class="kv"><dt>Activity</dt><dd>${pv.title}</dd><dt>DIP</dt><dd class="mono">${pv.dip}</dd><dt>Project</dt><dd>${proj.name}</dd><dt>Dates</dt><dd>${MACRO.fmt.full(pv.submitted)} – ${MACRO.fmt.full(pv.paidOn||today)}</dd><dt>Location</dt><dd>Mzuzu, Karonga</dd></dl>
+      <h3>Aim</h3><div class="narrative">Conduct field rotation of index-testing teams across high-burden hot-spots, deliver targeted HIV testing, and link positive cases to treatment within 72 hours.</div>
+      <h3>Objectives</h3><div class="narrative">1. Test 480 KP individuals across 12 hot-spots. 2. Achieve ≥3.5% positivity yield. 3. Link 100% of identified positives to ART within 72h. 4. Document community feedback on service quality.</div>
+      <h3>Approach &amp; Schedule</h3><table><thead><tr><th>Day</th><th>Activity</th><th>Responsible</th></tr></thead><tbody>
+        <tr><td>1</td><td>Site briefing, kit distribution, peer-educator pairing</td><td>Project Officer</td></tr>
+        <tr><td>2</td><td>Field deployment · Mzuzu cluster (4 hot-spots)</td><td>Field Lead A</td></tr>
+        <tr><td>3</td><td>Field deployment · Karonga cluster (4 hot-spots)</td><td>Field Lead B</td></tr>
+        <tr><td>3</td><td>Linkage verification, debrief, expense reconciliation</td><td>Project Officer</td></tr></tbody></table>
+      <h3>Deliverables</h3><div class="narrative">Attendance sheets (AM/PM), HTS register, linkage register, narrative report, expense report, liquidation pack.</div>
+      <div class="signrow">${sigRow('Prepared by · Project Officer',MACRO.user('U-PO'),MACRO.fmt.full(pv.submitted))}${sigRow('Recommended by · Head of Programs',MACRO.user('U-HOP'),today)}<div></div></div>
+      <div class="doc-num">sow · 4 of ${docs.length}</div></section>`;
+  }
+
+  function docPV(i){
+    return `<section class="doc" id="d${i}"><span class="corner-ref">PAYMENT VOUCHER</span><span class="stamp ${stamp.cls}">${stamp.text}</span>
+      <div class="doc-title-block"><div><div class="org">Malawi AIDS Counselling and Resource Organisation</div><div class="ot">Payment Voucher</div></div>
+        <div class="right"><div class="org" style="font-family:'JetBrains Mono',monospace;color:var(--blue)">${pv.id}</div><div class="ot">${proj.code||''}</div></div></div>
+      <dl class="kv"><dt>Project a/c</dt><dd class="mono">MACRO ${proj.code||pv.proj} a/c 1970000376337</dd><dt>Payee</dt><dd>${vendor.name}</dd><dt>TPIN</dt><dd class="mono">${vendor.tpin||'—'}</dd><dt>Narration</dt><dd>Being funds for ${pv.title.toLowerCase()}.</dd><dt>Cheque / EFT no.</dt><dd class="mono">${pv.paidOn?'EFT-2026-'+(2025000+Math.floor(Math.random()*999)):'—'}</dd></dl>
+      <h3>Budget Coding</h3>
+      <table><thead><tr><th>Description</th><th>DIP Code</th><th class="num">DR (MK)</th><th class="num">CR (MK)</th></tr></thead>
+        <tbody><tr><td>${pv.title}</td><td class="mono">${pv.dip}</td><td class="num">${(pv.gross||0).toLocaleString()}</td><td class="num">—</td></tr>
+        <tr><td>WHT payable to MRA</td><td class="mono">LIAB-WHT</td><td class="num">—</td><td class="num">${(pv.wht||0).toLocaleString()}</td></tr>
+        <tr><td>Bank · Standard Bank a/c 1970000376337</td><td class="mono">CASH-001</td><td class="num">—</td><td class="num">${(pv.net||0).toLocaleString()}</td></tr>
+        <tr><th colspan="2" style="text-align:right">TOTALS</th><th class="num">${(pv.gross||0).toLocaleString()}</th><th class="num">${(pv.gross||0).toLocaleString()}</th></tr></tbody></table>
+      ${isOverdraft?`<div class="ovr-box"><b>Overdraft Justification — required under Rule 59</b>${(pv.overdraftJustification||'Reallocation pending donor approval; activity is mission-critical and committed under prior MoU. Offset by underspend on DIP-2.4.2 noted in May variance review.')} <br/><i>— Recorded by R. Mwale, Finance Manager · ${today}</i></div>`:''}
+      <div class="signrow">${sigRow('Prepared by · Grant Finance Officer',sigGFO,today)}${sigRow('Checked by · Finance Manager',sigFM,today)}${sigRow('Authorised by · Executive Director',sigED,today)}</div>
+      <div class="doc-num">payment voucher · 5 of ${docs.length}</div></section>`;
+  }
+
+  function docEFT(i){
+    return `<section class="doc" id="d${i}"><span class="corner-ref">BANK EFT CONFIRMATION</span><span class="stamp paid">PAID</span>
+      <div class="doc-title-block"><div><div class="org">Standard Bank Malawi · Corporate Banking</div><div class="ot">Electronic Funds Transfer · Payment Confirmation</div></div>
+        <div class="right"><div class="org" style="font-family:'JetBrains Mono',monospace;color:var(--blue)">EFT-2026-${2025000+Math.floor(Math.random()*999)}</div></div></div>
+      <dl class="kv"><dt>Originator</dt><dd>MACRO ${proj.code||pv.proj} a/c 1970000376337</dd><dt>Beneficiary</dt><dd>${vendor.name}</dd><dt>Beneficiary bank</dt><dd>National Bank of Malawi · Capital City Branch</dd><dt>Beneficiary a/c</dt><dd class="mono">${vendor.id==='V-001'?'1014328400':'1009274516'}</dd><dt>Amount</dt><dd class="mono">MK ${(pv.net||0).toLocaleString()}</dd><dt>Reference</dt><dd class="mono">${pv.id}</dd><dt>Host reference</dt><dd class="mono">SBN.HST.${Date.now().toString().slice(-10)}</dd><dt>Status</dt><dd><b style="color:#1E7E48">SETTLED</b> · ${MACRO.fmt.full(pv.paidOn||pv.submitted)}</dd></dl>
+      <p class="small-note">This confirmation is auto-generated from the bank file. Retain in the voucher bundle as evidence of disbursement.</p>
+      <div class="doc-num">eft · 6 of ${docs.length}</div></section>`;
+  }
+
+  function docAttendance(i){
+    const rows=[['Tendai Phiri','Project Officer','MACRO','✓','✓'],['Mary Banda','Peer Educator','Lilongwe Cluster','✓','✓'],['John Kalua','Peer Educator','Mzuzu Cluster','✓','✓'],['Grace Lungu','Peer Educator','Karonga','✓','—'],['Daniel Nyirenda','Field Lead A','MACRO','✓','✓'],['Esther Phiri','Peer Educator','Mzuzu Cluster','✓','✓'],['Patrick Mhone','Driver','AfriRide','✓','✓'],['Linda Mvula','Peer Educator','Lilongwe Cluster','—','✓'],['Wilson Chirwa','Peer Educator','Karonga','✓','✓'],['Beatrice Tembo','Peer Educator','Karonga','✓','✓']];
+    return `<section class="doc" id="d${i}"><span class="corner-ref">ATTENDANCE SHEETS</span><span class="stamp">FINAL</span>
+      <div class="doc-title-block"><div><div class="org">Malawi AIDS Counselling and Resource Organisation</div><div class="ot">Attendance Register · AM &amp; PM Sessions</div></div>
+        <div class="right"><div class="org" style="font-family:'JetBrains Mono',monospace;color:var(--blue)">${pv.id}</div></div></div>
+      <dl class="kv"><dt>Activity</dt><dd>${pv.title}</dd><dt>Date</dt><dd>${MACRO.fmt.full(pv.submitted)}</dd><dt>Location</dt><dd>Mzuzu, Karonga</dd></dl>
+      <table><thead><tr><th>#</th><th>Name</th><th>Designation</th><th>Institution</th><th>AM</th><th>PM</th><th>Signature</th></tr></thead>
+        <tbody>${rows.map((r,k)=>`<tr><td>${k+1}</td><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td style="text-align:center">${r[3]}</td><td style="text-align:center">${r[4]}</td><td style="font-style:italic;color:#9aa1ad">[scanned]</td></tr>`).join('')}</tbody></table>
+      <p class="small-note">Scanned attendance sheets uploaded ${today} · file hash SHA-256 a3:42:fe:…</p>
+      <div class="doc-num">attendance · 7 of ${docs.length}</div></section>`;
+  }
+
+  function docNarrative(i){
+    return `<section class="doc" id="d${i}"><span class="corner-ref">NARRATIVE REPORT</span><span class="stamp">FINAL</span>
+      <div class="doc-title-block"><div><div class="org">Malawi AIDS Counselling and Resource Organisation</div><div class="ot">Activity / Narrative Report</div></div>
+        <div class="right"><div class="org" style="font-family:'JetBrains Mono',monospace;color:var(--blue)">${pv.id}</div></div></div>
+      <h3>Summary</h3><div class="narrative">Field rotation completed across all 12 planned hot-spots over a 3-day window. 462 KP individuals tested (96% of plan). Identified positivity yield 4.1% — above the 3.5% target. All 19 newly-identified positives linked to ART within 72 hours.</div>
+      <h3>Key Outcomes</h3>
+      <table><thead><tr><th>Indicator</th><th class="num">Target</th><th class="num">Actual</th><th class="num">% achieved</th></tr></thead>
+        <tbody><tr><td>KP individuals tested</td><td class="num">480</td><td class="num">462</td><td class="num">96%</td></tr>
+        <tr><td>Positivity yield</td><td class="num">3.5%</td><td class="num">4.1%</td><td class="num">117%</td></tr>
+        <tr><td>72h linkage rate</td><td class="num">100%</td><td class="num">100%</td><td class="num">100%</td></tr>
+        <tr><td>Hot-spots covered</td><td class="num">12</td><td class="num">12</td><td class="num">100%</td></tr></tbody></table>
+      <h3>Issues &amp; Mitigations</h3>
+      <div class="narrative">Vehicle breakdown on Day 2 caused 4-hour delay in Karonga; mitigated by re-routing through AfriRide secondary unit. Three peer educators reported stipend arrival delays — flagged to GFO for review.</div>
+      <div class="signrow">${sigRow('Prepared by · Project Officer',MACRO.user('U-PO'),today)}${sigRow('Reviewed by · Head of Programs',MACRO.user('U-HOP'),today)}<div></div></div>
+      <div class="doc-num">narrative · 8 of ${docs.length}</div></section>`;
+  }
+
+  function docExpense(i){
+    return `<section class="doc" id="d${i}"><span class="corner-ref">EXPENSE REPORT</span><span class="stamp">FINAL</span>
+      <div class="doc-title-block"><div><div class="org">Malawi AIDS Counselling and Resource Organisation</div><div class="ot">Expense Report &amp; Liquidation</div></div>
+        <div class="right"><div class="org" style="font-family:'JetBrains Mono',monospace;color:var(--blue)">${pv.id}</div></div></div>
+      <table><thead><tr><th>Line</th><th class="num">Advanced (MK)</th><th class="num">Spent (MK)</th><th class="num">Variance (MK)</th></tr></thead>
+        <tbody>
+          <tr><td>DSA · field officers</td><td class="num">756,000</td><td class="num">756,000</td><td class="num">—</td></tr>
+          <tr><td>DSA · peer educators</td><td class="num">792,000</td><td class="num">748,000</td><td class="num" style="color:#1E7E48">44,000</td></tr>
+          <tr><td>Transport · field rotation</td><td class="num">360,000</td><td class="num">412,000</td><td class="num" style="color:#B42318">(52,000)</td></tr>
+          <tr><td>Refreshments</td><td class="num">189,000</td><td class="num">168,000</td><td class="num" style="color:#1E7E48">21,000</td></tr>
+          <tr><td>Stationery &amp; job aids</td><td class="num">${((pv.gross||0)-2097000).toLocaleString()}</td><td class="num">${((pv.gross||0)-2106000).toLocaleString()}</td><td class="num" style="color:#1E7E48">9,000</td></tr>
+          <tr><th colspan="1" style="text-align:right">TOTAL</th><th class="num">${(pv.gross||0).toLocaleString()}</th><th class="num">${((pv.gross||0)-22000).toLocaleString()}</th><th class="num" style="color:#1E7E48">22,000</th></tr></tbody></table>
+      <p class="small-note">Net variance MK 22,000 to be refunded to MACRO bank a/c on receipt.</p>
+      <div class="signrow">${sigRow('Prepared by · Project Officer',MACRO.user('U-PO'),today)}${sigRow('Verified by · Grant Finance Officer',sigGFO,today)}${sigRow('Approved by · Finance Manager',sigFM,today)}</div>
+      <div class="doc-num">expense report · 9 of ${docs.length}</div></section>`;
+  }
+
+  function docLiq(i){
+    const items=['Activity report submitted','Expense report submitted','All receipts attached','Attendance sheets attached','Variance refund processed','DIP balance updated','Outstanding advance flag cleared','Activity record marked Liquidated'];
+    return `<section class="doc" id="d${i}"><span class="corner-ref">LIQUIDATION CHECKLIST</span><span class="stamp">FINAL</span>
+      <div class="doc-title-block"><div><div class="org">Malawi AIDS Counselling and Resource Organisation</div><div class="ot">Advance Liquidation Checklist</div></div>
+        <div class="right"><div class="org" style="font-family:'JetBrains Mono',monospace;color:var(--blue)">${pv.id}</div></div></div>
+      <ul class="checklist">${items.map(t=>`<li><span class="b">✓</span><span>${t}</span></li>`).join('')}</ul>
+      <div class="signrow">${sigRow('Verified by · Grant Finance Officer',sigGFO,today)}${sigRow('Closed by · Finance Manager',sigFM,today)}<div></div></div>
+      <div class="doc-num">liquidation · 10 of ${docs.length}</div></section>`;
+  }
+
+  // Procurement-flavoured docs (used when bundleKind==='Procurement')
+  function docProc(i,t){
+    const map={
+      'Maintenance / Service Request':()=>['Asset / Service','Vehicle hire · 30-day rotation','Description','Vehicle required for index-testing field rotation across Lilongwe, Mzuzu and Karonga clusters.','Justification','Existing fleet capacity insufficient for parallel deployment.'],
+      'Request for Quotes':()=>['RFQ Reference','RFQ-2026-0124','Items','30-day vehicle hire (4×4) including driver and fuel allowance','Submission deadline',MACRO.fmt.full(pv.submitted),'Vendors invited','AfriRide Logistics, Capital Fleet, Lakeshore Transport'],
+      'Supplier Quotations':()=>null,
+      'IPC Meeting Minutes':()=>null,
+      'COI Declarations':()=>null,
+      'Bid Analysis Table':()=>null,
+      'Local Purchase Order':()=>null,
+      'Vendor Tax Invoice & WTEC':()=>null,
+      'Goods Received Note':()=>null
+    };
+    const isQuotes=t==='Supplier Quotations';
+    const isIPC=t==='IPC Meeting Minutes';
+    const isCOI=t==='COI Declarations';
+    const isBid=t==='Bid Analysis Table';
+    const isLPO=t==='Local Purchase Order';
+    const isInv=t==='Vendor Tax Invoice & WTEC';
+    const isGRN=t==='Goods Received Note';
+    let body='';
+    if (isQuotes){
+      body=`<table><thead><tr><th>Vendor</th><th>Reference</th><th>Date</th><th class="num">Total incl. VAT</th></tr></thead><tbody>
+        <tr><td>${vendor.name}</td><td class="mono">Q-2026-3401</td><td>${MACRO.fmt.full(pv.submitted)}</td><td class="num">${(pv.gross||0).toLocaleString()}</td></tr>
+        <tr><td>Capital Fleet</td><td class="mono">Q-2026-3402</td><td>${MACRO.fmt.full(pv.submitted)}</td><td class="num">${((pv.gross||0)*1.08).toLocaleString().split('.')[0]}</td></tr>
+        <tr><td>Lakeshore Transport</td><td class="mono">Q-2026-3403</td><td>${MACRO.fmt.full(pv.submitted)}</td><td class="num">${((pv.gross||0)*1.14).toLocaleString().split('.')[0]}</td></tr></tbody></table>
+        <p class="small-note">Three quotations received per Standard procurement rule (≥ MK 500,000).</p>`;
+    } else if (isIPC){
+      body=`<dl class="kv"><dt>Date</dt><dd>${MACRO.fmt.full(pv.submitted)}</dd><dt>Procurement</dt><dd>${pv.title}</dd><dt>Members present</dt><dd>R. Mwale (Chair), W. Lungu (Sec), C. Banda, F. Mhone</dd></dl>
+        <h3>Resolution</h3><div class="narrative">Following review of three responsive quotations and confirmation of COI declarations, the IPC unanimously selected ${vendor.name} on the basis of lowest responsive price, established compliance record (TPIN ${vendor.tpin}), and confirmed delivery capacity. Selected vendor to be issued LPO within 48h.</div>
+        <div class="signrow">${sigRow('Chair',sigFM,today)}${sigRow('Secretary',MACRO.user('U-PRC'),today)}${sigRow('Member',MACRO.user('U-HOP'),today)}</div>`;
+    } else if (isCOI){
+      body=`<table><thead><tr><th>Member</th><th>Has conflict?</th><th>Declaration</th><th>Signed</th></tr></thead><tbody>
+        <tr><td>R. Mwale · Chair</td><td>No</td><td>I have no personal or financial interest in any of the responding vendors.</td><td>${today}</td></tr>
+        <tr><td>W. Lungu · Procurement</td><td>No</td><td>No conflict declared.</td><td>${today}</td></tr>
+        <tr><td>C. Banda · HoP</td><td>No</td><td>No conflict declared.</td><td>${today}</td></tr>
+        <tr><td>F. Mhone · Admin</td><td>No</td><td>No conflict declared.</td><td>${today}</td></tr></tbody></table>`;
+    } else if (isBid){
+      body=`<table><thead><tr><th>Vendor</th><th class="num">Price (MK)</th><th class="num">Compliance</th><th class="num">Delivery</th><th class="num">Total Score</th><th>Recommended</th></tr></thead><tbody>
+        <tr><td>${vendor.name}</td><td class="num">${(pv.gross||0).toLocaleString()}</td><td class="num">95</td><td class="num">92</td><td class="num"><b>94.2</b></td><td><b style="color:#1E7E48">YES</b></td></tr>
+        <tr><td>Capital Fleet</td><td class="num">${((pv.gross||0)*1.08).toLocaleString().split('.')[0]}</td><td class="num">88</td><td class="num">85</td><td class="num">86.1</td><td>—</td></tr>
+        <tr><td>Lakeshore Transport</td><td class="num">${((pv.gross||0)*1.14).toLocaleString().split('.')[0]}</td><td class="num">82</td><td class="num">88</td><td class="num">83.8</td><td>—</td></tr></tbody></table>`;
+    } else if (isLPO){
+      body=`<dl class="kv"><dt>LPO number</dt><dd class="mono">LPO-2026-0192</dd><dt>Vendor</dt><dd>${vendor.name}</dd><dt>TPIN</dt><dd class="mono">${vendor.tpin}</dd><dt>Delivery</dt><dd>${MACRO.fmt.full(pv.submitted)}</dd></dl>
+        <table><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Unit (MK)</th><th class="num">Total (MK)</th></tr></thead><tbody>
+        <tr><td>${pv.title}</td><td class="num">1</td><td class="num">${(pv.gross||0).toLocaleString()}</td><td class="num">${(pv.gross||0).toLocaleString()}</td></tr>
+        <tr><th colspan="3" style="text-align:right">SUBTOTAL</th><th class="num">${(pv.gross||0).toLocaleString()}</th></tr></tbody></table>
+        <div class="signrow">${sigRow('Authorised by · Procurement Officer',MACRO.user('U-PRC'),today)}${sigRow('Approved by · Finance Manager',sigFM,today)}<div></div></div>`;
+    } else if (isInv){
+      body=`<dl class="kv"><dt>Invoice number</dt><dd class="mono">INV-${vendor.id}-2026-0142</dd><dt>Date</dt><dd>${MACRO.fmt.full(pv.submitted)}</dd><dt>TPIN</dt><dd class="mono">${vendor.tpin}</dd><dt>WTEC reference</dt><dd class="mono">WTEC-${vendor.tpin}-2025/26 · Valid until 31 Dec 2026</dd></dl>
+        <table><thead><tr><th>Item</th><th class="num">Total (MK)</th></tr></thead><tbody>
+        <tr><td>${pv.title}</td><td class="num">${(pv.gross||0).toLocaleString()}</td></tr>
+        <tr><td>VAT @ 16.5%</td><td class="num">included</td></tr>
+        <tr><th style="text-align:right">GRAND TOTAL</th><th class="num">${(pv.gross||0).toLocaleString()}</th></tr></tbody></table>`;
+    } else if (isGRN){
+      body=`<dl class="kv"><dt>GRN number</dt><dd class="mono">GRN-2026-0188</dd><dt>LPO reference</dt><dd class="mono">LPO-2026-0192</dd><dt>Receiving officer</dt><dd>F. Mhone · Administrator</dd><dt>Date received</dt><dd>${MACRO.fmt.full(pv.submitted)}</dd></dl>
+        <table><thead><tr><th>Item</th><th class="num">Ordered</th><th class="num">Received</th><th class="num">Variance</th></tr></thead><tbody>
+        <tr><td>${pv.title}</td><td class="num">1</td><td class="num">1</td><td class="num">—</td></tr></tbody></table>
+        <p class="small-note">Three-way match passed: LPO MK ${(pv.gross||0).toLocaleString()} = Invoice MK ${(pv.gross||0).toLocaleString()} = GRN MK ${(pv.gross||0).toLocaleString()}. Variance 0.0% (≤ 5% threshold).</p>`;
+    } else {
+      const k=map[t]&&map[t]();
+      body=k?`<dl class="kv">${k.reduce((a,_,j)=>j%2?a:a+`<dt>${k[j]}</dt><dd>${k[j+1]}</dd>`,'')}</dl>`:'<div class="narrative">Document on file.</div>';
+    }
+    return `<section class="doc" id="d${i}"><span class="corner-ref">${t.toUpperCase()}</span><span class="stamp">FINAL</span>
+      <div class="doc-title-block"><div><div class="org">Malawi AIDS Counselling and Resource Organisation</div><div class="ot">${t}</div></div>
+        <div class="right"><div class="org" style="font-family:'JetBrains Mono',monospace;color:var(--blue)">${pv.id}</div></div></div>
+      ${body}
+      <div class="doc-num">${t.toLowerCase()} · ${i+1} of ${docs.length}</div></section>`;
+  }
+
+  let html=shellTop()+`<div>`;
+  if (bundleKind==='Activity'){
+    [docCover,docAR,docChecklist,docSOW,docPV,docEFT,docAttendance,docNarrative,docExpense,docLiq].forEach((fn,k)=>{ html+=fn(k); });
+  } else {
+    html+=docCover(0);
+    docs.slice(1).forEach((d,k)=>{
+      const idx=k+1;
+      if (d.t==='Payment Voucher') html+=docPV(idx);
+      else if (d.t==='Bank EFT Confirmation') html+=docEFT(idx);
+      else html+=docProc(idx,d.t);
+    });
+  }
+  html+=`</div>`;
+  document.body.insertAdjacentHTML('afterbegin','<div class="vb-shell">'+html+'</div>');
+</script>
+</body>
+</html>

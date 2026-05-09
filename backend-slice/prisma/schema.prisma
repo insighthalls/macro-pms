@@ -1,0 +1,521 @@
+// MACRO PMS · slice schema
+// AR · Payment Vouchers · Procurement · Action Points
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================================
+// Enums
+// =====================================================================
+
+enum UserRole {
+  PROJECT_OFFICER
+  HEAD_OF_PROGRAMS
+  GRANT_FINANCE_OFFICER
+  FINANCE_MANAGER
+  EXECUTIVE_DIRECTOR
+  PROCUREMENT_OFFICER
+  ADMINISTRATOR
+  VENDOR
+}
+
+enum ArStage {
+  DRAFT
+  PO_SUBMITTED
+  HOP_RECOMMENDED
+  FM_APPROVED
+  ED_APPROVED
+  DISBURSED
+  LIQUIDATION_PENDING
+  LIQUIDATED
+  RETURNED
+  REJECTED
+}
+
+enum PvStage {
+  DRAFT
+  PO_SUBMITTED
+  GFO_REVIEWED
+  FM_APPROVED
+  ED_APPROVED
+  SCHEDULED
+  PAID
+  RETURNED
+  REJECTED
+}
+
+enum PrStage {
+  DRAFT
+  PR_SUBMITTED
+  RFQ_OPEN
+  RFQ_EVALUATED
+  LPO_ISSUED
+  GRN_RECEIVED
+  CLOSED
+  CANCELLED
+}
+
+enum ApStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+  REOPENED
+}
+
+enum ApPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ActStage {
+  CONCEPT
+  SOW
+  ADVANCE
+  EXECUTE
+  LIQUIDATE
+  CLOSED
+}
+
+enum WatchLevel {
+  GREEN
+  AMBER
+  RED
+}
+
+enum EntityKind {
+  AR
+  PV
+  PR
+  AP
+  ACT
+  VENDOR
+  BR
+  EFT
+}
+
+enum EftStage {
+  DRAFT
+  LOCKED
+  EXPORTED
+  ACK_RECEIVED
+  CANCELLED
+}
+
+enum BrStage {
+  DRAFT
+  SUBMITTED
+  FM_APPROVED
+  ED_APPROVED
+  REJECTED
+  RETURNED
+}
+
+enum NotifKind {
+  ASSIGNED
+  RETURNED
+  APPROVED
+  ESCALATED
+  SLA_BREACH
+  SYSTEM
+}
+
+// =====================================================================
+// Core
+// =====================================================================
+
+model Project {
+  id          String   @id
+  code        String   @unique
+  name        String
+  donor       String
+  colorHex    String   @map("color_hex")
+  ccy         String   @default("MWK")
+  budgetTotal BigInt   @map("budget_total")
+  spentTotal  BigInt   @default(0) @map("spent_total")
+  periodStart DateTime @map("period_start") @db.Date
+  periodEnd   DateTime @map("period_end") @db.Date
+
+  dipLines      DipLine[]
+  activities    Activity[]
+  ars           AdvanceRequest[]
+  pvs           PaymentVoucher[]
+  prs           PurchaseRequisition[]
+  actionPoints  ActionPoint[]
+  userAccess    UserProjectAccess[]
+
+  @@map("projects")
+}
+
+model User {
+  id           String   @id
+  fullName     String   @map("full_name")
+  role         UserRole
+  email        String   @unique
+  region       String?
+  passwordHash String   @map("password_hash")
+  initials     String
+  active       Boolean  @default(true)
+
+  projectAccess UserProjectAccess[]
+  refreshTokens RefreshToken[]
+  activities    Activity[]            @relation("ActivityOfficer")
+  ars           AdvanceRequest[]      @relation("ArRequestedBy")
+  pvs           PaymentVoucher[]      @relation("PvRaisedBy")
+  prs           PurchaseRequisition[] @relation("PrRaisedBy")
+  apsOwned      ActionPoint[]         @relation("ApOwner")
+  apsRaised     ActionPoint[]         @relation("ApRaiser")
+  audits        AuditEntry[]
+
+  @@map("users")
+}
+
+model UserProjectAccess {
+  userId  String
+  projId  String
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projId])
+  @@map("user_project_access")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  hash      String    @unique
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model DipLine {
+  code         String     @id
+  projId       String
+  label        String
+  budgetAmount BigInt     @map("budget_amount")
+  committed    BigInt     @default(0)
+  spent        BigInt     @default(0)
+  watchLevel   WatchLevel @default(GREEN) @map("watch_level")
+
+  project    Project               @relation(fields: [projId], references: [id])
+  activities Activity[]
+  ars        AdvanceRequest[]
+  pvs        PaymentVoucher[]
+  prs        PurchaseRequisition[]
+
+  @@index([projId])
+  @@map("dip_lines")
+}
+
+model Activity {
+  id            String   @id
+  projId        String
+  dipCode       String
+  title         String
+  officerId     String
+  stage         ActStage @default(CONCEPT)
+  budgetAmount  BigInt   @map("budget_amount")
+  advanceAmount BigInt   @default(0) @map("advance_amount")
+  spentAmount   BigInt   @default(0) @map("spent_amount")
+  startDate     DateTime @db.Date
+  dueLiqDate    DateTime @db.Date
+
+  project Project          @relation(fields: [projId], references: [id])
+  dipLine DipLine          @relation(fields: [dipCode], references: [code])
+  officer User             @relation("ActivityOfficer", fields: [officerId], references: [id])
+  ars     AdvanceRequest[]
+
+  @@index([projId, stage])
+  @@map("activities")
+}
+
+// =====================================================================
+// Advance Requests
+// =====================================================================
+
+model AdvanceRequest {
+  id               String    @id
+  activityId       String
+  projId           String
+  dipCode          String
+  title            String
+  amount           BigInt
+  requestedById    String    @map("requested_by")
+  stage            ArStage   @default(DRAFT)
+  nextApproverRole UserRole? @map("next_approver_role")
+  submittedAt      DateTime?
+  disbursedOn      DateTime? @db.Date
+  dueLiqDate       DateTime? @db.Date
+  spentAmount      BigInt?
+  varianceNote     String?
+  returnReason     String?
+  eftRef           String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  activity    Activity         @relation(fields: [activityId], references: [id])
+  project     Project          @relation(fields: [projId], references: [id])
+  dipLine     DipLine          @relation(fields: [dipCode], references: [code])
+  requestedBy User             @relation("ArRequestedBy", fields: [requestedById], references: [id])
+  pvs         PaymentVoucher[]
+
+  @@index([projId, stage])
+  @@index([requestedById])
+  @@map("advance_requests")
+}
+
+// =====================================================================
+// Payment Vouchers
+// =====================================================================
+
+model Vendor {
+  id          String    @id
+  name        String
+  tin         String?
+  bankName    String?
+  bankAccount String?
+  wtecValid   Boolean   @default(true)
+  wtecExpiry  DateTime? @db.Date
+  ceiling     BigInt?
+  spent       BigInt    @default(0)
+  active      Boolean   @default(true)
+
+  pvs PaymentVoucher[]
+  prs PurchaseRequisition[]
+
+  @@map("vendors")
+}
+
+model PaymentVoucher {
+  id               String    @id
+  projId           String
+  dipCode          String
+  arId             String?
+  vendorId         String?
+  title            String
+  grossAmount      BigInt
+  whtAmount        BigInt    @default(0)
+  netAmount        BigInt
+  itemsJson        Json
+  attachmentsJson  Json
+  stage            PvStage   @default(DRAFT)
+  nextApproverRole UserRole?
+  raisedById       String
+  paidOn           DateTime? @db.Date
+  eftRef           String?
+  returnReason     String?
+  threeWayMatchOk  Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  project  Project         @relation(fields: [projId], references: [id])
+  dipLine  DipLine         @relation(fields: [dipCode], references: [code])
+  vendor   Vendor?         @relation(fields: [vendorId], references: [id])
+  ar       AdvanceRequest? @relation(fields: [arId], references: [id])
+  raisedBy User            @relation("PvRaisedBy", fields: [raisedById], references: [id])
+
+  @@index([projId, stage])
+  @@map("payment_vouchers")
+}
+
+// =====================================================================
+// Procurement (PR -> RFQ -> LPO -> GRN as one record progressing)
+// =====================================================================
+
+model PurchaseRequisition {
+  id              String    @id
+  projId          String
+  dipCode         String
+  title           String
+  estimatedAmount BigInt
+  vendorId        String?
+  rfqDeadline     DateTime? @db.Date
+  lpoRef          String?
+  grnRef          String?
+  grnReceivedOn   DateTime? @db.Date
+  stage           PrStage   @default(DRAFT)
+  raisedById      String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project  Project @relation(fields: [projId], references: [id])
+  dipLine  DipLine @relation(fields: [dipCode], references: [code])
+  vendor   Vendor? @relation(fields: [vendorId], references: [id])
+  raisedBy User    @relation("PrRaisedBy", fields: [raisedById], references: [id])
+
+  @@index([projId, stage])
+  @@map("purchase_requisitions")
+}
+
+// =====================================================================
+// Action Points
+// =====================================================================
+
+model ActionPoint {
+  id             String      @id
+  title          String
+  description    String?
+  ownerId        String
+  raisedById     String
+  priority       ApPriority  @default(MEDIUM)
+  status         ApStatus    @default(OPEN)
+  dueDate        DateTime?   @db.Date
+  closedAt       DateTime?
+  closedNote     String?
+  linkedEntity   EntityKind?
+  linkedEntityId String?
+  projId         String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  owner    User     @relation("ApOwner",  fields: [ownerId],    references: [id])
+  raisedBy User     @relation("ApRaiser", fields: [raisedById], references: [id])
+  project  Project? @relation(fields: [projId], references: [id])
+
+  @@index([ownerId, status])
+  @@map("action_points")
+}
+
+// =====================================================================
+// Approval rules + audit
+// =====================================================================
+
+model ApprovalRule {
+  id            String     @id
+  entityKind    EntityKind @map("entity_kind")
+  thresholdLow  BigInt     @map("threshold_low")
+  thresholdHigh BigInt?    @map("threshold_high")
+  route         Json
+
+  @@map("approval_matrix")
+}
+
+// =====================================================================
+// EFT Batches — group SCHEDULED PVs into a payment run, lock, export pacs.008
+// =====================================================================
+
+model EftBatch {
+  id          String    @id
+  projId      String
+  ccy         String    @default("MWK")
+  totalAmount BigInt    @default(0) @map("total_amount")
+  stage       EftStage  @default(DRAFT)
+  bankFile    String?   @map("bank_file")
+  ackFile     String?   @map("ack_file")
+  createdById String    @map("created_by")
+  lockedAt    DateTime?
+  exportedAt  DateTime?
+  ackedAt     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  items EftBatchItem[]
+
+  @@index([projId, stage])
+  @@map("eft_batches")
+}
+
+model EftBatchItem {
+  batchId String
+  pvId    String
+  amount  BigInt
+
+  batch EftBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@id([batchId, pvId])
+  @@map("eft_batch_items")
+}
+
+// =====================================================================
+// Budget Revisions
+// =====================================================================
+
+model BudgetRevision {
+  id         String   @id
+  projId     String
+  title      String
+  reason     String
+  fromDip    String
+  toDip      String
+  amount     BigInt
+  stage      BrStage  @default(DRAFT)
+  raisedById String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([projId, stage])
+  @@map("budget_revisions")
+}
+
+// =====================================================================
+// Notifications (per-user inbox + SLA escalation queue)
+// =====================================================================
+
+model Notification {
+  id           String     @id @default(cuid())
+  userId       String
+  kind         NotifKind
+  title        String
+  body         String?
+  entity       EntityKind
+  entityId     String
+  link         String?
+  readAt       DateTime?
+  createdAt    DateTime   @default(now())
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+// =====================================================================
+// Attachments — files in Supabase Storage; row carries the metadata
+// =====================================================================
+
+model Attachment {
+  id          String     @id @default(cuid())
+  entity      EntityKind
+  entityId    String
+  bucket      String     @default("macro-attachments")
+  path        String
+  filename    String
+  mime        String?
+  sizeBytes   Int        @map("size_bytes")
+  uploadedBy  String     @map("uploaded_by")
+  createdAt   DateTime   @default(now())
+
+  @@index([entity, entityId])
+  @@map("attachments")
+}
+
+model AuditEntry {
+  id        BigInt     @id @default(autoincrement())
+  at        DateTime   @default(now())
+  whoId     String
+  entity    EntityKind
+  entityId  String
+  action    String
+  note      String?
+  prevHash  String     @map("prev_hash")
+  hash      String     @unique
+  ip        String?
+  userAgent String?
+
+  who User @relation(fields: [whoId], references: [id])
+
+  @@index([entity, entityId])
+  @@map("audit_log")
+}

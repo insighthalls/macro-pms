@@ -1,0 +1,1898 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS — Project Management System</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --blue:#1F4E79;
+    --blue-700:#163955;
+    --blue-500:#2E75B6;
+    --blue-50:#EBF3FB;
+    --blue-100:#D9E7F4;
+    --ink:#0E1A2B;
+    --ink-2:#3B4A5E;
+    --ink-3:#6A7689;
+    --line:#E4E9EF;
+    --line-2:#EEF2F6;
+    --bg:#F5F7FA;
+    --paper:#FFFFFF;
+    --green:#1E7E48;
+    --green-bg:#E2EFDA;
+    --amber:#A6791A;
+    --amber-bg:#FFF2CC;
+    --red:#B42318;
+    --red-bg:#FFE2E2;
+    --candle:#E8B400;
+    --flame:#E84F1B;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+  a{color:inherit;text-decoration:none}
+
+  /* ===== App shell ===== */
+  .app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+  .sidebar{background:var(--blue);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .brand{padding:22px 20px 18px;display:flex;gap:12px;align-items:center;border-bottom:1px solid rgba(255,255,255,.1)}
+  .brand-mark{width:42px;height:42px;background:#fff;border-radius:10px;display:grid;place-items:center;flex:0 0 auto;overflow:hidden}
+  .brand-mark img{width:100%;height:100%;object-fit:cover}
+  .brand-name{font-weight:800;font-size:15px;letter-spacing:.02em;line-height:1.1}
+  .brand-sub{font-size:11px;opacity:.7;margin-top:2px;letter-spacing:.06em;text-transform:uppercase}
+  .nav-section{padding:18px 14px 6px;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+  .nav{display:flex;flex-direction:column;gap:2px;padding:0 10px;flex:1;overflow:auto}
+  .nav button{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:8px;color:rgba(255,255,255,.82);text-align:left;font-size:13.5px;font-weight:500;width:100%;transition:.15s}
+  .nav button:hover{background:rgba(255,255,255,.07);color:#fff}
+  .nav button.active{background:#fff;color:var(--blue);font-weight:700}
+  .nav button .badge{margin-left:auto;background:rgba(255,255,255,.18);font-size:11px;padding:1px 7px;border-radius:10px;font-weight:700}
+  .nav button.active .badge{background:var(--blue);color:#fff}
+  .nav svg{width:18px;height:18px;flex:0 0 auto;stroke-width:1.8}
+  .sidebar-foot{padding:14px;border-top:1px solid rgba(255,255,255,.1);display:flex;gap:10px;align-items:center}
+  .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#FFD479,#E8881C);color:#3a2400;display:grid;place-items:center;font-weight:700;font-size:13px;flex:0 0 auto}
+  .me-name{font-size:13px;font-weight:600}
+  .me-role{font-size:11px;opacity:.65}
+
+  /* ===== Topbar ===== */
+  .main{display:flex;flex-direction:column;min-width:0}
+  .topbar{display:flex;align-items:center;gap:14px;padding:14px 28px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+  .crumbs{font-size:12.5px;color:var(--ink-3);display:flex;gap:6px;align-items:center}
+  .crumbs b{color:var(--ink);font-weight:600}
+  .crumbs .sep{opacity:.5}
+  .search{margin-left:auto;display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--line);border-radius:9px;width:340px;background:#fafbfc}
+  .search input{border:0;outline:0;background:transparent;flex:1;font:inherit;color:var(--ink)}
+  .search kbd{font:600 10.5px "JetBrains Mono",monospace;background:#fff;border:1px solid var(--line);padding:2px 6px;border-radius:4px;color:var(--ink-3)}
+  .icon-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--line);display:grid;place-items:center;background:#fff;position:relative}
+  .icon-btn .dot{position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--red);border:2px solid #fff}
+  .icon-btn svg{width:18px;height:18px;stroke-width:1.8}
+
+  /* ===== Page ===== */
+  .page{padding:24px 28px 60px;max-width:1400px;margin:0 auto;width:100%}
+  .page-head{display:flex;align-items:flex-end;gap:18px;margin-bottom:22px}
+  .page-title{font-size:26px;font-weight:800;letter-spacing:-.01em;line-height:1.1}
+  .page-sub{color:var(--ink-3);font-size:13px;margin-top:4px}
+  .page-head .actions{margin-left:auto;display:flex;gap:8px}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:8px;font-weight:600;font-size:13px;border:1px solid var(--line);background:#fff;color:var(--ink);transition:.15s}
+  .btn:hover{border-color:var(--ink-3)}
+  .btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .btn.primary:hover{background:var(--blue-700);border-color:var(--blue-700)}
+  .btn svg{width:15px;height:15px;stroke-width:2}
+
+  /* ===== KPI cards ===== */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px}
+  .kpi .label{font-size:11.5px;font-weight:600;color:var(--ink-3);letter-spacing:.04em;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+  .kpi .label svg{width:14px;height:14px;stroke-width:2}
+  .kpi .val{font-size:28px;font-weight:800;letter-spacing:-.02em;margin-top:8px;line-height:1}
+  .kpi .val small{font-size:14px;font-weight:600;color:var(--ink-3);margin-left:3px}
+  .kpi .delta{margin-top:10px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px}
+  .kpi .delta.up{color:var(--green)}
+  .kpi .delta.down{color:var(--red)}
+  .kpi .delta.flat{color:var(--ink-3)}
+  .kpi.accent{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .kpi.accent .label{color:rgba(255,255,255,.78)}
+  .kpi.accent .delta.up{color:#9be0b4}
+
+  /* ===== Grid ===== */
+  .grid{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:22px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:22px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .card-h{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line-2)}
+  .card-h h3{margin:0;font-size:14px;font-weight:700}
+  .card-h .sub{color:var(--ink-3);font-size:12px;margin-left:6px}
+  .card-h .right{margin-left:auto;display:flex;gap:6px;align-items:center}
+  .pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--blue-50);color:var(--blue)}
+  .ghost{font-size:12.5px;color:var(--ink-3);font-weight:600}
+  .ghost:hover{color:var(--blue)}
+
+  /* ===== Workflow timeline (Activity card) ===== */
+  .wfl{padding:18px}
+  .wfl-row{display:grid;grid-template-columns:160px 1fr 90px;gap:14px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line-2)}
+  .wfl-row:last-child{border-bottom:0}
+  .wfl-id{font:600 12px "JetBrains Mono",monospace;color:var(--ink-3)}
+  .wfl-id b{color:var(--ink);font-weight:700;display:block;font-size:13px;font-family:"Plus Jakarta Sans"}
+  .wfl-stages{display:flex;align-items:center;gap:0}
+  .stg{flex:1;height:8px;border-radius:99px;background:var(--line-2);position:relative}
+  .stg.done{background:var(--green)}
+  .stg.now{background:var(--blue);animation:pulse 1.6s infinite}
+  .stg.fail{background:var(--red)}
+  .stg + .stg{margin-left:3px}
+  @keyframes pulse{50%{opacity:.55}}
+  .stg-labels{display:flex;font-size:10.5px;color:var(--ink-3);margin-top:6px;font-weight:500}
+  .stg-labels span{flex:1;text-align:center}
+  .stg-labels span.now{color:var(--blue);font-weight:700}
+  .stg-labels span.done{color:var(--green)}
+  .wfl-amt{text-align:right;font-weight:700;font-size:13px}
+  .wfl-amt small{display:block;font-weight:500;color:var(--ink-3);font-size:11px;margin-top:1px}
+
+  /* ===== Approval queue ===== */
+  .queue{padding:6px 0}
+  .qrow{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line-2);transition:.15s}
+  .qrow:last-child{border-bottom:0}
+  .qrow:hover{background:var(--blue-50)}
+  .qrow .ico{width:36px;height:36px;border-radius:9px;background:var(--blue-50);color:var(--blue);display:grid;place-items:center;flex:0 0 auto}
+  .qrow .ico svg{width:18px;height:18px;stroke-width:1.8}
+  .qrow.urgent .ico{background:var(--red-bg);color:var(--red)}
+  .qrow .t{font-size:13px;font-weight:600;line-height:1.25}
+  .qrow .m{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+  .qrow .age{margin-left:auto;font-size:11px;color:var(--ink-3);font-weight:600;text-align:right}
+  .qrow .age b{display:block;color:var(--ink);font-size:12.5px}
+
+  /* ===== Budget bars ===== */
+  .bud-list{padding:6px 18px 14px}
+  .bud{padding:12px 0;border-bottom:1px solid var(--line-2)}
+  .bud:last-child{border-bottom:0}
+  .bud-top{display:flex;align-items:center;gap:10px;font-size:13px}
+  .bud-top .code{font:600 11px "JetBrains Mono",monospace;background:var(--blue-50);color:var(--blue);padding:2px 7px;border-radius:5px}
+  .bud-top .nm{font-weight:600}
+  .bud-top .amt{margin-left:auto;font-weight:700;font-size:13px}
+  .bud-top .amt small{color:var(--ink-3);font-weight:500}
+  .bar{height:8px;border-radius:99px;background:var(--line-2);margin-top:8px;display:flex;overflow:hidden}
+  .bar .seg-d{background:var(--blue)}
+  .bar .seg-c{background:var(--blue-500)}
+  .bar.over .seg-d{background:var(--red)}
+  .bar.warn .seg-d{background:var(--amber)}
+  .bud-meta{display:flex;gap:14px;font-size:11px;color:var(--ink-3);margin-top:6px;font-weight:500}
+  .bud-meta b{color:var(--ink);font-weight:700}
+  .bud-meta .tag{margin-left:auto;font-size:10.5px;padding:2px 8px;border-radius:99px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+  .tag-ok{background:var(--green-bg);color:var(--green)}
+  .tag-warn{background:var(--amber-bg);color:var(--amber)}
+  .tag-over{background:var(--red-bg);color:var(--red)}
+
+  /* ===== Status chips ===== */
+  .chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;letter-spacing:.02em;display:inline-flex;align-items:center;gap:5px}
+  .chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .chip.draft{background:#EEF2F6;color:#52617A}
+  .chip.review{background:var(--blue-50);color:var(--blue)}
+  .chip.approved{background:var(--green-bg);color:var(--green)}
+  .chip.paid{background:#E5DBF7;color:#5A2BB1}
+  .chip.overdue{background:var(--red-bg);color:var(--red)}
+  .chip.warn{background:var(--amber-bg);color:var(--amber)}
+
+  /* ===== Procurement table ===== */
+  table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+  table.tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:700;text-align:left;padding:12px 18px;background:#fafbfc;border-bottom:1px solid var(--line-2)}
+  table.tbl td{padding:14px 18px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+  table.tbl tr:last-child td{border-bottom:0}
+  table.tbl tr:hover td{background:#fafbfc}
+  .lpo{font:700 12px "JetBrains Mono",monospace;color:var(--blue)}
+  .vendor{display:flex;align-items:center;gap:9px}
+  .vendor .vlogo{width:30px;height:30px;border-radius:7px;background:var(--blue-50);color:var(--blue);display:grid;place-items:center;font-weight:800;font-size:12px;flex:0 0 auto}
+  .vendor .vname{font-weight:600;line-height:1.2}
+  .vendor .vmeta{font-size:11px;color:var(--ink-3);margin-top:1px}
+  .cat{font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:.02em}
+  .cat.std{background:#EEF2F6;color:var(--ink-2)}
+  .cat.lv{background:#FEF3E8;color:#A65A1B}
+  .cat.moa{background:#E7F0FF;color:#1B5BAB}
+
+  /* ===== Schema diagram (lightweight) ===== */
+  .schema{padding:22px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;background:linear-gradient(180deg,#fafbfc, #fff)}
+  .ent{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12px}
+  .ent .eh{background:var(--blue);color:#fff;padding:7px 10px;font-weight:700;display:flex;align-items:center;gap:6px}
+  .ent .eh svg{width:13px;height:13px;stroke-width:2}
+  .ent ul{margin:0;padding:6px 0;list-style:none}
+  .ent li{padding:3px 10px;font:500 11.5px "JetBrains Mono",monospace;color:var(--ink-2);display:flex;justify-content:space-between;gap:6px}
+  .ent li .typ{color:var(--blue-500);font-size:10.5px}
+  .ent li.fk{color:var(--blue);font-weight:600}
+  .ent li.pk{color:var(--ink);font-weight:700}
+  .ent li.pk .typ{color:var(--amber)}
+
+  /* ===== State machine viz ===== */
+  .fsm{padding:22px;display:flex;flex-direction:column;gap:14px;align-items:stretch}
+  .fsm-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .state{padding:8px 14px;border-radius:99px;font-size:12px;font-weight:700;border:1.5px solid var(--line);background:#fff;letter-spacing:.02em;font-family:"JetBrains Mono",monospace}
+  .state.start{border-color:var(--ink-3);color:var(--ink-3)}
+  .state.live{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .state.done{background:var(--green);color:#fff;border-color:var(--green)}
+  .state.terminal{background:#5A2BB1;color:#fff;border-color:#5A2BB1}
+  .arrow{display:flex;flex-direction:column;align-items:center;font-size:10px;color:var(--ink-3);font-weight:600}
+  .arrow .ln{width:30px;height:2px;background:var(--ink-3);position:relative}
+  .arrow .ln::after{content:"";position:absolute;right:-1px;top:-3px;border:4px solid transparent;border-left-color:var(--ink-3)}
+
+  /* ===== Voucher preview ===== */
+  .voucher-wrap{padding:22px;display:grid;grid-template-columns:1.4fr 1fr;gap:22px;align-items:start}
+  .voucher{background:#fff;border:1px solid var(--line);border-radius:10px;padding:24px;font-size:11.5px;color:var(--ink-2);position:relative;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.02), 0 8px 32px -16px rgba(31,78,121,.18)}
+  .voucher::before{content:"DRAFT";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-22deg);font-size:120px;font-weight:900;color:rgba(31,78,121,.07);letter-spacing:.1em;pointer-events:none;z-index:0}
+  .voucher > *{position:relative;z-index:1}
+  .voucher-h{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--blue);padding-bottom:10px;margin-bottom:14px}
+  .voucher-h .org{font-size:14px;font-weight:800;color:var(--blue);letter-spacing:.02em}
+  .voucher-h .org small{display:block;font-size:10px;font-weight:500;color:var(--ink-3);margin-top:2px}
+  .voucher-h .pvno{font:700 13px "JetBrains Mono",monospace;color:var(--blue);text-align:right}
+  .voucher-h .pvno small{display:block;font-size:10px;color:var(--ink-3);font-weight:500;margin-top:2px;font-family:"Plus Jakarta Sans"}
+  .v-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:11px;margin-bottom:14px}
+  .v-grid .k{color:var(--ink-3);font-weight:500}
+  .v-grid .v{font-weight:600;color:var(--ink)}
+  .v-tbl{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:11px}
+  .v-tbl th{background:var(--blue-50);color:var(--blue);text-align:left;padding:6px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--blue-100)}
+  .v-tbl td{padding:6px 8px;border:1px solid var(--line);font-weight:500}
+  .v-tbl td.num{text-align:right;font:600 11px "JetBrains Mono",monospace}
+  .v-total{display:flex;justify-content:space-between;padding:8px 10px;background:var(--blue-50);border-radius:6px;margin-bottom:14px;font-weight:700;color:var(--blue)}
+  .sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  .sig{border-top:1px solid var(--line);padding-top:6px;font-size:10px;color:var(--ink-3)}
+  .sig b{display:block;color:var(--ink);font-size:11.5px;font-weight:700}
+  .sig .ts{font:500 10px "JetBrains Mono",monospace;color:var(--blue);margin-top:2px}
+  .sig.pending b{color:var(--ink-3);font-style:italic}
+
+  .v-side{display:flex;flex-direction:column;gap:14px}
+  .approval-tl{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px}
+  .approval-tl h4{margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)}
+  .tl-step{display:flex;gap:12px;padding:8px 0;position:relative}
+  .tl-step .nub{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;font-size:10px;background:var(--green);color:#fff;font-weight:800}
+  .tl-step.now .nub{background:var(--blue);box-shadow:0 0 0 4px var(--blue-50)}
+  .tl-step.todo .nub{background:#fff;border:1.5px dashed var(--ink-3);color:var(--ink-3)}
+  .tl-step + .tl-step::before{content:"";position:absolute;top:-12px;left:10px;width:2px;height:18px;background:var(--line)}
+  .tl-step.now + .tl-step::before, .tl-step.todo + .tl-step::before{background:var(--line)}
+  .tl-step.done + .tl-step::before{background:var(--green)}
+  .tl-body{flex:1;font-size:12px}
+  .tl-body b{display:block;font-weight:700}
+  .tl-body small{color:var(--ink-3);font-size:11px}
+  .tl-body .cm{margin-top:4px;padding:6px 8px;background:var(--blue-50);border-radius:6px;font-size:11px;color:var(--ink-2);font-style:italic}
+
+  /* ===== Module list ===== */
+  .modules{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:22px}
+  .mod{padding:16px;border:1px solid var(--line);border-radius:12px;background:#fff;position:relative;transition:.15s}
+  .mod:hover{border-color:var(--blue);box-shadow:0 6px 24px -10px rgba(31,78,121,.18)}
+  .mod .mh{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .mod .mn{width:32px;height:32px;border-radius:8px;background:var(--blue-50);color:var(--blue);display:grid;place-items:center;font-weight:800;font-size:12.5px}
+  .mod h4{margin:0;font-size:13.5px;font-weight:700}
+  .mod .desc{font-size:11.5px;color:var(--ink-3);line-height:1.4}
+  .mod .feat{margin-top:10px;display:flex;flex-wrap:wrap;gap:5px}
+  .mod .feat span{font-size:10.5px;font-weight:600;background:#fafbfc;border:1px solid var(--line);color:var(--ink-2);padding:2px 7px;border-radius:99px}
+
+  /* ===== Alert banner ===== */
+  .alert{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;background:linear-gradient(90deg,#FFF8E1,#FFF2CC);border:1px solid #F1E0A0;margin-bottom:18px}
+  .alert .ico{width:32px;height:32px;border-radius:8px;background:#fff;color:var(--amber);display:grid;place-items:center;flex:0 0 auto}
+  .alert b{display:block;font-size:13px}
+  .alert .m{font-size:12px;color:var(--ink-2)}
+  .alert .x{margin-left:auto;font-weight:700;color:var(--amber)}
+
+  /* ===== Project picker ===== */
+  .proj-picker{position:relative}
+  .proj-btn{display:flex;align-items:center;gap:10px;padding:7px 10px 7px 8px;border:1px solid var(--line);border-radius:9px;background:#fff;font-weight:600;font-size:13px;min-width:240px;text-align:left;transition:.15s}
+  .proj-btn:hover{border-color:var(--blue-500)}
+  .proj-btn.open{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-50)}
+  .proj-btn .swatch{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:11px;letter-spacing:.04em;flex:0 0 auto}
+  .proj-btn .pn{flex:1;line-height:1.15;min-width:0}
+  .proj-btn .pn b{display:block;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .proj-btn .pn small{font-size:10.5px;color:var(--ink-3);font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+  .proj-btn .car{color:var(--ink-3);flex:0 0 auto}
+  .proj-menu{position:absolute;top:calc(100% + 6px);left:0;width:420px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 48px -16px rgba(14,26,43,.25), 0 4px 12px -4px rgba(14,26,43,.08);padding:6px;z-index:50;display:none}
+  .proj-menu.open{display:block}
+  .proj-menu .ph{padding:8px 12px 6px;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);display:flex;align-items:center}
+  .proj-menu .ph .add{margin-left:auto;color:var(--blue);font-weight:700;font-size:11.5px;letter-spacing:0;text-transform:none}
+  .proj-item{display:grid;grid-template-columns:32px 1fr auto;gap:11px;align-items:center;padding:9px 10px;border-radius:8px;cursor:pointer;transition:.12s}
+  .proj-item:hover{background:var(--blue-50)}
+  .proj-item.active{background:var(--blue-50)}
+  .proj-item .swatch{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:11px}
+  .proj-item .meta b{display:block;font-size:13px;font-weight:700;color:var(--ink)}
+  .proj-item .meta .donor{font-size:11px;color:var(--ink-3);font-weight:500}
+  .proj-item .meta .stats{font-size:10.5px;color:var(--ink-3);margin-top:3px;display:flex;gap:8px;font-weight:500}
+  .proj-item .meta .stats span b{display:inline;font-size:10.5px;color:var(--ink)}
+  .proj-item .pct{font:700 12px "JetBrains Mono",monospace;color:var(--ink);text-align:right}
+  .proj-item .pct small{display:block;font-size:9.5px;color:var(--ink-3);font-weight:500;letter-spacing:.04em;text-transform:uppercase;font-family:"Plus Jakarta Sans"}
+  .proj-item .check{color:var(--blue);margin-left:6px;display:none}
+  .proj-item.active .check{display:block}
+  .proj-menu .div{height:1px;background:var(--line-2);margin:4px 8px}
+  .proj-menu .all{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12px;color:var(--ink-3);font-weight:600;cursor:pointer;border-radius:8px}
+  .proj-menu .all:hover{background:#fafbfc;color:var(--blue)}
+  .proj-menu .all svg{width:14px;height:14px;stroke-width:2}
+
+  /* ===== v4 — Event Bus ===== */
+  .ebus{padding:22px;display:grid;grid-template-columns:1fr;gap:18px}
+  .pipeline{display:grid;grid-template-columns:1fr 36px 1fr 36px 1.4fr;gap:0;align-items:stretch}
+  .pipe-col{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+  .pipe-col h5{margin:0 0 4px;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  .pipe-col .desc{font-size:11.5px;color:var(--ink-3);line-height:1.4;margin-bottom:8px}
+  .pipe-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fafbfc;border:1px solid var(--line);border-radius:8px;font-size:12px}
+  .pipe-row b{font-weight:700}
+  .pipe-row .ev-tag{font:600 10.5px "JetBrains Mono",monospace;color:var(--blue);background:var(--blue-50);padding:2px 6px;border-radius:5px}
+  .pipe-arrow{display:flex;align-items:center;justify-content:center;color:var(--ink-3)}
+  .pipe-arrow svg{width:22px;height:22px;stroke-width:2}
+  .outbox{padding:0}
+  .ob-row{display:grid;grid-template-columns:80px 200px 1fr 100px 80px;gap:12px;padding:11px 18px;border-bottom:1px solid var(--line-2);font-size:12.5px;align-items:center}
+  .ob-row:last-child{border-bottom:0}
+  .ob-row .ev{font:700 12px "JetBrains Mono",monospace;color:var(--blue)}
+  .ob-row .agg{font-size:12px;color:var(--ink-2);font-weight:600}
+  .ob-row .agg small{display:block;color:var(--ink-3);font-size:10.5px;font-weight:500;font-family:"JetBrains Mono"}
+  .ob-row .subs{display:flex;gap:4px;flex-wrap:wrap}
+  .sub-pill{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;font-family:"JetBrains Mono",monospace}
+  .sub-pill.ok{background:var(--green-bg);color:var(--green)}
+  .sub-pill.work{background:var(--blue-50);color:var(--blue)}
+  .sub-pill.fail{background:var(--red-bg);color:var(--red)}
+  .sub-pill.dl{background:#3B4A5E;color:#fff}
+  .ob-row .lat{font:600 11.5px "JetBrains Mono",monospace;color:var(--ink-3);text-align:right}
+
+  /* ===== v4 — Observability ===== */
+  .obs-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:18px}
+  .slo{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}
+  .slo .nm{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)}
+  .slo .target{font-size:11px;color:var(--ink-3);margin-top:2px}
+  .slo .v{font-size:24px;font-weight:800;margin-top:8px;letter-spacing:-.02em}
+  .slo .v.ok{color:var(--green)}
+  .slo .v.warn{color:var(--amber)}
+  .slo .v.bad{color:var(--red)}
+  .slo .bar{height:5px;border-radius:99px;background:var(--line-2);margin-top:8px;overflow:hidden}
+  .slo .bar div{height:100%;background:var(--green)}
+  .slo.warn .bar div{background:var(--amber)}
+  .slo.bad .bar div{background:var(--red)}
+  .slo .meta{font-size:11px;color:var(--ink-3);margin-top:6px;display:flex;justify-content:space-between}
+  .trace{padding:0}
+  .span-row{display:grid;grid-template-columns:240px 1fr 80px;gap:12px;padding:9px 18px;align-items:center;border-bottom:1px dashed var(--line-2);font-size:12px}
+  .span-row .nm{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--ink-2)}
+  .span-row .nm b{display:block;font-family:"Plus Jakarta Sans";font-weight:600;font-size:12px;color:var(--ink)}
+  .span-row .bar{height:18px;border-radius:4px;background:var(--blue);position:relative;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;padding:0 6px}
+  .span-row .bar.work{background:var(--blue-500)}
+  .span-row .bar.fast{background:var(--green)}
+  .span-row .bar.slow{background:var(--amber)}
+  .span-row .ms{text-align:right;font:700 11.5px "JetBrains Mono",monospace}
+  .log-row{padding:8px 18px;border-bottom:1px solid var(--line-2);font:500 11.5px "JetBrains Mono",monospace;display:grid;grid-template-columns:130px 60px 130px 1fr;gap:12px;align-items:center}
+  .log-row.warn{background:#FFF8E1}
+  .log-row.error{background:#FFE2E2}
+  .lvl{font-weight:700;padding:2px 6px;border-radius:4px;font-size:10px;text-align:center}
+  .lvl.info{background:var(--blue-50);color:var(--blue)}
+  .lvl.warn{background:var(--amber-bg);color:var(--amber)}
+  .lvl.err{background:var(--red-bg);color:var(--red)}
+  .corr{color:var(--ink-3)}
+
+  /* ===== v4 — Flags ===== */
+  .flags-grid{padding:18px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .flag{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+  .flag-h{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .flag-h .key{font:700 12px "JetBrains Mono",monospace;color:var(--blue);background:var(--blue-50);padding:3px 8px;border-radius:6px}
+  .flag-h .ftype{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin-left:auto}
+  .flag .desc{font-size:12px;color:var(--ink-2);line-height:1.45;min-height:34px}
+  .flag .ctrl{display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line-2)}
+  .flag .pct{flex:1}
+  .flag .pct .label{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-bottom:4px;font-weight:600}
+  .flag .pct .label b{color:var(--ink);font-family:"JetBrains Mono",monospace}
+  .flag .pct .bar{height:6px;border-radius:99px;background:var(--line-2);overflow:hidden}
+  .flag .pct .bar div{height:100%;background:var(--blue);transition:.4s}
+  .toggle{width:38px;height:22px;border-radius:99px;background:var(--line);position:relative;flex:0 0 auto;cursor:pointer;transition:.2s}
+  .toggle::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:.2s}
+  .toggle.on{background:var(--green)}
+  .toggle.on::after{left:18px}
+  .toggle.kill{background:var(--red)}
+  .flag .seg{display:flex;gap:4px;flex-wrap:wrap}
+  .seg-tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--blue-50);color:var(--blue);font-family:"JetBrains Mono",monospace}
+  .lc{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:5px}
+  .lc.created{background:#EEF2F6;color:var(--ink-3)}
+  .lc.rolling{background:var(--blue-50);color:var(--blue)}
+  .lc.full{background:var(--green-bg);color:var(--green)}
+  .lc.retired{background:#3B4A5E;color:#fff}
+
+  /* ===== v4 — Integrations ===== */
+  .webhook{padding:18px;display:grid;grid-template-columns:1fr;gap:14px}
+  .wh-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;grid-template-columns:48px 1fr auto;gap:14px;align-items:center}
+  .wh-card .lg{width:48px;height:48px;border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;letter-spacing:.04em}
+  .wh-card h4{margin:0;font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .wh-card .url{font:500 11px "JetBrains Mono",monospace;color:var(--ink-3);margin-top:4px}
+  .wh-card .events{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+  .wh-card .stats{text-align:right;display:flex;flex-direction:column;gap:6px;font-size:11.5px;color:var(--ink-3)}
+  .wh-card .stats b{color:var(--ink);font-weight:700;font-size:13px;display:block}
+
+  .delivery-tbl{width:100%;border-collapse:collapse;font-size:12px}
+  .delivery-tbl th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:700;text-align:left;padding:9px 18px;background:#fafbfc;border-bottom:1px solid var(--line-2)}
+  .delivery-tbl td{padding:11px 18px;border-bottom:1px solid var(--line-2);font-family:"JetBrains Mono",monospace;font-size:11.5px}
+  .delivery-tbl tr:last-child td{border-bottom:0}
+
+  /* ===== v4 — Archival ===== */
+  .tiers{padding:22px;display:grid;grid-template-columns:repeat(4,1fr);gap:0;align-items:stretch}
+  .tier{background:#fff;border:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:8px}
+  .tier:first-child{border-radius:12px 0 0 12px}
+  .tier:last-child{border-radius:0 12px 12px 0}
+  .tier + .tier{border-left:0}
+  .tier .nm{font-size:14px;font-weight:800;letter-spacing:-.01em}
+  .tier .nm .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:1px}
+  .tier.hot .dot{background:#E84F1B}
+  .tier.warm .dot{background:#E8B400}
+  .tier.cold .dot{background:#2E75B6}
+  .tier.del .dot{background:#3B4A5E}
+  .tier .ret{font-size:11px;color:var(--ink-3);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+  .tier .vol{font:800 22px/1 "Plus Jakarta Sans";letter-spacing:-.02em;margin-top:4px}
+  .tier .vol small{font-size:12px;color:var(--ink-3);font-weight:500;margin-left:3px}
+  .tier .feat{font-size:11px;color:var(--ink-2);line-height:1.45;margin-top:4px}
+  .tier .badge-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
+  .tier .badge-row span{font-size:10px;font-weight:700;background:#fafbfc;border:1px solid var(--line);color:var(--ink-2);padding:2px 7px;border-radius:99px}
+
+  /* ===== Page sections (toggle via hash) ===== */
+  .view{display:none}
+  .view.active{display:block}
+
+  /* ===== Footer ===== */
+  .foot{padding:28px;text-align:center;font-size:11.5px;color:var(--ink-3);border-top:1px solid var(--line)}
+  .foot b{color:var(--ink-2)}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><img src="assets/macro-logo.jpeg" alt="MACRO" /></div>
+      <div>
+        <div class="brand-name">MACRO PMS</div>
+        <div class="brand-sub">v4.0 · Optimised</div>
+      </div>
+    </div>
+
+    <div class="nav-section">Workspace</div>
+    <div class="nav" id="nav">
+      <button data-view="dashboard" class="active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+        Dashboard
+      </button>
+      <button data-view="activities">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 4v4M16 4v4"/></svg>
+        Activities <span class="badge">12</span>
+      </button>
+      <button data-view="procurement">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 7h14l-1.5 11a2 2 0 0 1-2 1.7H8.5a2 2 0 0 1-2-1.7L5 7zM9 7V5a3 3 0 0 1 6 0v2"/></svg>
+        Procurement <span class="badge">7</span>
+      </button>
+      <button data-view="budget">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v18h18M7 14l4-4 4 4 5-5"/></svg>
+        Budget &amp; Finance
+      </button>
+      <button data-view="vouchers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5zM8 10h8M8 14h6M8 18h4"/></svg>
+        Vouchers
+      </button>
+      <button data-view="vendors">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>
+        Vendors &amp; MoAs
+      </button>
+      <button data-view="actions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 12l2 2 4-4M5 5h14v14H5z"/></svg>
+        Action Points
+      </button>
+
+      <div class="nav-section">v4 · Platform</div>
+      <button data-view="events">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>
+        Event Bus &amp; Outbox
+      </button>
+      <button data-view="observability">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
+        Observability
+      </button>
+      <button data-view="flags">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 21V4l8 3 7-3v12l-7 3-8-3"/></svg>
+        Feature Flags <span class="badge">14</span>
+      </button>
+      <button data-view="integrations">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 13a5 5 0 0 0 7 0l4-4a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-4 4a5 5 0 0 0 7 7l1-1"/></svg>
+        Integrations
+      </button>
+      <button data-view="archival">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v12h14V8M10 12h4"/></svg>
+        Data Archival
+      </button>
+
+      <div class="nav-section">System</div>
+      <button data-view="modules">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        All 17 Modules
+      </button>
+      <button data-view="schema">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+        Data Model
+      </button>
+      <button data-view="workflow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M9 6h6M7.5 8.3L11 15.5M16.5 8.3L13 15.5"/></svg>
+        Workflow Engine
+      </button>
+      <button data-view="audit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg>
+        Security &amp; Audit
+      </button>
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="avatar">CM</div>
+      <div>
+        <div class="me-name">Chimwemwe Mvula</div>
+        <div class="me-role">Finance Manager</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===================== MAIN ===================== -->
+  <div class="main">
+    <header class="topbar">
+      <div class="proj-picker">
+        <button class="proj-btn" id="projBtn">
+          <span class="swatch" id="projSwatch" style="background:#1F4E79">IK</span>
+          <span class="pn"><b id="projName">IMPACT KP</b><small id="projDonor">PEPFAR · Q2 2026</small></span>
+          <svg class="car" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="proj-menu" id="projMenu">
+          <div class="ph"><span>Switch project</span><a class="add" href="#">+ New project</a></div>
+          <div class="proj-item active" data-key="IK" data-name="IMPACT KP" data-donor="PEPFAR · Q2 2026" data-color="#1F4E79">
+            <div class="swatch" style="background:#1F4E79">IK</div>
+            <div class="meta"><b>IMPACT KP</b><div class="donor">PEPFAR · Lilongwe · Blantyre · Mzuzu</div><div class="stats"><span>Activities <b>42</b></span><span>Procurements <b>17</b></span><span>Budget <b>MK 612M</b></span></div></div>
+            <div class="pct">79.6%<small>utilised</small></div>
+            <svg class="check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="proj-item" data-key="LR" data-name="LINK RISE" data-donor="USAID · FY26" data-color="#1E7E48">
+            <div class="swatch" style="background:#1E7E48">LR</div>
+            <div class="meta"><b>LINK RISE</b><div class="donor">USAID · National scale-up</div><div class="stats"><span>Activities <b>28</b></span><span>Procurements <b>9</b></span><span>Budget <b>MK 480M</b></span></div></div>
+            <div class="pct">54.1%<small>utilised</small></div>
+            <svg class="check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="proj-item" data-key="AG" data-name="AGYW Plus" data-donor="Global Fund · Y3" data-color="#A6791A">
+            <div class="swatch" style="background:#A6791A">AG</div>
+            <div class="meta"><b>AGYW Plus</b><div class="donor">Global Fund · Adolescent girls &amp; young women</div><div class="stats"><span>Activities <b>31</b></span><span>Procurements <b>11</b></span><span>Budget <b>MK 295M</b></span></div></div>
+            <div class="pct">68.2%<small>utilised</small></div>
+            <svg class="check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="proj-item" data-key="TF" data-name="Tikondane Fast-Track" data-donor="UNAIDS · 2025–2027" data-color="#5A2BB1">
+            <div class="swatch" style="background:#5A2BB1">TF</div>
+            <div class="meta"><b>Tikondane Fast-Track</b><div class="donor">UNAIDS · DREAMS districts</div><div class="stats"><span>Activities <b>19</b></span><span>Procurements <b>5</b></span><span>Budget <b>MK 184M</b></span></div></div>
+            <div class="pct">41.8%<small>utilised</small></div>
+            <svg class="check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="proj-item" data-key="CO" data-name="Core Operations" data-donor="MACRO · Recurrent" data-color="#3B4A5E">
+            <div class="swatch" style="background:#3B4A5E">CO</div>
+            <div class="meta"><b>Core Operations</b><div class="donor">Internal · Org-wide overheads</div><div class="stats"><span>Activities <b>8</b></span><span>Procurements <b>6</b></span><span>Budget <b>MK 92M</b></span></div></div>
+            <div class="pct">88.3%<small>utilised</small></div>
+            <svg class="check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="div"></div>
+          <div class="all" id="allProjects">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            View all projects portfolio →
+          </div>
+        </div>
+      </div>
+      <div class="crumbs"><span class="sep">›</span><b id="crumb-leaf">Dashboard</b></div>
+      <div class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6A7689" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg>
+        <input placeholder="Search activities, vendors, vouchers, DIP codes…" />
+        <kbd>⌘K</kbd>
+      </div>
+      <button class="icon-btn" title="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0"/></svg>
+        <span class="dot"></span>
+      </button>
+      <button class="icon-btn" title="Help">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/></svg>
+      </button>
+    </header>
+
+    <main class="page">
+
+      <!-- =================== DASHBOARD =================== -->
+      <section class="view active" data-view="dashboard">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Good morning, Chimwemwe</div>
+            <div class="page-sub">Friday, 8 May 2026 · 4 advances and 2 vouchers waiting on your approval</div>
+          </div>
+          <div class="actions">
+            <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>New activity</button>
+            <button class="btn primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Approval queue</button>
+          </div>
+        </div>
+
+        <div class="alert">
+          <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M3.5 19h17a1 1 0 0 0 .9-1.5l-8.5-14a1 1 0 0 0-1.7 0l-8.5 14a1 1 0 0 0 .8 1.5z"/></svg></div>
+          <div>
+            <b>Budget overdraft on DIP-2.4.1 · Community Outreach — Lilongwe</b>
+            <div class="m">Advance request <b>AR-2026-0184</b> would push the line MK 1,420,000 below zero. Written justification required to approve.</div>
+          </div>
+          <button class="x">Review →</button>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpis">
+          <div class="kpi accent">
+            <div class="label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>Total budget disbursed</div>
+            <div class="val">MK 487.2M <small>/ 612M</small></div>
+            <div class="delta up">▲ MK 31.4M this month · 79.6% utilised</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Active activities</div>
+            <div class="val">42</div>
+            <div class="delta up">▲ 6 vs last month</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Outstanding advances</div>
+            <div class="val">MK 14.8M</div>
+            <div class="delta down">▲ 3 overdue (>30 days)</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Procurement in-flight</div>
+            <div class="val">17</div>
+            <div class="delta flat">7 awaiting IPC · 4 awaiting GRN</div>
+          </div>
+        </div>
+
+        <!-- Active workflows + queue -->
+        <div class="grid">
+          <div class="card">
+            <div class="card-h">
+              <h3>Active workflows</h3>
+              <span class="sub">Live finite-state-machine progression</span>
+              <div class="right"><button class="ghost">View all 42 →</button></div>
+            </div>
+            <div class="wfl">
+              <div class="wfl-row">
+                <div class="wfl-id"><b>BT Moonlight Testing</b>AR-2026-0182 · Blantyre</div>
+                <div>
+                  <div class="wfl-stages">
+                    <div class="stg done"></div><div class="stg done"></div><div class="stg done"></div><div class="stg now"></div><div class="stg"></div>
+                  </div>
+                  <div class="stg-labels"><span class="done">SoW</span><span class="done">Submit</span><span class="done">FM</span><span class="now">ED Review</span><span>Voucher</span></div>
+                </div>
+                <div class="wfl-amt">MK 2,840,000<small>Pending ED · 3h</small></div>
+              </div>
+              <div class="wfl-row">
+                <div class="wfl-id"><b>KP Peer Educator Training</b>AR-2026-0180 · Lilongwe</div>
+                <div>
+                  <div class="wfl-stages">
+                    <div class="stg done"></div><div class="stg done"></div><div class="stg done"></div><div class="stg done"></div><div class="stg now"></div>
+                  </div>
+                  <div class="stg-labels"><span class="done">SoW</span><span class="done">Submit</span><span class="done">FM</span><span class="done">ED</span><span class="now">PV Draft</span></div>
+                </div>
+                <div class="wfl-amt">MK 6,120,000<small>Voucher draft</small></div>
+              </div>
+              <div class="wfl-row">
+                <div class="wfl-id"><b>Index Testing Refresher</b>AR-2026-0179 · Mzuzu</div>
+                <div>
+                  <div class="wfl-stages">
+                    <div class="stg done"></div><div class="stg done"></div><div class="stg now"></div><div class="stg"></div><div class="stg"></div>
+                  </div>
+                  <div class="stg-labels"><span class="done">SoW</span><span class="done">Submit</span><span class="now">FM Review</span><span>ED</span><span>Voucher</span></div>
+                </div>
+                <div class="wfl-amt">MK 1,690,000<small>On your queue</small></div>
+              </div>
+              <div class="wfl-row">
+                <div class="wfl-id"><b>Toyota Hilux Service · BJ-7421</b>PR-2026-0094 · Standard</div>
+                <div>
+                  <div class="wfl-stages">
+                    <div class="stg done"></div><div class="stg done"></div><div class="stg done"></div><div class="stg now"></div><div class="stg"></div>
+                  </div>
+                  <div class="stg-labels"><span class="done">RFQ</span><span class="done">Quotes</span><span class="done">IPC</span><span class="now">LPO Issue</span><span>GRN</span></div>
+                </div>
+                <div class="wfl-amt">MK 845,000<small>3 quotes · IPC done</small></div>
+              </div>
+              <div class="wfl-row">
+                <div class="wfl-id"><b>HTS Test Kits Restock</b>PR-2026-0091 · MoA</div>
+                <div>
+                  <div class="wfl-stages">
+                    <div class="stg done"></div><div class="stg done"></div><div class="stg done"></div><div class="stg done"></div><div class="stg done"></div>
+                  </div>
+                  <div class="stg-labels"><span class="done">Verify</span><span class="done">LPO</span><span class="done">GRN</span><span class="done">Match</span><span class="done">Paid</span></div>
+                </div>
+                <div class="wfl-amt">MK 12,450,000<small>Paid 06 May</small></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-h">
+              <h3>Your approval queue</h3>
+              <span class="pill">6 items</span>
+            </div>
+            <div class="queue">
+              <div class="qrow urgent">
+                <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4M12 17h.01M3.5 19h17a1 1 0 0 0 .9-1.5l-8.5-14a1 1 0 0 0-1.7 0l-8.5 14a1 1 0 0 0 .8 1.5z"/></svg></div>
+                <div><div class="t">AR-2026-0184 · Outreach Lilongwe</div><div class="m">Overdraft · justification required</div></div>
+                <div class="age"><b>2h</b>since 11:14</div>
+              </div>
+              <div class="qrow">
+                <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 4h11l3 3v13H5z"/></svg></div>
+                <div><div class="t">PV-2026-1248 · Y. Banda</div><div class="m">DSA 3 days · MK 285,000</div></div>
+                <div class="age"><b>4h</b>09:02</div>
+              </div>
+              <div class="qrow">
+                <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2"/></svg></div>
+                <div><div class="t">AR-2026-0179 · Index Refresher</div><div class="m">FM review · DIP-3.1.2</div></div>
+                <div class="age"><b>6h</b>07:41</div>
+              </div>
+              <div class="qrow">
+                <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 7h18l-1.5 11A2 2 0 0 1 17.5 20h-11A2 2 0 0 1 4.5 18z"/></svg></div>
+                <div><div class="t">PR-2026-0093 · Office Stationery</div><div class="m">Three-way match passed · ready to pay</div></div>
+                <div class="age"><b>1d</b>Thu</div>
+              </div>
+              <div class="qrow">
+                <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+                <div><div class="t">Liquidation · AR-2026-0171</div><div class="m">Variance MK 24,500 to refund</div></div>
+                <div class="age"><b>1d</b>Thu</div>
+              </div>
+              <div class="qrow">
+                <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg></div>
+                <div><div class="t">Budget revision · DIP-2.4.1</div><div class="m">+MK 4M reallocation from 2.4.3</div></div>
+                <div class="age"><b>2d</b>Wed</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Budget snapshot + Notifications -->
+        <div class="grid">
+          <div class="card">
+            <div class="card-h">
+              <h3>Budget lines · IMPACT KP / Q2 2026</h3>
+              <div class="right"><span class="tag-ok chip">12 healthy</span><span class="tag-warn chip">3 warning</span><span class="tag-over chip">1 overdraft</span></div>
+            </div>
+            <div class="bud-list">
+              <div class="bud">
+                <div class="bud-top">
+                  <span class="code">DIP-1.2.1</span><span class="nm">HTS Outreach Activities</span>
+                  <span class="amt">MK 84.2M <small>/ 120M</small></span>
+                </div>
+                <div class="bar"><div class="seg-d" style="width:62%"></div><div class="seg-c" style="width:8%"></div></div>
+                <div class="bud-meta">
+                  <span>Disbursed <b>MK 74.3M</b></span><span>Committed <b>MK 9.9M</b></span><span>Available <b>MK 35.8M</b></span>
+                  <span class="tag tag-ok">Healthy</span>
+                </div>
+              </div>
+              <div class="bud">
+                <div class="bud-top">
+                  <span class="code">DIP-2.4.1</span><span class="nm">Community Outreach — Lilongwe</span>
+                  <span class="amt">MK 31.4M <small>/ 30M</small></span>
+                </div>
+                <div class="bar over"><div class="seg-d" style="width:100%"></div></div>
+                <div class="bud-meta">
+                  <span>Disbursed <b>MK 28.6M</b></span><span>Committed <b>MK 2.8M</b></span><span>Overdraft <b style="color:var(--red)">MK 1.42M</b></span>
+                  <span class="tag tag-over">Overdraft</span>
+                </div>
+              </div>
+              <div class="bud">
+                <div class="bud-top">
+                  <span class="code">DIP-3.1.2</span><span class="nm">Peer Educator Training (KP)</span>
+                  <span class="amt">MK 18.7M <small>/ 22M</small></span>
+                </div>
+                <div class="bar warn"><div class="seg-d" style="width:78%"></div><div class="seg-c" style="width:7%"></div></div>
+                <div class="bud-meta">
+                  <span>Disbursed <b>MK 17.2M</b></span><span>Committed <b>MK 1.5M</b></span><span>Available <b>MK 3.3M</b></span>
+                  <span class="tag tag-warn">Below 15%</span>
+                </div>
+              </div>
+              <div class="bud">
+                <div class="bud-top">
+                  <span class="code">DIP-4.2.0</span><span class="nm">Vehicle Maintenance &amp; Fuel</span>
+                  <span class="amt">MK 9.4M <small>/ 16M</small></span>
+                </div>
+                <div class="bar"><div class="seg-d" style="width:48%"></div><div class="seg-c" style="width:11%"></div></div>
+                <div class="bud-meta">
+                  <span>Disbursed <b>MK 7.6M</b></span><span>Committed <b>MK 1.8M</b></span><span>Available <b>MK 6.6M</b></span>
+                  <span class="tag tag-ok">Healthy</span>
+                </div>
+              </div>
+              <div class="bud">
+                <div class="bud-top">
+                  <span class="code">DIP-5.1.4</span><span class="nm">M&amp;E Data Quality Audits</span>
+                  <span class="amt">MK 4.1M <small>/ 8M</small></span>
+                </div>
+                <div class="bar"><div class="seg-d" style="width:40%"></div><div class="seg-c" style="width:11%"></div></div>
+                <div class="bud-meta">
+                  <span>Disbursed <b>MK 3.2M</b></span><span>Committed <b>MK 0.9M</b></span><span>Available <b>MK 3.9M</b></span>
+                  <span class="tag tag-ok">Healthy</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-h"><h3>System alerts</h3><span class="sub">Auto-generated</span></div>
+            <div class="queue">
+              <div class="qrow urgent">
+                <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg></div>
+                <div><div class="t">Refresh-token reuse detected</div><div class="m">user: t.phiri@macro.org · all sessions revoked</div></div>
+                <div class="age"><b>2m</b>now</div>
+              </div>
+              <div class="qrow">
+                <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg></div>
+                <div><div class="t">WTEC expiring · Lilongwe Office Mart</div><div class="m">expires 06 Jun 2026 — 29 days left</div></div>
+                <div class="age"><b>1h</b>09:00</div>
+              </div>
+              <div class="qrow">
+                <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2"/></svg></div>
+                <div><div class="t">3 advances overdue liquidation</div><div class="m">>30 days post-activity end</div></div>
+                <div class="age"><b>7h</b>02:00</div>
+              </div>
+              <div class="qrow">
+                <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14"/></svg></div>
+                <div><div class="t">Weekly budget status report ready</div><div class="m">All 5 projects · Mon 07:00 dispatch</div></div>
+                <div class="age"><b>3d</b>Mon</div>
+              </div>
+              <div class="qrow">
+                <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 12l2 2 4-4"/></svg></div>
+                <div><div class="t">DB restore drill passed</div><div class="m">RTO 3h 12m · within 4h target</div></div>
+                <div class="age"><b>1w</b>02 May</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================== ACTIVITIES =================== -->
+      <section class="view" data-view="activities">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Activity Requests</div>
+            <div class="page-sub">SoW → Advance → Execution → Liquidation. Auto-blocked on outstanding unretired advances.</div>
+          </div>
+          <div class="actions">
+            <button class="btn">Filters</button>
+            <button class="btn">Export ↓</button>
+            <button class="btn primary">+ New Scope of Work</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <h3>All activities</h3>
+            <span class="sub">42 total · 5 visible</span>
+            <div class="right">
+              <span class="chip review">Pending FM 4</span>
+              <span class="chip approved">Approved 28</span>
+              <span class="chip overdue">Overdue 3</span>
+            </div>
+          </div>
+          <table class="tbl">
+            <thead><tr>
+              <th style="width:140px">Reference</th><th>Activity</th><th>DIP</th><th>Officer</th><th>Status</th><th class="num" style="text-align:right">Amount</th><th>Updated</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="lpo">AR-2026-0184</span></td>
+                <td><b>Community Outreach — Area 25</b><div style="font-size:11px;color:var(--ink-3)">Lilongwe · 12–14 May 2026</div></td>
+                <td><span class="cat std">DIP-2.4.1</span></td>
+                <td>L. Kachale</td>
+                <td><span class="chip warn">Overdraft</span></td>
+                <td style="text-align:right;font-weight:700;font-family:JetBrains Mono">2,840,000</td>
+                <td>2h ago</td>
+              </tr>
+              <tr>
+                <td><span class="lpo">AR-2026-0182</span></td>
+                <td><b>BT Moonlight Testing</b><div style="font-size:11px;color:var(--ink-3)">Blantyre · 09–10 May 2026</div></td>
+                <td><span class="cat std">DIP-1.2.1</span></td>
+                <td>P. Mkandawire</td>
+                <td><span class="chip review">Pending ED</span></td>
+                <td style="text-align:right;font-weight:700;font-family:JetBrains Mono">2,840,000</td>
+                <td>3h ago</td>
+              </tr>
+              <tr>
+                <td><span class="lpo">AR-2026-0180</span></td>
+                <td><b>KP Peer Educator Training</b><div style="font-size:11px;color:var(--ink-3)">Lilongwe · 02–04 May 2026</div></td>
+                <td><span class="cat std">DIP-3.1.2</span></td>
+                <td>T. Phiri</td>
+                <td><span class="chip approved">Approved · Voucher draft</span></td>
+                <td style="text-align:right;font-weight:700;font-family:JetBrains Mono">6,120,000</td>
+                <td>Yesterday</td>
+              </tr>
+              <tr>
+                <td><span class="lpo">AR-2026-0179</span></td>
+                <td><b>Index Testing Refresher</b><div style="font-size:11px;color:var(--ink-3)">Mzuzu · 13–15 May 2026</div></td>
+                <td><span class="cat std">DIP-3.1.2</span></td>
+                <td>R. Nyirenda</td>
+                <td><span class="chip review">Pending FM</span></td>
+                <td style="text-align:right;font-weight:700;font-family:JetBrains Mono">1,690,000</td>
+                <td>6h ago</td>
+              </tr>
+              <tr>
+                <td><span class="lpo">AR-2026-0171</span></td>
+                <td><b>HTS Quarterly Review</b><div style="font-size:11px;color:var(--ink-3)">Lilongwe · 22–24 Apr 2026</div></td>
+                <td><span class="cat std">DIP-5.1.4</span></td>
+                <td>C. Mvula</td>
+                <td><span class="chip overdue">Liq. overdue · 14d</span></td>
+                <td style="text-align:right;font-weight:700;font-family:JetBrains Mono">3,450,000</td>
+                <td>2 weeks ago</td>
+              </tr>
+              <tr>
+                <td><span class="lpo">AR-2026-0166</span></td>
+                <td><b>Mobile Clinic — Kasungu</b><div style="font-size:11px;color:var(--ink-3)">Kasungu · 18–19 Apr 2026</div></td>
+                <td><span class="cat std">DIP-1.2.1</span></td>
+                <td>L. Kachale</td>
+                <td><span class="chip paid">Closed</span></td>
+                <td style="text-align:right;font-weight:700;font-family:JetBrains Mono">2,200,000</td>
+                <td>3 weeks ago</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- =================== PROCUREMENT =================== -->
+      <section class="view" data-view="procurement">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Procurement</div>
+            <div class="page-sub">Standard · Low-Value · MoA. Threshold rules and IPC quotation gates enforced automatically.</div>
+          </div>
+          <div class="actions">
+            <button class="btn">Vendor registry</button>
+            <button class="btn">Contracts (MoA)</button>
+            <button class="btn primary">+ New procurement</button>
+          </div>
+        </div>
+
+        <div class="grid-3" style="grid-template-columns:repeat(3,1fr)">
+          <div class="card" style="padding:18px">
+            <div class="ghost" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Standard</div>
+            <div class="kpi" style="border:0;padding:0;margin-top:6px">
+              <div class="val">9 <small>in flight</small></div>
+              <div class="delta flat">Min 3 quotes · IPC required · FM + ED approval</div>
+            </div>
+          </div>
+          <div class="card" style="padding:18px">
+            <div class="ghost" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Low-Value (&lt; MK 500,000)</div>
+            <div class="kpi" style="border:0;padding:0;margin-top:6px">
+              <div class="val">5 <small>in flight</small></div>
+              <div class="delta flat">1 quote · GFO review · auto-reclassify on breach</div>
+            </div>
+          </div>
+          <div class="card" style="padding:18px">
+            <div class="ghost" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">MoA Contract</div>
+            <div class="kpi" style="border:0;padding:0;margin-top:6px">
+              <div class="val">3 <small>in flight</small></div>
+              <div class="delta flat">Contract verified · ceiling check live</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <h3>Active procurements</h3>
+            <span class="sub">Awaiting next gate</span>
+          </div>
+          <table class="tbl">
+            <thead><tr>
+              <th>Ref · LPO</th><th>Vendor</th><th>Description</th><th>Category</th><th>Stage</th><th class="num" style="text-align:right">Total (MWK)</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td><div class="lpo">PR-2026-0094</div><div style="font-size:11px;color:var(--ink-3)">LPO-2026-0312</div></td>
+                <td><div class="vendor"><div class="vlogo">TM</div><div><div class="vname">Toyota Malawi Ltd</div><div class="vmeta">TPIN 30055891 · WTEC valid</div></div></div></td>
+                <td>Hilux BJ-7421 service · 90 000 km</td>
+                <td><span class="cat std">Standard</span></td>
+                <td><span class="chip review">LPO Issue</span></td>
+                <td style="text-align:right;font-weight:700;font-family:JetBrains Mono">845,000</td>
+              </tr>
+              <tr>
+                <td><div class="lpo">PR-2026-0093</div><div style="font-size:11px;color:var(--ink-3)">LPO-2026-0311</div></td>
+                <td><div class="vendor"><div class="vlogo">OM</div><div><div class="vname">Lilongwe Office Mart</div><div class="vmeta">WTEC expires 06 Jun</div></div></div></td>
+                <td>Q2 office stationery resupply</td>
+                <td><span class="cat lv">Low-Value</span></td>
+                <td><span class="chip approved">3-way Match · Pay</span></td>
+                <td style="text-align:right;font-weight:700;font-family:JetBrains Mono">412,500</td>
+              </tr>
+              <tr>
+                <td><div class="lpo">PR-2026-0092</div><div style="font-size:11px;color:var(--ink-3)">LPO-2026-0310</div></td>
+                <td><div class="vendor"><div class="vlogo">HF</div><div><div class="vname">HealthFirst Pharmaceuticals</div><div class="vmeta">MoA-2025-014 · ceiling 78%</div></div></div></td>
+                <td>HTS rapid test kits — restock 5,000 units</td>
+                <td><span class="cat moa">MoA</span></td>
+                <td><span class="chip approved">Paid</span></td>
+                <td style="text-align:right;font-weight:700;font-family:JetBrains Mono">12,450,000</td>
+              </tr>
+              <tr>
+                <td><div class="lpo">PR-2026-0091</div><div style="font-size:11px;color:var(--ink-3)">—</div></td>
+                <td><div class="vendor"><div class="vlogo">TS</div><div><div class="vname">TechSetters Lilongwe</div><div class="vmeta">TPIN 31044120</div></div></div></td>
+                <td>4× HP laptops for M&amp;E team</td>
+                <td><span class="cat std">Standard</span></td>
+                <td><span class="chip warn">IPC Pending · 2/4 COI</span></td>
+                <td style="text-align:right;font-weight:700;font-family:JetBrains Mono">3,720,000</td>
+              </tr>
+              <tr>
+                <td><div class="lpo">PR-2026-0090</div><div style="font-size:11px;color:var(--ink-3)">LPO-2026-0309</div></td>
+                <td><div class="vendor"><div class="vlogo">FE</div><div><div class="vname">First Energy Fuels</div><div class="vmeta">MoA-2025-006 · ceiling 41%</div></div></div></td>
+                <td>Fuel monthly drawdown — May 2026</td>
+                <td><span class="cat moa">MoA</span></td>
+                <td><span class="chip review">GRN Pending</span></td>
+                <td style="text-align:right;font-weight:700;font-family:JetBrains Mono">1,890,000</td>
+              </tr>
+              <tr>
+                <td><div class="lpo">PR-2026-0089</div><div style="font-size:11px;color:var(--ink-3)">LPO-2026-0308</div></td>
+                <td><div class="vendor"><div class="vlogo">DG</div><div><div class="vname">Dwangwa Generators &amp; Power</div><div class="vmeta">TPIN 30988201</div></div></div></td>
+                <td>Standby generator service · Mzuzu office</td>
+                <td><span class="cat lv">Low-Value</span></td>
+                <td><span class="chip approved">Closed</span></td>
+                <td style="text-align:right;font-weight:700;font-family:JetBrains Mono">298,000</td>
+              </tr>
+              <tr>
+                <td><div class="lpo">PR-2026-0088</div><div style="font-size:11px;color:var(--ink-3)">LPO-2026-0307</div></td>
+                <td><div class="vendor"><div class="vlogo">AP</div><div><div class="vname">AfriPrint Solutions</div><div class="vmeta">TPIN 30412559</div></div></div></td>
+                <td>500× IEC pamphlets — KP Project</td>
+                <td><span class="cat std">Standard</span></td>
+                <td><span class="chip approved">Paid</span></td>
+                <td style="text-align:right;font-weight:700;font-family:JetBrains Mono">1,124,000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- =================== BUDGET =================== -->
+      <section class="view" data-view="budget">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Budget &amp; Finance</div>
+            <div class="page-sub">Real-time auto-offset · row-locked transactions · overdraft justification gating</div>
+          </div>
+          <div class="actions">
+            <button class="btn">Revise budget</button>
+            <button class="btn primary">Download report ↓</button>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi"><div class="label">Total approved</div><div class="val">MK 612.0M</div><div class="delta flat">5 projects · Q2 2026</div></div>
+          <div class="kpi"><div class="label">Committed</div><div class="val">MK 58.4M</div><div class="delta flat">17 in-flight transactions</div></div>
+          <div class="kpi"><div class="label">Disbursed</div><div class="val">MK 487.2M</div><div class="delta up">79.6% utilised</div></div>
+          <div class="kpi accent"><div class="label">Available balance</div><div class="val">MK 66.4M</div><div class="delta down">▼ MK 1.42M overdraft on DIP-2.4.1</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <h3>Budget lines · all projects</h3>
+            <div class="right">
+              <span class="ghost">Healthy 12 ·</span>
+              <span class="ghost" style="color:var(--amber)">Warning 3 ·</span>
+              <span class="ghost" style="color:var(--red)">Overdraft 1</span>
+            </div>
+          </div>
+          <div class="bud-list">
+            <div class="bud">
+              <div class="bud-top"><span class="code">DIP-1.2.1</span><span class="nm">HTS Outreach Activities</span><span class="amt">MK 84.2M <small>/ 120M</small></span></div>
+              <div class="bar"><div class="seg-d" style="width:62%"></div><div class="seg-c" style="width:8%"></div></div>
+              <div class="bud-meta"><span>Disbursed <b>74.3M</b></span><span>Committed <b>9.9M</b></span><span>Available <b>35.8M</b></span><span class="tag tag-ok">Healthy</span></div>
+            </div>
+            <div class="bud">
+              <div class="bud-top"><span class="code">DIP-1.4.0</span><span class="nm">PrEP Distribution</span><span class="amt">MK 22.1M <small>/ 45M</small></span></div>
+              <div class="bar"><div class="seg-d" style="width:38%"></div><div class="seg-c" style="width:11%"></div></div>
+              <div class="bud-meta"><span>Disbursed <b>17.1M</b></span><span>Committed <b>5.0M</b></span><span>Available <b>22.9M</b></span><span class="tag tag-ok">Healthy</span></div>
+            </div>
+            <div class="bud">
+              <div class="bud-top"><span class="code">DIP-2.4.1</span><span class="nm">Community Outreach — Lilongwe</span><span class="amt">MK 31.4M <small>/ 30M</small></span></div>
+              <div class="bar over"><div class="seg-d" style="width:100%"></div></div>
+              <div class="bud-meta"><span>Disbursed <b>28.6M</b></span><span>Committed <b>2.8M</b></span><span style="color:var(--red)">Overdraft <b>1.42M</b></span><span class="tag tag-over">Overdraft</span></div>
+            </div>
+            <div class="bud">
+              <div class="bud-top"><span class="code">DIP-2.4.3</span><span class="nm">Community Outreach — Mzuzu</span><span class="amt">MK 11.0M <small>/ 28M</small></span></div>
+              <div class="bar"><div class="seg-d" style="width:33%"></div><div class="seg-c" style="width:6%"></div></div>
+              <div class="bud-meta"><span>Disbursed <b>9.3M</b></span><span>Committed <b>1.7M</b></span><span>Available <b>17.0M</b></span><span class="tag tag-ok">Healthy</span></div>
+            </div>
+            <div class="bud">
+              <div class="bud-top"><span class="code">DIP-3.1.2</span><span class="nm">Peer Educator Training (KP)</span><span class="amt">MK 18.7M <small>/ 22M</small></span></div>
+              <div class="bar warn"><div class="seg-d" style="width:78%"></div><div class="seg-c" style="width:7%"></div></div>
+              <div class="bud-meta"><span>Disbursed <b>17.2M</b></span><span>Committed <b>1.5M</b></span><span>Available <b>3.3M</b></span><span class="tag tag-warn">Below 15%</span></div>
+            </div>
+            <div class="bud">
+              <div class="bud-top"><span class="code">DIP-4.2.0</span><span class="nm">Vehicle Maintenance &amp; Fuel</span><span class="amt">MK 9.4M <small>/ 16M</small></span></div>
+              <div class="bar"><div class="seg-d" style="width:48%"></div><div class="seg-c" style="width:11%"></div></div>
+              <div class="bud-meta"><span>Disbursed <b>7.6M</b></span><span>Committed <b>1.8M</b></span><span>Available <b>6.6M</b></span><span class="tag tag-ok">Healthy</span></div>
+            </div>
+            <div class="bud">
+              <div class="bud-top"><span class="code">DIP-4.5.1</span><span class="nm">Office Supplies &amp; Utilities</span><span class="amt">MK 3.8M <small>/ 6M</small></span></div>
+              <div class="bar warn"><div class="seg-d" style="width:67%"></div><div class="seg-c" style="width:9%"></div></div>
+              <div class="bud-meta"><span>Disbursed <b>3.1M</b></span><span>Committed <b>0.7M</b></span><span>Available <b>2.2M</b></span><span class="tag tag-warn">Watch</span></div>
+            </div>
+            <div class="bud">
+              <div class="bud-top"><span class="code">DIP-5.1.4</span><span class="nm">M&amp;E Data Quality Audits</span><span class="amt">MK 4.1M <small>/ 8M</small></span></div>
+              <div class="bar"><div class="seg-d" style="width:40%"></div><div class="seg-c" style="width:11%"></div></div>
+              <div class="bud-meta"><span>Disbursed <b>3.2M</b></span><span>Committed <b>0.9M</b></span><span>Available <b>3.9M</b></span><span class="tag tag-ok">Healthy</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================== VOUCHERS =================== -->
+      <section class="view" data-view="vouchers">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Payment Voucher · PV-2026-1248</div>
+            <div class="page-sub">Auto-generated on ED approval · DRAFT until 3 signatures · LOCKED on EFT confirmation</div>
+          </div>
+          <div class="actions">
+            <button class="btn">Print preview</button>
+            <button class="btn">Download bundle (PDF)</button>
+            <button class="btn primary">Approve as Finance Mgr</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <h3>Voucher preview</h3>
+            <span class="sub">DRAFT · awaiting GFO + FM signatures</span>
+            <div class="right"><span class="chip draft">DRAFT</span></div>
+          </div>
+          <div class="voucher-wrap">
+            <div class="voucher">
+              <div class="voucher-h">
+                <div class="org">MALAWI AIDS COUNSELLING<br/>AND RESOURCE ORGANISATION<small>Shedding Light on Your Health</small></div>
+                <div class="pvno">PV-2026-1248<small>Generated 8 May 2026 09:02 CAT</small></div>
+              </div>
+              <div class="v-grid">
+                <div class="k">Payee</div><div class="v">Yamikani Banda (Program Officer)</div>
+                <div class="k">Project</div><div class="v">IMPACT KP · PEPFAR</div>
+                <div class="k">Activity</div><div class="v">KP Peer Educator Training (AR-2026-0180)</div>
+                <div class="k">Bank</div><div class="v">Standard Bank · 9100 7184 22</div>
+                <div class="k">Procurement category</div><div class="v">— (Activity advance)</div>
+                <div class="k">Idempotency key</div><div class="v" style="font:600 10.5px JetBrains Mono">8c1a-fe4d-2b07-9e22</div>
+              </div>
+              <table class="v-tbl">
+                <thead><tr><th>DIP</th><th>Description</th><th style="text-align:right">Days</th><th style="text-align:right">Rate</th><th style="text-align:right">Amount</th></tr></thead>
+                <tbody>
+                  <tr><td>DIP-3.1.2</td><td>DSA · 3 days × 4 facilitators</td><td class="num">12</td><td class="num">95,000</td><td class="num">1,140,000</td></tr>
+                  <tr><td>DIP-3.1.2</td><td>Participant transport reimbursement (40)</td><td class="num">3</td><td class="num">12,500</td><td class="num">1,500,000</td></tr>
+                  <tr><td>DIP-3.1.2</td><td>Conference room hire · Kalikuti Hotel</td><td class="num">3</td><td class="num">285,000</td><td class="num">855,000</td></tr>
+                  <tr><td>DIP-3.1.2</td><td>Stationery &amp; printed materials</td><td class="num">—</td><td class="num">—</td><td class="num">325,000</td></tr>
+                  <tr><td>DIP-3.1.2</td><td>Refreshments (lunch + tea)</td><td class="num">3</td><td class="num">766,667</td><td class="num">2,300,000</td></tr>
+                </tbody>
+              </table>
+              <div class="v-total"><span>Net payable (WTEC valid · WHT 0)</span><span style="font-family:JetBrains Mono">MK 6,120,000.00</span></div>
+              <div class="sigs">
+                <div class="sig"><b>Y. Banda</b>Grant Finance Officer<div class="ts">— pending —</div></div>
+                <div class="sig"><b>C. Mvula</b>Finance Manager<div class="ts">— pending —</div></div>
+                <div class="sig pending"><b><i>E. Chirwa</i></b>Executive Director<div class="ts">approved 7 May 16:42 CAT</div></div>
+              </div>
+            </div>
+
+            <div class="v-side">
+              <div class="approval-tl">
+                <h4>Workflow timeline</h4>
+                <div class="tl-step done"><div class="nub">✓</div><div class="tl-body"><b>Scope of Work recommended</b><small>HoP · 5 May 2026 14:08</small><div class="cm">"Strong alignment to Q2 KP targets. Approve recommendation."</div></div></div>
+                <div class="tl-step done"><div class="nub">✓</div><div class="tl-body"><b>Advance Request submitted</b><small>T. Phiri · 6 May 2026 09:31</small></div></div>
+                <div class="tl-step done"><div class="nub">✓</div><div class="tl-body"><b>FM approval</b><small>C. Mvula · 6 May 2026 16:18</small></div></div>
+                <div class="tl-step done"><div class="nub">✓</div><div class="tl-body"><b>ED approval</b><small>E. Chirwa · 7 May 2026 16:42</small></div></div>
+                <div class="tl-step now"><div class="nub">●</div><div class="tl-body"><b>PV draft generated</b><small>System · 7 May 2026 16:42</small></div></div>
+                <div class="tl-step todo"><div class="nub">○</div><div class="tl-body"><b>EFT confirmation</b><small>awaiting Standard Bank batch ref</small></div></div>
+                <div class="tl-step todo"><div class="nub">○</div><div class="tl-body"><b>Lock as PAID</b><small>auto on EFT upload</small></div></div>
+              </div>
+              <div class="approval-tl">
+                <h4>Voucher bundle (11 docs)</h4>
+                <div style="font-size:12px;color:var(--ink-2);display:flex;flex-direction:column;gap:6px">
+                  <div>1. Cover sheet</div><div>2. Approved Advance Request</div><div>3. Advance Request Checklist</div><div>4. Scope of Work</div><div>5. Payment Voucher</div><div style="opacity:.4">6. Bank EFT Confirmation <i>(pending)</i></div><div style="opacity:.4">7. Attendance Sheets <i>(pending)</i></div><div style="opacity:.4">8. Signing Sheet <i>(pending)</i></div><div style="opacity:.4">9. Activity Report <i>(pending)</i></div><div style="opacity:.4">10. Expense Report <i>(pending)</i></div><div style="opacity:.4">11. Liquidation Checklist <i>(pending)</i></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================== VENDORS =================== -->
+      <section class="view" data-view="vendors">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Vendor Registry &amp; MoA Contracts</div>
+            <div class="page-sub">WTEC monitoring · contract ceilings · auto-classify procurements</div>
+          </div>
+          <div class="actions"><button class="btn primary">+ Add vendor</button></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Vendors</h3></div>
+          <table class="tbl">
+            <thead><tr><th>Vendor</th><th>TPIN</th><th>WTEC</th><th>Bank</th><th>MoA</th><th>Active POs</th></tr></thead>
+            <tbody>
+              <tr><td><div class="vendor"><div class="vlogo">HF</div><div class="vname">HealthFirst Pharmaceuticals</div></div></td><td>30872014</td><td><span class="chip approved">Valid · 12 Mar 2027</span></td><td>NBM · 0014 8722 90</td><td><span class="cat moa">MoA-2025-014 · 78%</span></td><td>2</td></tr>
+              <tr><td><div class="vendor"><div class="vlogo">FE</div><div class="vname">First Energy Fuels</div></div></td><td>30412080</td><td><span class="chip approved">Valid · 04 Sep 2026</span></td><td>Standard · 9100 0411 16</td><td><span class="cat moa">MoA-2025-006 · 41%</span></td><td>1</td></tr>
+              <tr><td><div class="vendor"><div class="vlogo">TM</div><div class="vname">Toyota Malawi Ltd</div></div></td><td>30055891</td><td><span class="chip approved">Valid · 21 Nov 2026</span></td><td>FMB · 6005 1138 41</td><td>—</td><td>1</td></tr>
+              <tr><td><div class="vendor"><div class="vlogo">OM</div><div class="vname">Lilongwe Office Mart</div></div></td><td>30994412</td><td><span class="chip warn">Expires 06 Jun · 29d</span></td><td>NBS · 0405 7820 11</td><td>—</td><td>1</td></tr>
+              <tr><td><div class="vendor"><div class="vlogo">TS</div><div class="vname">TechSetters Lilongwe</div></div></td><td>31044120</td><td><span class="chip approved">Valid · 18 Jan 2027</span></td><td>Standard · 9100 7720 13</td><td>—</td><td>1</td></tr>
+              <tr><td><div class="vendor"><div class="vlogo">DG</div><div class="vname">Dwangwa Generators &amp; Power</div></div></td><td>30988201</td><td><span class="chip overdue">Expired 24 Apr</span></td><td>NBM · 0014 9921 47</td><td>—</td><td>0</td></tr>
+              <tr><td><div class="vendor"><div class="vlogo">AP</div><div class="vname">AfriPrint Solutions</div></div></td><td>30412559</td><td><span class="chip approved">Valid · 02 Aug 2026</span></td><td>FDH · 1100 5582 60</td><td>—</td><td>0</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- =================== ACTION POINTS =================== -->
+      <section class="view" data-view="actions">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Action Points Register</div>
+            <div class="page-sub">Auto-extracted from activity reports · escalation to supervisor on overdue</div>
+          </div>
+        </div>
+        <div class="card">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>Action</th><th>Owner</th><th>Due</th><th>Priority</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>AP-0481</td><td>Submit attendance scans for AR-2026-0166</td><td>L. Kachale</td><td>30 Apr</td><td><span class="chip overdue">High</span></td><td><span class="chip overdue">Overdue · 8d</span></td></tr>
+              <tr><td>AP-0482</td><td>Update vendor bank details — TechSetters</td><td>Y. Banda</td><td>12 May</td><td><span class="chip warn">Med</span></td><td><span class="chip review">In progress</span></td></tr>
+              <tr><td>AP-0483</td><td>WTEC renewal · Lilongwe Office Mart</td><td>P. Mkandawire</td><td>06 Jun</td><td><span class="chip review">Med</span></td><td><span class="chip draft">Open</span></td></tr>
+              <tr><td>AP-0484</td><td>Reconcile Q1 fuel drawdown vs MoA-2025-006</td><td>C. Mvula</td><td>15 May</td><td><span class="chip warn">High</span></td><td><span class="chip review">In progress</span></td></tr>
+              <tr><td>AP-0485</td><td>Train Mzuzu staff on offline attendance sync</td><td>R. Nyirenda</td><td>24 May</td><td><span class="chip draft">Low</span></td><td><span class="chip draft">Open</span></td></tr>
+              <tr><td>AP-0486</td><td>Close out AR-2026-0171 liquidation variance</td><td>C. Mvula</td><td>22 May</td><td><span class="chip warn">High</span></td><td><span class="chip review">In progress</span></td></tr>
+              <tr><td>AP-0480</td><td>Q1 narrative report — donor portal upload</td><td>T. Phiri</td><td>02 May</td><td><span class="chip warn">High</span></td><td><span class="chip approved">Closed</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- =================== ALL MODULES =================== -->
+      <section class="view" data-view="modules">
+        <div class="page-head">
+          <div>
+            <div class="page-title">All 17 Functional Modules</div>
+            <div class="page-sub">v4.0 Optimised Edition · adds Observability, Feature Flags, Integration Layer, Data Archival on top of v3.0 Complete</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="modules">
+            <div class="mod"><div class="mh"><div class="mn">01</div><h4>Security &amp; Infrastructure</h4></div><div class="desc">RBAC, JWT dual-token rotation, MFA, WAF, env separation, CI/CD secrets scanning.</div><div class="feat"><span>RBAC</span><span>JWT+refresh</span><span>MFA</span><span>WAF</span></div></div>
+            <div class="mod"><div class="mh"><div class="mn">02</div><h4>Activity Request</h4></div><div class="desc">SoW → Advance → Execution → Liquidation. Outstanding-advance block enforced.</div><div class="feat"><span>SoW</span><span>Auto-save</span><span>Offline attendance</span></div></div>
+            <div class="mod"><div class="mh"><div class="mn">03</div><h4>Workflow Engine (FSM)</h4></div><div class="desc">Configurable state machine with guards, atomic side-effects, append-only audit.</div><div class="feat"><span>States</span><span>Guards</span><span>Side-effects</span></div></div>
+            <div class="mod"><div class="mh"><div class="mn">04</div><h4>Progress Tracking</h4></div><div class="desc">Real-time activity status across all projects, milestone monitoring, overdue flags.</div><div class="feat"><span>Live status</span><span>Dashboards</span></div></div>
+            <div class="mod"><div class="mh"><div class="mn">05</div><h4>Document Storage</h4></div><div class="desc">S3 versioned, SHA-256 verified, presigned URLs, integrity alerts on mismatch.</div><div class="feat"><span>S3</span><span>SHA-256</span><span>Presigned</span></div></div>
+            <div class="mod"><div class="mh"><div class="mn">06</div><h4>Action Points</h4></div><div class="desc">Auto-extracted, owner + due date, supervisor escalation on overdue.</div><div class="feat"><span>Reminders</span><span>Escalation</span></div></div>
+            <div class="mod"><div class="mh"><div class="mn">07</div><h4>Procurement</h4></div><div class="desc">Standard / Low-Value / MoA paths, IPC + COI gating, three-way invoice match.</div><div class="feat"><span>3 quotes rule</span><span>IPC</span><span>3-way match</span></div></div>
+            <div class="mod"><div class="mh"><div class="mn">08</div><h4>Budget Management</h4></div><div class="desc">Real-time auto-offset, row-locked posting, overdraft justification gating.</div><div class="feat"><span>Auto-offset</span><span>Row-lock</span><span>Overdraft</span></div></div>
+            <div class="mod"><div class="mh"><div class="mn">09</div><h4>Notifications</h4></div><div class="desc">In-app + email, weekly status reports, WTEC/MoA expiry alerts, integrity alarms.</div><div class="feat"><span>Email</span><span>Push</span><span>Schedules</span></div></div>
+            <div class="mod"><div class="mh"><div class="mn">10</div><h4>Voucher &amp; Bundle</h4></div><div class="desc">Auto-generated PV (DRAFT→FINAL→PAID→LOCKED), full bundle PDF compile.</div><div class="feat"><span>DRAFT/FINAL</span><span>Bundle PDF</span></div></div>
+            <div class="mod"><div class="mh"><div class="mn">11</div><h4>Data Integrity</h4></div><div class="desc">Soft-delete, idempotency keys, FK RESTRICT, audit log append-only.</div><div class="feat"><span>Idempotency</span><span>Append-only</span></div></div>
+            <div class="mod"><div class="mh"><div class="mn">12</div><h4>Search &amp; Filtering</h4></div><div class="desc">PostgreSQL tsvector, cursor pagination, saved filters, async export.</div><div class="feat"><span>FTS</span><span>Cursor pages</span></div></div>
+            <div class="mod"><div class="mh"><div class="mn">13</div><h4>UX Standards</h4></div><div class="desc">Auto-save 30s, session warning, inline validation, print views, bulk actions, a11y.</div><div class="feat"><span>Auto-save</span><span>WCAG 2.1 AA</span></div></div>
+            <div class="mod" style="border-color:var(--blue)"><div class="mh"><div class="mn">14</div><h4>Observability</h4></div><div class="desc">Structured JSON logs, OpenTelemetry tracing, SLI/SLO with burn-rate alerts, runbooks.</div><div class="feat"><span>OTel</span><span>SLO</span><span>Runbooks</span><span>v4 NEW</span></div></div>
+            <div class="mod" style="border-color:var(--blue)"><div class="mh"><div class="mn">15</div><h4>Feature Flags</h4></div><div class="desc">Boolean / role / project / percentage gating · kill switch · 30-day stale flag cleanup.</div><div class="feat"><span>Phased rollout</span><span>Kill switch</span><span>v4 NEW</span></div></div>
+            <div class="mod" style="border-color:var(--blue)"><div class="mh"><div class="mn">16</div><h4>Integrations &amp; Webhooks</h4></div><div class="desc">Outbound webhook layer for donor &amp; internal systems · HMAC-signed · DLQ on failure.</div><div class="feat"><span>HMAC-SHA256</span><span>Backoff</span><span>DLQ</span><span>v4 NEW</span></div></div>
+            <div class="mod" style="border-color:var(--blue)"><div class="mh"><div class="mn">17</div><h4>Data Archival</h4></div><div class="desc">Hot / Warm / Cold / Purge tiers · 7-year PEPFAR retention · annual idempotent promotion.</div><div class="feat"><span>Tiered</span><span>Glacier</span><span>v4 NEW</span></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================== SCHEMA =================== -->
+      <section class="view" data-view="schema">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Data Model · Core Entities</div>
+            <div class="page-sub">PostgreSQL 15 · soft-delete on master data · idempotency on financial writes · append-only audit log</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="schema">
+            <div class="ent"><div class="eh">User</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li>name <span class="typ">text</span></li><li>role <span class="typ">enum</span></li><li>email <span class="typ">text</span></li><li>password_hash <span class="typ">bcrypt</span></li><li>mfa_secret <span class="typ">enc</span></li><li>deleted_at <span class="typ">ts</span></li></ul></div>
+            <div class="ent"><div class="eh">Project</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li>name <span class="typ">text</span></li><li>donor <span class="typ">text</span></li><li>budget_total <span class="typ">numeric</span></li><li>start_date <span class="typ">date</span></li><li>end_date <span class="typ">date</span></li></ul></div>
+            <div class="ent"><div class="eh">Activity</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li class="fk">project_id <span class="typ">FK</span></li><li>name · dip_code <span class="typ">text</span></li><li>status <span class="typ">FSM</span></li><li class="fk">officer_id <span class="typ">FK</span></li><li class="fk">budget_line_id <span class="typ">FK</span></li></ul></div>
+            <div class="ent"><div class="eh">AdvanceRequest</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li class="fk">activity_id <span class="typ">FK</span></li><li>line_items <span class="typ">jsonb</span></li><li>total <span class="typ">numeric</span></li><li>status <span class="typ">FSM</span></li><li>idempotency_key <span class="typ">uuid</span></li></ul></div>
+
+            <div class="ent"><div class="eh">BudgetLine</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li class="fk">budget_id <span class="typ">FK</span></li><li>dip_code <span class="typ">text</span></li><li>approved <span class="typ">numeric</span></li><li>committed <span class="typ">calc</span></li><li>disbursed <span class="typ">calc</span></li><li>search_vector <span class="typ">tsv</span></li></ul></div>
+            <div class="ent"><div class="eh">BudgetTransaction</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li class="fk">budget_line_id <span class="typ">FK</span></li><li>type <span class="typ">enum</span></li><li>amount <span class="typ">numeric</span></li><li>idempotency_key <span class="typ">uuid</span></li><li>append-only ✦</li></ul></div>
+            <div class="ent"><div class="eh">Vendor</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li>name <span class="typ">text</span></li><li>tpin <span class="typ">unique</span></li><li>wtec_expiry <span class="typ">date</span></li><li>bank_account <span class="typ">enc</span></li><li>search_vector <span class="typ">tsv</span></li></ul></div>
+            <div class="ent"><div class="eh">Contract (MoA)</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li class="fk">vendor_id <span class="typ">FK</span></li><li>ceiling <span class="typ">numeric</span></li><li>cumulative <span class="typ">calc</span></li><li>expiry_date <span class="typ">date</span></li><li>status <span class="typ">enum</span></li></ul></div>
+
+            <div class="ent"><div class="eh">ProcurementRequest</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li>category <span class="typ">enum</span></li><li class="fk">contract_id <span class="typ">FK?</span></li><li>status <span class="typ">FSM</span></li><li>idempotency_key <span class="typ">uuid</span></li></ul></div>
+            <div class="ent"><div class="eh">LPO / GRN</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li>number <span class="typ">unique</span></li><li class="fk">vendor_id <span class="typ">FK</span></li><li>items <span class="typ">jsonb</span></li><li>total <span class="typ">numeric</span></li></ul></div>
+            <div class="ent"><div class="eh">PaymentVoucher</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li>pv_number <span class="typ">unique</span></li><li>status <span class="typ">FSM</span></li><li>tax_lines <span class="typ">jsonb</span></li><li>locked_at <span class="typ">ts</span></li></ul></div>
+            <div class="ent"><div class="eh">ApprovalRecord</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li>doc_type · doc_id <span class="typ">poly</span></li><li class="fk">approver_id <span class="typ">FK</span></li><li>decision <span class="typ">enum</span></li><li>justification <span class="typ">text</span></li><li>append-only ✦</li></ul></div>
+
+            <div class="ent"><div class="eh">RefreshToken</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li class="fk">user_id <span class="typ">FK</span></li><li>token_hash <span class="typ">bcrypt</span></li><li>expires_at <span class="typ">ts</span></li><li>revoked_at <span class="typ">ts</span></li></ul></div>
+            <div class="ent"><div class="eh">IdempotencyKey</div><ul><li class="pk">key <span class="typ">uuid PK</span></li><li>endpoint <span class="typ">text</span></li><li>response_hash <span class="typ">sha256</span></li><li>expires_at <span class="typ">ts</span></li></ul></div>
+            <div class="ent"><div class="eh">DocumentAttachment</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li>parent <span class="typ">poly</span></li><li>s3_path <span class="typ">text</span></li><li>sha256 <span class="typ">hash</span></li></ul></div>
+            <div class="ent"><div class="eh">AuditLog</div><ul><li class="pk">id <span class="typ">uuid PK</span></li><li>table · record_id <span class="typ">poly</span></li><li>before <span class="typ">jsonb</span></li><li>after <span class="typ">jsonb</span></li><li>append-only ✦</li></ul></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================== WORKFLOW =================== -->
+      <section class="view" data-view="workflow">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Workflow Engine · Finite State Machines</div>
+            <div class="page-sub">attemptTransition(documentType, documentId, action, actorId, payload) — guards run sync, side-effects atomic.</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-h"><h3>AdvanceRequest</h3><span class="sub">Activity advance lifecycle</span></div>
+          <div class="fsm">
+            <div class="fsm-row">
+              <span class="state start">DRAFT</span>
+              <span class="arrow"><span>submit</span><span class="ln"></span></span>
+              <span class="state done">SUBMITTED</span>
+              <span class="arrow"><span>auto · SoW recommended</span><span class="ln"></span></span>
+              <span class="state done">PENDING_FM</span>
+              <span class="arrow"><span>FM approve</span><span class="ln"></span></span>
+              <span class="state done">PENDING_ED</span>
+              <span class="arrow"><span>ED approve</span><span class="ln"></span></span>
+              <span class="state live">APPROVED</span>
+            </div>
+            <div style="font-size:12px;color:var(--ink-3);padding-left:6px"><b style="color:var(--ink)">Side-effects on APPROVE:</b> post BudgetCommitment (row-locked) → check overdraft → generate DRAFT PaymentVoucher → release advance block → publish event.</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-h"><h3>ProcurementRequest · Standard</h3><span class="sub">≥ MK 500,000 · 3 quotes · IPC required</span></div>
+          <div class="fsm">
+            <div class="fsm-row">
+              <span class="state start">DRAFT</span>
+              <span class="arrow"><span class="ln"></span></span>
+              <span class="state done">SUBMITTED</span>
+              <span class="arrow"><span>FM</span><span class="ln"></span></span>
+              <span class="state done">FM_APPROVED</span>
+              <span class="arrow"><span>ED</span><span class="ln"></span></span>
+              <span class="state done">QUOTES_OPEN</span>
+              <span class="arrow"><span>≥3 quotes</span><span class="ln"></span></span>
+              <span class="state live">IPC_PENDING</span>
+              <span class="arrow"><span>COI×4 + minutes</span><span class="ln"></span></span>
+              <span class="state">LPO_ISSUED</span>
+            </div>
+            <div class="fsm-row">
+              <span class="state">LPO_ISSUED</span>
+              <span class="arrow"><span>GRN</span><span class="ln"></span></span>
+              <span class="state">GRN_PENDING</span>
+              <span class="arrow"><span>3-way match</span><span class="ln"></span></span>
+              <span class="state">INVOICE_MATCHED</span>
+              <span class="arrow"><span class="ln"></span></span>
+              <span class="state">PAYMENT_PENDING</span>
+              <span class="arrow"><span>EFT</span><span class="ln"></span></span>
+              <span class="state">PAID</span>
+              <span class="arrow"><span class="ln"></span></span>
+              <span class="state terminal">CLOSED</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h3>PaymentVoucher</h3><span class="sub">Auto-locked once PAID</span></div>
+          <div class="fsm">
+            <div class="fsm-row">
+              <span class="state start">DRAFT</span>
+              <span class="arrow"><span>3 sigs (GFO+FM+ED)</span><span class="ln"></span></span>
+              <span class="state done">FINAL</span>
+              <span class="arrow"><span>EFT confirm</span><span class="ln"></span></span>
+              <span class="state live">PAID</span>
+              <span class="arrow"><span>auto</span><span class="ln"></span></span>
+              <span class="state terminal">LOCKED</span>
+            </div>
+            <div style="font-size:12px;color:var(--ink-3);padding-left:6px"><b style="color:var(--ink)">Guards:</b> 3 ApprovalRecords (one per role) for FINAL · uploaded EFT confirmation doc for PAID. Once LOCKED, write access revoked — corrections require reversal.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================== EVENT BUS =================== -->
+      <section class="view" data-view="events">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Event Bus &amp; Outbox</div>
+            <div class="page-sub">Transactional outbox · subscribers handle side-effects · 5× exponential backoff · DLQ on exhaustion</div>
+          </div>
+          <div class="actions">
+            <button class="btn">Replay events</button>
+            <button class="btn">Dead-letter queue <span class="chip overdue" style="margin-left:6px">2</span></button>
+            <button class="btn primary">Subscribe new handler</button>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi"><div class="label">Events / min (1h avg)</div><div class="val">214</div><div class="delta up">▲ steady · p95 lag 1.4s</div></div>
+          <div class="kpi"><div class="label">Outbox unprocessed</div><div class="val">3</div><div class="delta flat">poller every 500ms</div></div>
+          <div class="kpi"><div class="label">Retries (24h)</div><div class="val">17</div><div class="delta flat">14 succeeded on retry · 3 DLQ</div></div>
+          <div class="kpi accent"><div class="label">End-to-end SLO (p95)</div><div class="val">1.42s <small>/ 5s</small></div><div class="delta up">28% of budget consumed</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h3>Event flow</h3><span class="sub">FSM transition → outbox INSERT → poller → subscribers</span></div>
+          <div class="ebus">
+            <div class="pipeline">
+              <div class="pipe-col">
+                <h5>① Transition (atomic)</h5>
+                <div class="desc">In a single DB tx: update document state + INSERT into outbox.</div>
+                <div class="pipe-row"><b>attemptTransition()</b></div>
+                <div class="pipe-row"><span class="ev-tag">UPDATE</span> advance_requests</div>
+                <div class="pipe-row"><span class="ev-tag">INSERT</span> outbox_events</div>
+              </div>
+              <div class="pipe-arrow"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+              <div class="pipe-col">
+                <h5>② Poller (500ms)</h5>
+                <div class="desc">Reads unprocessed events in order, dispatches to matching subscribers.</div>
+                <div class="pipe-row"><b>SELECT</b> WHERE processed_at IS NULL</div>
+                <div class="pipe-row">FOR UPDATE SKIP LOCKED</div>
+                <div class="pipe-row">retry: 1s · 2s · 4s · 8s · 16s</div>
+              </div>
+              <div class="pipe-arrow"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+              <div class="pipe-col">
+                <h5>③ Subscribers (parallel, isolated)</h5>
+                <div class="desc">One concern each. A subscriber failure never affects siblings or the originating transition.</div>
+                <div class="pipe-row"><span class="sub-pill ok">Budget</span> post commitment / disbursement</div>
+                <div class="pipe-row"><span class="sub-pill ok">Voucher</span> generate DRAFT PV</div>
+                <div class="pipe-row"><span class="sub-pill ok">Notify</span> email / push</div>
+                <div class="pipe-row"><span class="sub-pill ok">Audit</span> append AuditLog row</div>
+                <div class="pipe-row"><span class="sub-pill work">Integration</span> forward to donor webhooks</div>
+                <div class="pipe-row"><span class="sub-pill ok">Observability</span> emit metric + trace</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <div class="card-h"><h3>Outbox · live tail</h3><span class="sub">last 60s</span><div class="right"><span class="chip approved">processed 42</span><span class="chip review">in-flight 3</span><span class="chip overdue">DLQ 2</span></div></div>
+          <div class="outbox">
+            <div class="ob-row">
+              <div class="ev">#94221</div>
+              <div class="agg">advance.approved<small>AR-2026-0180</small></div>
+              <div class="subs"><span class="sub-pill ok">Budget ✓ 41ms</span><span class="sub-pill ok">Voucher ✓ 220ms</span><span class="sub-pill ok">Notify ✓ 88ms</span><span class="sub-pill ok">Audit ✓ 8ms</span><span class="sub-pill ok">Integration ✓ 612ms</span></div>
+              <div><span class="chip approved">processed</span></div>
+              <div class="lat">969ms</div>
+            </div>
+            <div class="ob-row">
+              <div class="ev">#94220</div>
+              <div class="agg">lpo.issued<small>PR-2026-0094 → LPO-0312</small></div>
+              <div class="subs"><span class="sub-pill ok">Budget ✓</span><span class="sub-pill ok">Document ✓ PDF</span><span class="sub-pill ok">Notify vendor ✓</span><span class="sub-pill ok">Audit ✓</span></div>
+              <div><span class="chip approved">processed</span></div>
+              <div class="lat">1.21s</div>
+            </div>
+            <div class="ob-row">
+              <div class="ev">#94219</div>
+              <div class="agg">voucher.paid<small>PV-2026-1247</small></div>
+              <div class="subs"><span class="sub-pill ok">Budget reconcile ✓</span><span class="sub-pill ok">Notify ✓</span><span class="sub-pill work">Integration · attempt 2/5</span></div>
+              <div><span class="chip review">in-flight</span></div>
+              <div class="lat">2s · ⏳</div>
+            </div>
+            <div class="ob-row">
+              <div class="ev">#94218</div>
+              <div class="agg">actionpoint.overdue<small>AP-0481</small></div>
+              <div class="subs"><span class="sub-pill ok">Notify owner ✓</span><span class="sub-pill ok">Notify supervisor ✓</span></div>
+              <div><span class="chip approved">processed</span></div>
+              <div class="lat">142ms</div>
+            </div>
+            <div class="ob-row">
+              <div class="ev">#94215</div>
+              <div class="agg">advance.approved<small>AR-2026-0179</small></div>
+              <div class="subs"><span class="sub-pill ok">Budget ✓</span><span class="sub-pill ok">Voucher ✓</span><span class="sub-pill ok">Notify ✓</span><span class="sub-pill fail">Integration ✗ 5/5</span><span class="sub-pill dl">→ DLQ</span></div>
+              <div><span class="chip overdue">dead-lettered</span></div>
+              <div class="lat">31s</div>
+            </div>
+            <div class="ob-row">
+              <div class="ev">#94209</div>
+              <div class="agg">budget.overdraft<small>DIP-2.4.1</small></div>
+              <div class="subs"><span class="sub-pill ok">Notify FM+ED ✓</span><span class="sub-pill ok">Audit ✓</span><span class="sub-pill ok">Observability alert ✓</span></div>
+              <div><span class="chip approved">processed</span></div>
+              <div class="lat">68ms</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================== OBSERVABILITY =================== -->
+      <section class="view" data-view="observability">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Observability</div>
+            <div class="page-sub">Three pillars · structured JSON logs, OpenTelemetry traces, SLI/SLO metrics · linked by correlation_id</div>
+          </div>
+          <div class="actions">
+            <button class="btn">Open Jaeger</button>
+            <button class="btn">View runbooks</button>
+            <button class="btn primary">Configure alerts</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h3>SLO health · rolling 30 days</h3><span class="sub">burn-rate alerts at 1h fast / 3d slow</span></div>
+          <div class="obs-stats">
+            <div class="slo"><div class="nm">Availability</div><div class="target">target ≥ 99.5%</div><div class="v ok">99.74%</div><div class="bar"><div style="width:99.7%"></div></div><div class="meta"><span>Budget left</span><span><b>52%</b></span></div></div>
+            <div class="slo"><div class="nm">API p95 latency</div><div class="target">target &lt; 400ms</div><div class="v ok">312ms</div><div class="bar"><div style="width:78%"></div></div><div class="meta"><span>Cached reads p95</span><span><b>118ms</b></span></div></div>
+            <div class="slo warn"><div class="nm">Workflow tx p99</div><div class="target">target &lt; 150ms</div><div class="v warn">164ms</div><div class="bar"><div style="width:90%"></div></div><div class="meta"><span>Watch</span><span><b>row-lock contention</b></span></div></div>
+            <div class="slo"><div class="nm">Event lag p95</div><div class="target">target &lt; 5s</div><div class="v ok">1.42s</div><div class="bar"><div style="width:28%"></div></div><div class="meta"><span>Burn rate</span><span><b>0.3×</b></span></div></div>
+            <div class="slo"><div class="nm">Error rate (5xx)</div><div class="target">alert &gt; 1%</div><div class="v ok">0.12%</div><div class="bar"><div style="width:12%"></div></div><div class="meta"><span>1h window</span><span><b>2 errors</b></span></div></div>
+            <div class="slo"><div class="nm">Budget freshness</div><div class="target">target &lt; 2s</div><div class="v ok">90ms</div><div class="bar"><div style="width:5%"></div></div><div class="meta"><span>Strategy</span><span><b>write-through</b></span></div></div>
+            <div class="slo"><div class="nm">SAGE webhook</div><div class="target">target &lt; 0.5% fail</div><div class="v ok">0.3%</div><div class="bar"><div style="width:60%"></div></div><div class="meta"><span>30d</span><span><b>312 deliveries</b></span></div></div>
+            <div class="slo"><div class="nm">DB connection pool</div><div class="target">target &lt; 75% util</div><div class="v ok">38%</div><div class="bar"><div style="width:38%"></div></div><div class="meta"><span>PgBouncer</span><span><b>49/128 leased</b></span></div></div>
+          </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1.4fr 1fr;margin-top:18px">
+          <div class="card">
+            <div class="card-h"><h3>Trace · approveAdvance(AR-2026-0180)</h3><span class="sub">trace_id: 8c1a-fe4d-2b07-9e22 · 947ms total</span></div>
+            <div class="trace">
+              <div class="span-row"><div class="nm"><b>POST /v1/advances/.../approve</b>api</div><div class="bar" style="width:96%">947ms</div><div class="ms">947</div></div>
+              <div class="span-row"><div class="nm"><b>auth.verify_jwt</b>middleware</div><div class="bar fast" style="width:2%">12</div><div class="ms">12</div></div>
+              <div class="span-row"><div class="nm"><b>workflow.attemptTransition</b>fsm</div><div class="bar" style="width:14%;margin-left:1%">141ms</div><div class="ms">141</div></div>
+              <div class="span-row"><div class="nm"><b>tx: UPDATE advance_requests</b>postgres</div><div class="bar fast" style="width:3%;margin-left:1%">28</div><div class="ms">28</div></div>
+              <div class="span-row"><div class="nm"><b>tx: INSERT outbox_events</b>postgres</div><div class="bar fast" style="width:2%;margin-left:4%">19</div><div class="ms">19</div></div>
+              <div class="span-row"><div class="nm"><b>commit</b>postgres</div><div class="bar fast" style="width:1%;margin-left:5%">9</div><div class="ms">9</div></div>
+              <div class="span-row"><div class="nm"><b>cache.invalidate</b>redis</div><div class="bar fast" style="width:1%;margin-left:15%">7</div><div class="ms">7</div></div>
+              <div class="span-row"><div class="nm"><b>outbox.dispatch (async)</b>worker</div><div class="bar work" style="width:80%;margin-left:16%">762ms</div><div class="ms">762</div></div>
+              <div class="span-row" style="background:#fafbfc"><div class="nm" style="padding-left:14px"><b>BudgetSubscriber</b>worker</div><div class="bar fast" style="width:5%;margin-left:18%">41</div><div class="ms">41</div></div>
+              <div class="span-row" style="background:#fafbfc"><div class="nm" style="padding-left:14px"><b>VoucherSubscriber · render PDF</b>worker</div><div class="bar work" style="width:24%;margin-left:23%">220ms</div><div class="ms">220</div></div>
+              <div class="span-row" style="background:#fafbfc"><div class="nm" style="padding-left:14px"><b>IntegrationSubscriber → SAGE</b>worker</div><div class="bar work" style="width:30%;margin-left:32%">284ms</div><div class="ms">284</div></div>
+              <div class="span-row" style="background:#fafbfc"><div class="nm" style="padding-left:14px"><b>NotifySubscriber · email GFO</b>smtp</div><div class="bar work" style="width:9%;margin-left:30%">88</div><div class="ms">88</div></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-h"><h3>Live log tail</h3><span class="sub">tenant_id=MACRO · service=api</span></div>
+            <div>
+              <div class="log-row"><span class="corr">09:02:14.221</span><span class="lvl info">INFO</span><span class="corr">8c1a-fe4d</span><span>workflow.transition advance.approved doc=AR-2026-0180 actor=e.chirwa from=PENDING_ED to=APPROVED ms=141</span></div>
+              <div class="log-row"><span class="corr">09:02:14.243</span><span class="lvl info">INFO</span><span class="corr">8c1a-fe4d</span><span>outbox.insert event=advance.approved seq=#94221</span></div>
+              <div class="log-row"><span class="corr">09:02:14.812</span><span class="lvl info">INFO</span><span class="corr">8c1a-fe4d</span><span>budget.commitment posted line=DIP-3.1.2 amount=6,120,000 lock_ms=41</span></div>
+              <div class="log-row"><span class="corr">09:02:15.014</span><span class="lvl info">INFO</span><span class="corr">8c1a-fe4d</span><span>integration.sage attempt=1 status=202 ms=284</span></div>
+              <div class="log-row"><span class="corr">09:02:16.165</span><span class="lvl info">INFO</span><span class="corr">8c1a-fe4d</span><span>outbox.processed event=#94221 subscribers=5/5 total_ms=947</span></div>
+              <div class="log-row error"><span class="corr">08:42:32.011</span><span class="lvl err">ERROR</span><span class="corr">2f99-7714</span><span>auth.refresh_token reuse_detected user=t.phiri sessions_revoked=3 alert=fired</span></div>
+              <div class="log-row"><span class="corr">08:42:32.099</span><span class="lvl info">INFO</span><span class="corr">2f99-7714</span><span>audit.append table=refresh_tokens op=UPDATE record=tok_8c1afe4d</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================== FEATURE FLAGS =================== -->
+      <section class="view" data-view="flags">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Feature Flags</div>
+            <div class="page-sub">14 active · phased rollouts · kill switches · stale flag cleanup at 30 days</div>
+          </div>
+          <div class="actions">
+            <button class="btn">Audit log</button>
+            <button class="btn primary">+ Define flag</button>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi"><div class="label">Active</div><div class="val">14</div><div class="delta flat">across 5 projects · 7 roles</div></div>
+          <div class="kpi"><div class="label">Rolling out</div><div class="val">5</div><div class="delta up">3 percentage · 2 role-based</div></div>
+          <div class="kpi"><div class="label">Stale (>30d full)</div><div class="val">3</div><div class="delta down">cleanup queued for sprint 27</div></div>
+          <div class="kpi accent"><div class="label">Eval p99</div><div class="val">0.4 ms</div><div class="delta up">Redis cached · TTL 60s</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h3>Flag catalog</h3><span class="sub">scoped to current project</span></div>
+          <div class="flags-grid">
+
+            <div class="flag">
+              <div class="flag-h"><span class="key">three_way_match_v2</span><span class="lc rolling">Rolling out</span><span class="ftype">Percentage</span></div>
+              <div class="desc">Stricter LPO/GRN/Invoice tolerance band (was ±2%, now ±0.5%).</div>
+              <div class="ctrl">
+                <div class="pct"><div class="label"><span>Rollout</span><b>25%</b></div><div class="bar"><div style="width:25%"></div></div></div>
+                <div class="toggle on"></div>
+              </div>
+            </div>
+
+            <div class="flag">
+              <div class="flag-h"><span class="key">offline_attendance</span><span class="lc rolling">Rolling out</span><span class="ftype">Role</span></div>
+              <div class="desc">Field officers can capture attendance offline and sync on reconnect.</div>
+              <div class="ctrl">
+                <div class="seg"><span class="seg-tag">PROGRAM_OFFICER</span><span class="seg-tag">FIELD_AGENT</span></div>
+                <div class="toggle on"></div>
+              </div>
+            </div>
+
+            <div class="flag">
+              <div class="flag-h"><span class="key">overdraft_block_hard</span><span class="lc created">Created</span><span class="ftype">Boolean</span></div>
+              <div class="desc">Reject (vs warn) any AdvanceRequest that would breach DIP line. ED override required.</div>
+              <div class="ctrl">
+                <div class="pct"><div class="label"><span>Status</span><b>OFF · safe</b></div><div class="bar"><div style="width:0%"></div></div></div>
+                <div class="toggle"></div>
+              </div>
+            </div>
+
+            <div class="flag">
+              <div class="flag-h"><span class="key">budget_partition_writes</span><span class="lc rolling">Rolling out</span><span class="ftype">Percentage</span></div>
+              <div class="desc">Route BudgetTransaction writes through monthly partitioned tables.</div>
+              <div class="ctrl">
+                <div class="pct"><div class="label"><span>Rollout</span><b>60%</b></div><div class="bar"><div style="width:60%"></div></div></div>
+                <div class="toggle on"></div>
+              </div>
+            </div>
+
+            <div class="flag">
+              <div class="flag-h"><span class="key">dashboard_swr</span><span class="lc full">Full rollout</span><span class="ftype">Boolean</span></div>
+              <div class="desc">Serve dashboard aggregations stale-while-revalidate. Background refresh on event.</div>
+              <div class="ctrl">
+                <div class="pct"><div class="label"><span>Active for</span><b>100% · 12 days</b></div><div class="bar"><div style="width:100%;background:var(--green)"></div></div></div>
+                <div class="toggle on"></div>
+              </div>
+            </div>
+
+            <div class="flag">
+              <div class="flag-h"><span class="key">circuit_breaker_smtp</span><span class="lc full">Full rollout</span><span class="ftype">Boolean</span></div>
+              <div class="desc">Open circuit on SMTP after 5 consecutive failures · half-open probe at 30s.</div>
+              <div class="ctrl">
+                <div class="pct"><div class="label"><span>State</span><b>CLOSED · healthy</b></div><div class="bar"><div style="width:100%;background:var(--green)"></div></div></div>
+                <div class="toggle on"></div>
+              </div>
+            </div>
+
+            <div class="flag">
+              <div class="flag-h"><span class="key">historical_search_warm</span><span class="lc rolling">Rolling out</span><span class="ftype">Role</span></div>
+              <div class="desc">Allow Finance + ED to opt into searching warm-tier (2–3 yr archive) records.</div>
+              <div class="ctrl">
+                <div class="seg"><span class="seg-tag">FINANCE_MANAGER</span><span class="seg-tag">EXEC_DIRECTOR</span></div>
+                <div class="toggle on"></div>
+              </div>
+            </div>
+
+            <div class="flag">
+              <div class="flag-h"><span class="key">mtls_internal</span><span class="lc full">Full rollout</span><span class="ftype">Boolean</span></div>
+              <div class="desc">Mutual TLS on all backend-to-backend traffic. Certs from Private CA · 90-day rotation.</div>
+              <div class="ctrl">
+                <div class="pct"><div class="label"><span>Coverage</span><b>100%</b></div><div class="bar"><div style="width:100%;background:var(--green)"></div></div></div>
+                <div class="toggle on"></div>
+              </div>
+            </div>
+
+            <div class="flag">
+              <div class="flag-h"><span class="key">legacy_pv_template</span><span class="lc retired">Retired</span><span class="ftype">Boolean — kill</span></div>
+              <div class="desc">Old payment voucher PDF template. Code path removed in next release.</div>
+              <div class="ctrl">
+                <div class="pct"><div class="label"><span>Status</span><b>KILLED · 8 May 09:14</b></div><div class="bar"><div style="width:0%"></div></div></div>
+                <div class="toggle kill"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- =================== INTEGRATIONS =================== -->
+      <section class="view" data-view="integrations">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Integrations &amp; Webhook Layer</div>
+            <div class="page-sub">Outbound · HMAC-SHA256 signed · exponential backoff (5 retries) · dead-letter queue</div>
+          </div>
+          <div class="actions">
+            <button class="btn">Dead-letter queue <span class="chip overdue" style="margin-left:6px">2</span></button>
+            <button class="btn">Test delivery</button>
+            <button class="btn primary">+ New subscription</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h3>Subscriptions</h3><span class="sub">3 active</span></div>
+          <div class="webhook">
+            <div class="wh-card">
+              <div class="lg" style="background:#1E7E48">SR</div>
+              <div>
+                <h4>USAID SAGE Reporting <span class="chip approved">active</span></h4>
+                <div class="url">POST https://sage.usaid.gov/inbound/macro · X-Webhook-Signature</div>
+                <div class="events"><span class="ev-tag">voucher.paid</span><span class="ev-tag">activity.completed</span></div>
+              </div>
+              <div class="stats"><span><b>312</b>delivered (30d)</span><span><b>0.3%</b>failure rate</span><span><b>v1.0</b>Handlebars</span></div>
+            </div>
+
+            <div class="wh-card">
+              <div class="lg" style="background:#3B4A5E">SL</div>
+              <div>
+                <h4>Internal Slack · #pms-alerts <span class="chip approved">active</span></h4>
+                <div class="url">POST https://hooks.slack.com/services/T../B../...</div>
+                <div class="events"><span class="ev-tag">budget.overdraft</span><span class="ev-tag">refresh_token.reuse</span><span class="ev-tag">circuit_breaker.opened</span></div>
+              </div>
+              <div class="stats"><span><b>47</b>delivered (24h)</span><span><b>0%</b>failure rate</span><span><b>v1.0</b>Block Kit</span></div>
+            </div>
+
+            <div class="wh-card" style="opacity:.55">
+              <div class="lg" style="background:#A6791A">GF</div>
+              <div>
+                <h4>Global Fund SmartFile <span class="chip draft">paused</span></h4>
+                <div class="url">POST https://smartfile.theglobalfund.org/api/inbound</div>
+                <div class="events"><span class="ev-tag">voucher.paid</span></div>
+              </div>
+              <div class="stats"><span><b>—</b>paused since 02 May</span><span><b>—</b>—</span><span><b>v1.0</b>—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <div class="card-h"><h3>Recent deliveries</h3><span class="sub">last 60 minutes · all subscriptions</span></div>
+          <table class="delivery-tbl">
+            <thead><tr><th>Time (CAT)</th><th>Subscription</th><th>Event · Aggregate</th><th>Attempt</th><th>Status</th><th>Latency</th><th>Signature</th></tr></thead>
+            <tbody>
+              <tr><td>08:54:02</td><td>Slack #pms-alerts</td><td>refresh_token.reuse · t.phiri</td><td>1 / 5</td><td><span class="chip approved">200 OK</span></td><td>118ms</td><td>9c01…442d</td></tr>
+              <tr><td>08:43:11</td><td>USAID SAGE</td><td>voucher.paid · PV-2026-1247</td><td>1 / 5</td><td><span class="chip approved">202 Accepted</span></td><td>284ms</td><td>71b2…aa19</td></tr>
+              <tr><td>07:08:33</td><td>Slack #pms-alerts</td><td>budget.overdraft · DIP-2.4.1</td><td>1 / 5</td><td><span class="chip approved">200 OK</span></td><td>92ms</td><td>5d18…0094</td></tr>
+              <tr><td>07:00:00</td><td>USAID SAGE</td><td>weekly.budget_summary · 5 projects</td><td>1 / 5</td><td><span class="chip approved">202 Accepted</span></td><td>411ms</td><td>aab1…c02f</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- =================== ARCHIVAL =================== -->
+      <section class="view" data-view="archival">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Data Archival &amp; Retention</div>
+            <div class="page-sub">Tiered lifecycle · annual promotion job · PEPFAR 7-year retention compliant</div>
+          </div>
+          <div class="actions">
+            <button class="btn">Restore from cold</button>
+            <button class="btn">Archival logs</button>
+            <button class="btn primary">Run promotion · dry-run</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h3>Lifecycle tiers</h3><span class="sub">automatic promotion on FY-1 boundary</span></div>
+          <div class="tiers">
+            <div class="tier hot">
+              <div class="nm"><span class="dot"></span>HOT</div>
+              <div class="ret">Current + 1 fiscal year</div>
+              <div class="vol">2.1M <small>rows</small></div>
+              <div class="feat">PostgreSQL primary · full read-write · all application queries hit this tier.</div>
+              <div class="badge-row"><span>Primary DB</span><span>indexes</span><span>tsvector</span></div>
+            </div>
+            <div class="tier warm">
+              <div class="nm"><span class="dot"></span>WARM</div>
+              <div class="ret">2–3 years</div>
+              <div class="vol">8.4M <small>rows</small></div>
+              <div class="feat">Read replica · separate tablespace · search opt-in via "Historical data" toggle.</div>
+              <div class="badge-row"><span>Read-only</span><span>Replica</span><span>Compressed indexes</span></div>
+            </div>
+            <div class="tier cold">
+              <div class="nm"><span class="dot"></span>COLD</div>
+              <div class="ret">4–7 years</div>
+              <div class="vol">31.7M <small>rows</small></div>
+              <div class="feat">Compressed Parquet on S3 Glacier · 12h restore-on-request by SysAdmin.</div>
+              <div class="badge-row"><span>Glacier</span><span>Parquet · zstd</span><span>SHA-256 verified</span></div>
+            </div>
+            <div class="tier del">
+              <div class="nm"><span class="dot"></span>PURGE</div>
+              <div class="ret">After 7 years</div>
+              <div class="vol">— <small>auto</small></div>
+              <div class="feat">Annual purge job · Finance Manager sign-off required · irreversible · audit-logged.</div>
+              <div class="badge-row"><span>Annual</span><span>Sign-off</span><span>Irreversible</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1.4fr 1fr;margin-top:18px">
+          <div class="card">
+            <div class="card-h"><h3>Recent archival runs</h3><span class="sub">idempotent · checksum-verified</span></div>
+            <table class="tbl">
+              <thead><tr><th>Run ID</th><th>Scope</th><th>Promotion</th><th>Rows</th><th>Verification</th><th>Duration</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td><span class="lpo">ARC-2026-008</span></td><td>FY2024 · 5 projects</td><td>HOT → WARM</td><td style="font-family:JetBrains Mono">412,184</td><td>checksum OK · row-count OK</td><td>4h 22m</td><td><span class="chip approved">Completed</span></td></tr>
+                <tr><td><span class="lpo">ARC-2026-007</span></td><td>FY2022 · 4 projects</td><td>WARM → COLD</td><td style="font-family:JetBrains Mono">1,084,221</td><td>checksum OK · Parquet zstd</td><td>11h 08m</td><td><span class="chip approved">Completed</span></td></tr>
+                <tr><td><span class="lpo">ARC-2026-006</span></td><td>FY2024 · audit_log</td><td>partition detach</td><td style="font-family:JetBrains Mono">2,418,790</td><td>monthly partitions 2024-01..12</td><td>52m</td><td><span class="chip approved">Completed</span></td></tr>
+                <tr><td><span class="lpo">ARC-2026-005</span></td><td>Restore drill</td><td>COLD → WARM</td><td style="font-family:JetBrains Mono">14,200</td><td>SHA-256 verified</td><td>2h 41m</td><td><span class="chip approved">Drill OK</span></td></tr>
+                <tr><td><span class="lpo">ARC-2026-004</span></td><td>FY2023 · budget_tx</td><td>HOT → WARM</td><td style="font-family:JetBrains Mono">86,402</td><td>row-count mismatch · 14 rows</td><td>—</td><td><span class="chip overdue">Halted</span></td></tr>
+                <tr><td><span class="lpo">ARC-2026-003</span></td><td>FY2023 · budget_tx</td><td>HOT → WARM</td><td style="font-family:JetBrains Mono">86,416</td><td>resolved + checksum OK</td><td>3h 02m</td><td><span class="chip approved">Completed</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-h"><h3>Restore requests</h3><span class="sub">12h SLA on cold-tier</span></div>
+            <div class="queue">
+              <div class="qrow">
+                <div class="ico" style="background:var(--blue-50);color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></div>
+                <div><div class="t">FY2021 vouchers · audit query</div><div class="m">requested by C. Mvula · ETA 4h 12m</div></div>
+                <div class="age"><b>in flight</b>09:00</div>
+              </div>
+              <div class="qrow">
+                <div class="ico" style="background:var(--green-bg);color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12l5 5L20 7"/></svg></div>
+                <div><div class="t">FY2022 attendance scans · DREAMS</div><div class="m">restored to WARM · expires in 60d</div></div>
+                <div class="age"><b>completed</b>Tue</div>
+              </div>
+              <div class="qrow">
+                <div class="ico" style="background:var(--green-bg);color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12l5 5L20 7"/></svg></div>
+                <div><div class="t">FY2020 LPOs · Toyota Malawi audit</div><div class="m">restored 02 May · expires in 28d</div></div>
+                <div class="age"><b>completed</b>02 May</div>
+              </div>
+              <div class="qrow">
+                <div class="ico" style="background:var(--amber-bg);color:var(--amber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg></div>
+                <div><div class="t">FY2019 budget_tx (Q3)</div><div class="m">awaiting FM sign-off (3y old data)</div></div>
+                <div class="age"><b>pending</b>1d</div>
+              </div>
+            </div>
+
+            <div class="card-h" style="border-top:1px solid var(--line-2)"><h3>Storage footprint</h3></div>
+            <div style="padding:14px 18px;display:flex;flex-direction:column;gap:10px">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px"><span><span style="color:#E84F1B">●</span> HOT · PostgreSQL primary</span><span style="font-family:JetBrains Mono">28.4 GB</span></div>
+                <div class="bar" style="height:8px"><div class="seg-d" style="background:#E84F1B;width:14%"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px"><span><span style="color:#E8B400">●</span> WARM · read replica</span><span style="font-family:JetBrains Mono">112.0 GB</span></div>
+                <div class="bar" style="height:8px"><div class="seg-d" style="background:#E8B400;width:55%"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px"><span><span style="color:#2E75B6">●</span> COLD · S3 Glacier</span><span style="font-family:JetBrains Mono">408.2 GB</span></div>
+                <div class="bar" style="height:8px"><div class="seg-d" style="background:#2E75B6;width:100%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================== AUDIT =================== -->
+      <section class="view" data-view="audit">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Security &amp; Audit</div>
+            <div class="page-sub">Append-only audit log · token lifecycle · file integrity verification</div>
+          </div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="label">Active sessions</div><div class="val">24</div><div class="delta flat">across 18 users · 2 max/user</div></div>
+          <div class="kpi"><div class="label">Token rotations / 24h</div><div class="val">312</div><div class="delta flat">0 reuse incidents this week</div></div>
+          <div class="kpi"><div class="label">File integrity scans</div><div class="val">1,408</div><div class="delta up">100% verified · 0 mismatches</div></div>
+          <div class="kpi accent"><div class="label">Audit log entries (24h)</div><div class="val">4,219</div><div class="delta flat">append-only · UPDATE/DELETE revoked</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h3>Recent audit entries</h3><span class="sub">live tail</span></div>
+          <table class="tbl">
+            <thead><tr><th>Timestamp (CAT)</th><th>Actor</th><th>Operation</th><th>Table</th><th>Record</th><th>Detail</th></tr></thead>
+            <tbody>
+              <tr><td style="font-family:JetBrains Mono;font-size:12px">2026-05-08 09:02:14</td><td>system</td><td><span class="chip approved">INSERT</span></td><td>payment_vouchers</td><td><span class="lpo">PV-2026-1248</span></td><td>auto-generated DRAFT on AdvanceRequest APPROVED</td></tr>
+              <tr><td style="font-family:JetBrains Mono;font-size:12px">2026-05-08 08:49:01</td><td>e.chirwa</td><td><span class="chip review">UPDATE</span></td><td>advance_requests</td><td>AR-2026-0184</td><td>state PENDING_ED → REJECTED · justification not provided</td></tr>
+              <tr><td style="font-family:JetBrains Mono;font-size:12px">2026-05-08 08:42:32</td><td>system</td><td><span class="chip warn">ALERT</span></td><td>refresh_tokens</td><td>tok_8c1afe4d</td><td>reuse detected · all sessions revoked for t.phiri</td></tr>
+              <tr><td style="font-family:JetBrains Mono;font-size:12px">2026-05-08 07:00:00</td><td>system</td><td><span class="chip approved">JOB</span></td><td>—</td><td>weekly_budget</td><td>weekly status report dispatched · 5 projects</td></tr>
+              <tr><td style="font-family:JetBrains Mono;font-size:12px">2026-05-07 16:42:08</td><td>e.chirwa</td><td><span class="chip approved">INSERT</span></td><td>approval_records</td><td>ar_99821</td><td>AdvanceRequest AR-2026-0180 APPROVED</td></tr>
+              <tr><td style="font-family:JetBrains Mono;font-size:12px">2026-05-07 14:18:51</td><td>c.mvula</td><td><span class="chip approved">INSERT</span></td><td>approval_records</td><td>ar_99818</td><td>AdvanceRequest AR-2026-0180 PENDING_ED</td></tr>
+              <tr><td style="font-family:JetBrains Mono;font-size:12px">2026-05-07 13:55:07</td><td>system</td><td><span class="chip approved">INSERT</span></td><td>budget_transactions</td><td>bt_44219</td><td>commitment posted · DIP-3.1.2 · MK 6,120,000 · row-lock 41ms</td></tr>
+              <tr><td style="font-family:JetBrains Mono;font-size:12px">2026-05-07 11:02:33</td><td>l.kachale</td><td><span class="chip overdue">DENY</span></td><td>advance_requests</td><td>—</td><td>guard fail · outstanding advance AR-2026-0171 not liquidated</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="foot">
+        <b>MACRO PMS v3.0 Complete Edition</b> · Malawi AIDS Counselling and Resource Organisation · Confidential · Lilongwe · Blantyre · Mzuzu
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+  const navBtns = document.querySelectorAll('#nav button');
+  const views = document.querySelectorAll('.view');
+  const crumb = document.getElementById('crumb-leaf');
+  const labels = {dashboard:'Dashboard',activities:'Activities',procurement:'Procurement',budget:'Budget & Finance',vouchers:'Voucher · PV-2026-1248',vendors:'Vendors & MoA',actions:'Action Points',events:'Event Bus & Outbox',observability:'Observability',flags:'Feature Flags',integrations:'Integrations',archival:'Data Archival',modules:'All Modules',schema:'Data Model',workflow:'Workflow Engine',audit:'Security & Audit'};
+  navBtns.forEach(b=>b.addEventListener('click',()=>{
+    const v=b.dataset.view;
+    navBtns.forEach(x=>x.classList.toggle('active',x===b));
+    views.forEach(x=>x.classList.toggle('active',x.dataset.view===v));
+    crumb.textContent = labels[v] || v;
+    window.scrollTo({top:0,behavior:'instant'});
+  }));
+
+  // Project picker
+  const pBtn = document.getElementById('projBtn');
+  const pMenu = document.getElementById('projMenu');
+  const pName = document.getElementById('projName');
+  const pDonor = document.getElementById('projDonor');
+  const pSwatch = document.getElementById('projSwatch');
+  pBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    pBtn.classList.toggle('open');
+    pMenu.classList.toggle('open');
+  });
+  document.addEventListener('click', e => {
+    if (!pMenu.contains(e.target) && !pBtn.contains(e.target)) {
+      pBtn.classList.remove('open'); pMenu.classList.remove('open');
+    }
+  });
+  document.querySelectorAll('.proj-item').forEach(it => {
+    it.addEventListener('click', () => {
+      document.querySelectorAll('.proj-item').forEach(x => x.classList.remove('active'));
+      it.classList.add('active');
+      pName.textContent = it.dataset.name;
+      pDonor.textContent = it.dataset.donor;
+      pSwatch.textContent = it.dataset.key;
+      pSwatch.style.background = it.dataset.color;
+      pBtn.classList.remove('open'); pMenu.classList.remove('open');
+    });
+  });
+</script>
+</body>
+</html>

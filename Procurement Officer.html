@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS · Procurement Officer</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/macro-styles.css" />
+</head>
+<body>
+<div class="app" id="app"></div>
+<script src="shared/macro-core.js"></script>
+<script src="shared/macro-shell.js"></script>
+<script>
+const ME='U-PRC';
+const VIEWS=[
+  {id:'pipeline', icon:'inbox', label:'PR pipeline'},
+  {id:'rfqs',     icon:'file',  label:'RFQs & quotes'},
+  {id:'lpos',     icon:'truck', label:'LPOs'},
+  {id:'vendors',  icon:'users', label:'Vendor master'},
+  {id:'aps',      icon:'pin',   label:'Action points'},
+];
+let currentView='pipeline';
+
+function counts(){
+  return {
+    p1: MACRO.list('prs',r=>r.stage==='HoP Approved').length,
+    p2: MACRO.list('prs',r=>['RFQ Issued','Quotes Received','Evaluated'].includes(r.stage)).length,
+    aps: MACRO.list('aps',a=>a.owner===ME && a.stage!=='Closed').length
+  };
+}
+function render(){
+  const c=counts();
+  const items=VIEWS.map(v=>Object.assign({},v,
+    v.id==='pipeline'?{badge:c.p1||null}:
+    v.id==='rfqs'?{badge:c.p2||null}:
+    v.id==='aps'?{badge:c.aps||null,badgeQ:true}:{}));
+  document.getElementById('app').innerHTML=
+    UI.sidebar({userId:ME,label:'Procurement Officer · HQ',cls:'prc'},items,currentView,'v4.0 · Sandbox')+
+    `<div class="main">${UI.topbar({},['Procurement',label(currentView)],'IMP')}<div class="page">${pageBody()}</div></div>`;
+  UI.bindNav(id=>{currentView=id;render();});
+  bindActions();
+}
+function label(id){return (VIEWS.find(v=>v.id===id)||{}).label||'';}
+function pageBody(){return ({pipeline:viewPipeline,rfqs:viewRfqs,lpos:viewLpos,vendors:viewVendors,aps:viewAps}[currentView]||(()=>'')) ();}
+
+function viewPipeline(){
+  const me=MACRO.user(ME);
+  const all=MACRO.list('prs');
+  const stages=['Submitted','HoP Approved','RFQ Issued','Quotes Received','Evaluated','LPO Issued','Goods Received','Closed'];
+  return `
+    <div class="hello"><div class="hello-card amber">
+      <div><h1>Hi ${me.name.split(' ')[0]} — ${counts().p1} approved PR${counts().p1===1?'':'s'} ready for RFQ.</h1>
+        <div class="sub">${all.length} requisitions across the pipeline; ${MACRO.list('vendors',v=>v.status==='Active').length} active vendors.</div></div>
+      <div class="hello-stats">
+        <div class="hs"><div class="v">${all.length}</div><div class="l">Total PRs</div></div>
+        <div class="hs warn"><div class="v">${counts().p1}</div><div class="l">Ready for RFQ</div></div>
+        <div class="hs good"><div class="v">${all.filter(r=>r.stage==='LPO Issued'||r.stage==='Goods Received').length}</div><div class="l">In delivery</div></div>
+      </div></div></div>
+
+    <div class="grid-2e" style="grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:18px">
+      ${stages.map(s=>{const ct=all.filter(r=>r.stage===s).length;return `<div class="kpi" style="padding:11px 13px"><div class="l" style="font-size:10px">${s}</div><div class="v" style="font-size:20px">${ct}</div></div>`;}).join('')}
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>Procurement requisitions</h3></div>
+      <table class="tbl"><thead><tr><th>PR</th><th>Description</th><th>DIP</th><th class="num">Amount</th><th>Stage</th><th>Raised</th><th></th></tr></thead><tbody>
+        ${all.map(r=>`<tr>
+          <td><span class="ref">${r.id}</span></td><td>${r.desc}</td>
+          <td class="mono">${r.dip}</td><td class="num">${MACRO.fmt.mwk(r.amount)}</td>
+          <td>${UI.pill(r.stage,MACRO.stageTone('PR',r.stage))}</td>
+          <td class="muted">${MACRO.fmt.since(r.raised)}</td>
+          <td>${prAction(r)}</td>
+        </tr>`).join('')}
+      </tbody></table>
+    </div>`;
+}
+function prAction(r){
+  if (r.stage==='HoP Approved') return `<button class="btn sm primary" data-act="rfq" data-id="${r.id}">Issue RFQ</button>`;
+  if (r.stage==='RFQ Issued')   return `<button class="btn sm" data-act="quotes-in" data-id="${r.id}">Record quotes</button>`;
+  if (r.stage==='Quotes Received') return `<button class="btn sm primary" data-act="evaluate" data-id="${r.id}">Evaluate</button>`;
+  if (r.stage==='Evaluated')    return `<button class="btn sm primary" data-act="issue-lpo" data-id="${r.id}">Issue LPO</button>`;
+  if (r.stage==='Goods Received') return `<button class="btn sm" data-act="close" data-id="${r.id}">Close</button>`;
+  return '<span class="muted small">—</span>';
+}
+
+function viewRfqs(){
+  const all=MACRO.list('prs',r=>['RFQ Issued','Quotes Received','Evaluated'].includes(r.stage));
+  return `<div class="page-head"><h1 class="page-title">RFQs &amp; quotes</h1></div>
+    <div class="card"><div>${all.map(r=>`
+      <div class="ix"><div class="ico">RFQ</div>
+        <div><div class="t">${r.desc}</div>
+          <div class="m"><span class="ref mono">${r.id}</span><span>·</span><span class="mono">${r.dip}</span><span>·</span><b>${MACRO.fmt.mwk(r.amount)}</b><span>·</span>${r.stage==='RFQ Issued'?'3 vendors invited':r.stage==='Quotes Received'?'3 / 3 quotes in':'best-price selected'}</div></div>
+        ${prAction(r)}
+      </div>`).join('')||`<div class="empty">No RFQs in flight.</div>`}</div></div>`;
+}
+
+function viewLpos(){
+  const all=MACRO.list('prs',r=>['LPO Issued','Goods Received','Closed'].includes(r.stage));
+  return `<div class="page-head"><h1 class="page-title">Local purchase orders</h1></div>
+    <div class="card"><table class="tbl"><thead><tr><th>LPO ref</th><th>Description</th><th>Vendor</th><th class="num">Amount</th><th>Stage</th><th></th></tr></thead><tbody>
+      ${all.map(r=>`<tr>
+        <td><span class="ref">LPO-${r.id.slice(-4)}</span><div class="muted small mono">${r.id}</div></td>
+        <td>${r.desc}</td><td>${r.vendor||'Best-price vendor'}</td>
+        <td class="num">${MACRO.fmt.mwk(r.amount)}</td>
+        <td>${UI.pill(r.stage,MACRO.stageTone('PR',r.stage))}</td>
+        <td>${prAction(r)}</td></tr>`).join('')||`<tr><td colspan="6" class="empty">No LPOs.</td></tr>`}
+    </tbody></table></div>`;
+}
+
+function viewVendors(){
+  const all=MACRO.list('vendors');
+  return `<div class="page-head"><h1 class="page-title">Vendor master</h1>
+    <div class="actions"><button class="btn primary" data-act="vendor-new">Add vendor</button></div></div>
+    <div class="kpis">
+      <div class="kpi"><div class="l">Total vendors</div><div class="v">${all.length}</div></div>
+      <div class="kpi green"><div class="l">Active</div><div class="v">${all.filter(v=>v.status==='Active').length}</div></div>
+      <div class="kpi amber"><div class="l">Pending KYC</div><div class="v">${all.filter(v=>v.status==='Pending').length}</div></div>
+      <div class="kpi"><div class="l">Paid YTD</div><div class="v">${MACRO.fmt.short(all.reduce((s,v)=>s+v.paid_ytd,0))}</div></div>
+    </div>
+    <div class="card"><table class="tbl"><thead><tr><th>Vendor</th><th>TPIN</th><th>Category</th><th>Terms</th><th class="num">Paid YTD</th><th>Status</th></tr></thead><tbody>
+      ${all.map(v=>`<tr><td><b>${v.name}</b><div class="muted small">${v.contact}</div></td>
+        <td class="mono">${v.tpin}</td><td>${v.cat}</td><td>${v.terms}</td>
+        <td class="num">${MACRO.fmt.mwk(v.paid_ytd)}</td>
+        <td>${UI.pill(v.status, v.status==='Active'?'green':'amber')}</td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+function viewAps(){
+  const aps=MACRO.list('aps',a=>a.owner===ME);
+  return `<div class="page-head"><h1 class="page-title">Action points</h1></div>
+    <div class="card"><table class="tbl"><thead><tr><th>Ref</th><th>Title</th><th>Priority</th><th>Due</th><th>Stage</th><th></th></tr></thead><tbody>
+      ${aps.map(a=>`<tr><td><span class="ref">${a.id}</span></td><td>${a.title}</td>
+        <td>${UI.pill(a.priority,a.priority==='High'?'red':'amber')}</td>
+        <td>${MACRO.fmt.until(a.due)}</td><td>${UI.pill(a.stage,MACRO.stageTone('AP',a.stage))}</td>
+        <td>${a.stage==='Closed'?'':`<button class="btn sm" data-act="ap-resolve" data-id="${a.id}">Resolve</button>`}</td></tr>`).join('')||`<tr><td colspan="6" class="empty">No items.</td></tr>`}
+    </tbody></table></div>`;
+}
+
+function bindActions(){
+  document.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',async()=>{
+    const act=b.getAttribute('data-act'),id=b.getAttribute('data-id');
+    const map={'rfq':'rfq','quotes-in':'quotes-in','evaluate':'evaluate','issue-lpo':'issue-lpo','close':'close'};
+    if (map[act]){
+      MACRO.transition('PR','prs',id,map[act],ME, act);
+      const r=MACRO.get('prs',id);
+      if (act==='issue-lpo') MACRO.notify(r.requestedBy, 'LPO issued for '+id, id);
+      UI.toast(id+' → '+r.stage,'green'); render();
+    } else if (act==='vendor-new'){
+      const m=UI.modal({title:'Add vendor',body:`
+        <div class="fld"><label>Vendor name</label><input id="v-n" placeholder="e.g. Northern Tents"/></div>
+        <div class="fld-row"><div class="fld"><label>TPIN</label><input id="v-t" class="mono"/></div>
+        <div class="fld"><label>Category</label><input id="v-c"/></div></div>
+        <div class="fld"><label>Contact email</label><input id="v-e" type="email"/></div>`,
+        footer:`<button class="btn" data-close>Cancel</button><button class="btn primary" id="v-ok">Save</button>`});
+      m.el.querySelector('#v-ok').addEventListener('click',()=>{
+        const id='V-'+String(MACRO.list('vendors').length+1).padStart(3,'0');
+        MACRO.create('vendors',{id,name:m.el.querySelector('#v-n').value||'New vendor',tpin:m.el.querySelector('#v-t').value||'—',cat:m.el.querySelector('#v-c').value||'General',status:'Pending',contact:m.el.querySelector('#v-e').value||'—',paid_ytd:0,terms:'Net 30'});
+        m.close(); UI.toast('Vendor '+id+' added','green'); render();
+      });
+    } else if (act==='ap-resolve'){
+      MACRO.update('aps',id,{stage:'Resolved'}); MACRO.audit('AP',id,'resolve',ME,'Resolved');
+      UI.toast(id+' resolved','green'); render();
+    }
+  }));
+}
+
+MACRO.subscribe(()=>render());
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS · Automation</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/macro-styles.css" />
+<style>
+  .tabs{display:flex;gap:4px;background:#fff;padding:6px;border-radius:12px;border:1px solid var(--line);margin-bottom:18px;width:fit-content}
+  .tabs button{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--ink-3)}
+  .tabs button.active{background:var(--blue);color:#fff}
+  .pane{display:none}.pane.active{display:block}
+  .qrow{display:grid;grid-template-columns:36px 130px 1fr 130px 130px 110px 110px;gap:10px;padding:11px 14px;align-items:center;border-bottom:1px solid var(--line-2);font-size:13px}
+  .qrow.head{background:#fafbfc;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700;border-bottom:1px solid var(--line)}
+  .qrow input[type=checkbox]{width:16px;height:16px;cursor:pointer}
+  .qrow.sel{background:var(--blue-50)}
+  .bulk-bar{position:sticky;top:0;background:var(--blue);color:#fff;padding:12px 16px;border-radius:10px;display:flex;gap:12px;align-items:center;font-size:13px;margin-bottom:10px;box-shadow:0 6px 18px rgba(31,78,121,.25)}
+  .bulk-bar b{font-size:14px}
+  .bulk-bar .btn{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.3)}
+  .bulk-bar .btn:hover{background:rgba(255,255,255,.28)}
+  .rec-row{display:grid;grid-template-columns:130px 1fr 90px 130px 130px 110px 110px;gap:10px;padding:13px 14px;align-items:center;border-bottom:1px solid var(--line-2);font-size:13px}
+  .rec-row.head{background:#fafbfc;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700;border-bottom:1px solid var(--line)}
+  .rec-row .nm b{display:block}.rec-row .nm small{color:var(--ink-3);font-size:11.5px}
+  .switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600}
+  .switch i{width:30px;height:18px;background:#cfd3dc;border-radius:10px;position:relative;transition:.18s;display:inline-block}
+  .switch i::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.18s}
+  .switch.on i{background:var(--green)}.switch.on i::after{left:14px}
+  .ver-row{display:grid;grid-template-columns:64px 1fr 130px 110px 110px 110px;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line-2);font-size:13px;align-items:center}
+  .ver-row.head{background:#fafbfc;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700;border-bottom:1px solid var(--line)}
+  .diff{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-family:"JetBrains Mono",monospace;font-size:12px}
+  .diff > div{padding:14px 16px}
+  .diff .l{background:#fff7f5;border-right:1px solid var(--line)}
+  .diff .r{background:#f3fbf5}
+  .diff h4{font-family:"Plus Jakarta Sans";font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;font-weight:700}
+  .diff .add{background:rgba(30,126,72,.14);padding:1px 3px;border-radius:3px}
+  .diff .rem{background:rgba(180,40,40,.14);padding:1px 3px;border-radius:3px;text-decoration:line-through;color:#b42828}
+  .matrix{width:100%;border-collapse:collapse;font-size:13px}
+  .matrix th,.matrix td{padding:11px 14px;border-bottom:1px solid var(--line-2);text-align:left}
+  .matrix th{background:#fafbfc;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+  .matrix td.num{text-align:right;font-family:"JetBrains Mono",monospace}
+  .matrix tr.changed{background:var(--amber-bg)}
+  .scenario-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:8px;cursor:pointer;transition:.15s}
+  .scenario-card:hover{border-color:var(--blue);box-shadow:0 6px 18px rgba(31,78,121,.08)}
+  .scenario-card.on{border-color:var(--blue);background:var(--blue-50)}
+  .scenario-card h4{font-size:14px;font-weight:700}
+  .scenario-card p{font-size:12.5px;color:var(--ink-3);line-height:1.5}
+  .impact-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .impact{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}
+  .impact .l{font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px}
+  .impact .v{font-size:22px;font-weight:800;font-family:"JetBrains Mono",monospace;letter-spacing:-.01em}
+  .impact .delta{font-size:12px;font-weight:600;margin-top:4px}
+  .impact .delta.up{color:var(--red)}.impact .delta.down{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script src="shared/macro-core.js"></script>
+<script src="shared/macro-shell.js"></script>
+<script>
+const ME='U-FM';
+const VIEWS=[
+  {id:'bulk', icon:'list',   label:'Bulk actions'},
+  {id:'rec',  icon:'coins',  label:'Recurring transactions'},
+  {id:'ver',  icon:'file',   label:'Document versions'},
+  {id:'sim',  icon:'shield', label:'Workflow simulator'},
+];
+let v='bulk';
+const SEL = new Set();
+const SIM = {scenario:null};
+
+// Recurring transactions seed
+const RECURRING = [
+  {id:'REC-001', name:'CHW stipends · IMPACT KP',     dip:'DIP-3.2.1', amount: 9_600_000, freq:'Monthly', nextRun:'2026-06-01', payeeCount:48, on:true,  type:'Stipend'},
+  {id:'REC-002', name:'HQ office rent',                dip:'DIP-9.1.1', amount: 4_200_000, freq:'Monthly', nextRun:'2026-06-01', payeeCount:1,  on:true,  type:'Rent'},
+  {id:'REC-003', name:'Mentor stipends · AGYW',        dip:'DIP-3.1.2', amount: 2_240_000, freq:'Monthly', nextRun:'2026-06-15', payeeCount:14, on:true,  type:'Stipend'},
+  {id:'REC-004', name:'Internet & data · all sites',   dip:'DIP-9.1.1', amount:   480_000, freq:'Monthly', nextRun:'2026-06-05', payeeCount:1,  on:true,  type:'Utility'},
+  {id:'REC-005', name:'Vehicle service retainer',       dip:'DIP-9.2.1', amount: 1_800_000, freq:'Quarterly',nextRun:'2026-07-01', payeeCount:1, on:true,  type:'Retainer'},
+  {id:'REC-006', name:'External audit retainer',        dip:'DIP-9.1.1', amount: 8_400_000, freq:'Quarterly',nextRun:'2026-07-15', payeeCount:1, on:false, type:'Retainer'},
+  {id:'REC-007', name:'Insurance premium · fleet',      dip:'DIP-9.2.1', amount: 3_600_000, freq:'Annual',  nextRun:'2026-10-01', payeeCount:1, on:true,  type:'Insurance'},
+];
+
+// Document versions seed (Voucher Bundle PV-2026-1242)
+const VERSIONS = [
+  {v:'v3', at:'2026-05-06', who:'U-FM',  status:'Current · ED Approved', changes:'Routing note added; net unchanged'},
+  {v:'v2', at:'2026-05-05', who:'U-GFO', status:'Resubmitted',           changes:'TPIN field corrected; WHT recalculated'},
+  {v:'v1', at:'2026-05-03', who:'U-PO',  status:'Returned by GFO',       changes:'Initial submission'},
+];
+
+// Approval matrix base
+const MATRIX_BASE = [
+  {key:'AR<2M',     entity:'Advance Request', threshold:'< MK 2M',     route:['HoP','FM']},
+  {key:'AR2-10M',   entity:'Advance Request', threshold:'MK 2M – 10M', route:['HoP','FM','ED']},
+  {key:'AR>10M',    entity:'Advance Request', threshold:'> MK 10M',    route:['HoP','FM','ED','Board']},
+  {key:'PV<1M',     entity:'Payment Voucher', threshold:'< MK 1M',     route:['GFO','FM']},
+  {key:'PV1-5M',    entity:'Payment Voucher', threshold:'MK 1M – 5M',  route:['GFO','FM','ED']},
+  {key:'PV>5M',     entity:'Payment Voucher', threshold:'> MK 5M',     route:['GFO','FM','ED']},
+  {key:'PR<3M',     entity:'Procurement',     threshold:'< MK 3M',     route:['HoP','PRC']},
+  {key:'PR>3M',     entity:'Procurement',     threshold:'> MK 3M',     route:['HoP','FM','PRC']},
+];
+
+function render(){
+  document.getElementById('app').innerHTML=
+    UI.sidebar({userId:ME,label:'Finance Manager · Automation',cls:'fm'},VIEWS,v,'Tier 4 · Workflow automation')+
+    `<div class="main">${UI.topbar({userId:ME},['Automation', (VIEWS.find(x=>x.id===v)||{}).label],'IMP')}<div class="page">
+      <div class="tabs">${VIEWS.map(x=>`<button data-tab="${x.id}" class="${v===x.id?'active':''}">${x.label}</button>`).join('')}</div>
+      <div class="pane ${v==='bulk'?'active':''}">${paneBulk()}</div>
+      <div class="pane ${v==='rec'?'active':''}">${paneRec()}</div>
+      <div class="pane ${v==='ver'?'active':''}">${paneVer()}</div>
+      <div class="pane ${v==='sim'?'active':''}">${paneSim()}</div>
+    </div></div>`;
+  UI.bindNav(id=>{v=id;SEL.clear();render();});
+  bindLocal();
+}
+
+/* ---------------- BULK ACTIONS ---------------- */
+function paneBulk(){
+  const queue=MACRO.list('pvs', p=>p.stage==='FM Approved'||p.stage==='GFO Reviewed'||p.stage==='ED Approved');
+  const total=queue.reduce((s,p)=>s+(SEL.has(p.id)?p.net:0),0);
+  return `<div class="page-head"><h1 class="page-title">Bulk actions · Voucher queue</h1>
+    <div class="actions"><button class="btn">Export selected</button><button class="btn">Saved filters</button></div></div>
+  <p class="page-sub" style="margin-bottom:14px">Multi-select on any queue lets you approve, return, or reassign in batch. Each item still flows through its own state machine — bulk simply applies one action across many. Audit log records each transition individually.</p>
+
+  ${SEL.size?`<div class="bulk-bar">
+    <b>${SEL.size} selected</b>
+    <span style="opacity:.85">· total MK ${total.toLocaleString()}</span>
+    <span style="flex:1"></span>
+    <button class="btn" data-bulk="approve">Approve all</button>
+    <button class="btn" data-bulk="return">Return all…</button>
+    <button class="btn" data-bulk="reassign">Reassign…</button>
+    <button class="btn" data-bulk="clear">Clear selection</button>
+  </div>`:''}
+
+  <div class="card">
+    <div class="qrow head">
+      <div><input type="checkbox" id="selAll" ${SEL.size===queue.length&&queue.length?'checked':''}/></div>
+      <div>Voucher</div>
+      <div>Description</div>
+      <div>DIP / Project</div>
+      <div class="num" style="text-align:right">Net (MK)</div>
+      <div>Stage</div>
+      <div>Vendor</div>
+    </div>
+    ${queue.map(p=>{
+      const proj=MACRO.project(p.proj);
+      return `<div class="qrow ${SEL.has(p.id)?'sel':''}">
+        <div><input type="checkbox" data-pv="${p.id}" ${SEL.has(p.id)?'checked':''}/></div>
+        <div class="ref mono">${p.id}</div>
+        <div>${p.title}</div>
+        <div><span class="ref mono small">${p.dip}</span><div class="muted small">${proj?proj.code:p.proj}</div></div>
+        <div class="num" style="text-align:right;font-family:'JetBrains Mono',monospace">${p.net.toLocaleString()}</div>
+        <div>${UI.pill(p.stage,'amber')}</div>
+        <div class="muted small">${p.payee}</div>
+      </div>`;
+    }).join('')}
+  </div>
+
+  <p class="muted small" style="margin-top:14px">💡 Try selecting 2–3 vouchers and clicking <b>Approve all</b> — each transitions independently, and the audit log records one entry per voucher.</p>`;
+}
+
+/* ---------------- RECURRING ---------------- */
+function paneRec(){
+  const totalMonthly=RECURRING.filter(r=>r.on&&r.freq==='Monthly').reduce((s,r)=>s+r.amount,0);
+  const totalAll=RECURRING.filter(r=>r.on).reduce((s,r)=>s+r.amount,0);
+  return `<div class="page-head"><h1 class="page-title">Recurring transactions</h1>
+    <div class="actions"><button class="btn">Calendar view</button><button class="btn primary">+ New schedule</button></div></div>
+  <p class="page-sub" style="margin-bottom:14px">Schedules that auto-generate vouchers on their next run date. Approval still flows through normal route; system only drafts and pre-fills. Pause anything not yet authorised — paused items don't generate.</p>
+
+  <div class="kpis">
+    <div class="kpi blue"><div class="l">Active schedules</div><div class="v">${RECURRING.filter(r=>r.on).length}</div><div class="s">of ${RECURRING.length} configured</div></div>
+    <div class="kpi green"><div class="l">Monthly run total</div><div class="v">MK ${(totalMonthly/1e6).toFixed(2)}M</div><div class="s">drafted on the 1st</div></div>
+    <div class="kpi"><div class="l">All-frequency YTD</div><div class="v">MK ${(totalAll/1e6).toFixed(2)}M</div><div class="s">commit + spent</div></div>
+    <div class="kpi amber"><div class="l">Paused</div><div class="v">${RECURRING.filter(r=>!r.on).length}</div><div class="s">no auto-generation</div></div>
+  </div>
+
+  <div class="card">
+    <div class="rec-row head"><div>Schedule</div><div>Description · DIP</div><div>Payees</div><div class="num">Amount (MK)</div><div>Next run</div><div>Status</div><div></div></div>
+    ${RECURRING.map(r=>{const dip=MACRO.dip(r.dip)||{};return `<div class="rec-row">
+      <div class="ref mono">${r.id}</div>
+      <div class="nm"><b>${r.name}</b><small>${dip.label||'—'} · <span class="mono">${r.dip}</span> · ${r.freq} · ${r.type}</small></div>
+      <div>${r.payeeCount}</div>
+      <div class="num" style="font-family:'JetBrains Mono',monospace">${r.amount.toLocaleString()}</div>
+      <div class="muted small">${MACRO.fmt.full(r.nextRun)}</div>
+      <div><span class="switch ${r.on?'on':''}" data-rec="${r.id}"><i></i>${r.on?'Active':'Paused'}</span></div>
+      <div><button class="btn sm">Run now</button></div>
+    </div>`;}).join('')}
+  </div>
+
+  <div class="card" style="margin-top:14px"><div class="card-h"><h3>Upcoming auto-generations · next 14 days</h3></div><div class="card-b">
+    <ol class="atl">
+      <li class="atl-row blue"><span class="atl-dot"></span><div class="atl-body"><div class="atl-t"><b>1 June 2026 · 02:00</b><span class="atl-who">3 schedules will draft</span></div><div class="atl-note">CHW stipends · HQ rent · Internet — total 8 vouchers, MK 14.28M</div></div></li>
+      <li class="atl-row blue"><span class="atl-dot"></span><div class="atl-body"><div class="atl-t"><b>5 June 2026 · 02:00</b><span class="atl-who">1 schedule</span></div><div class="atl-note">REC-004 Internet & data · MK 480K</div></div></li>
+      <li class="atl-row blue"><span class="atl-dot"></span><div class="atl-body"><div class="atl-t"><b>15 June 2026 · 02:00</b><span class="atl-who">1 schedule</span></div><div class="atl-note">REC-003 Mentor stipends · MK 2.24M</div></div></li>
+    </ol>
+  </div></div>`;
+}
+
+/* ---------------- VERSIONS ---------------- */
+function paneVer(){
+  return `<div class="page-head"><h1 class="page-title">Document versions · PV-2026-1242</h1>
+    <div class="actions"><button class="btn">Open voucher</button><button class="btn">Export change log</button></div></div>
+  <p class="page-sub" style="margin-bottom:14px">Every Voucher Bundle revision is archived. Click any version to compare against the next; rolling back requires FM authorisation. Versioning is enabled for AR, PV, PR, and SOW documents.</p>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="ver-row head"><div>Version</div><div>Change summary</div><div>By</div><div>When</div><div>Status</div><div></div></div>
+    ${VERSIONS.map((x,i)=>{const u=MACRO.user(x.who);return `<div class="ver-row">
+      <div><span class="pill ${i===0?'green':'gray'}">${x.v}</span></div>
+      <div>${x.changes}</div>
+      <div>${u?u.name.split(' ').map(n=>n[0]).join(''):'—'} · ${u?u.role:''}</div>
+      <div class="muted small">${MACRO.fmt.full(x.at)}</div>
+      <div>${UI.pill(x.status,i===0?'green':i===1?'blue':'red')}</div>
+      <div><button class="btn sm">View</button>${i!==0?'<button class="btn sm" style="margin-left:6px">Rollback</button>':''}</div>
+    </div>`;}).join('')}
+  </div>
+
+  <div class="card"><div class="card-h"><h3>Diff · v1 → v2</h3>
+    <span class="muted small">Returned-then-resubmitted · TPIN correction</span></div><div class="card-b">
+    <div class="diff">
+      <div class="l"><h4>v1 · 3 May 2026 · Returned by GFO</h4>
+        <div>vendor.tpin: <span class="rem">21048372</span></div>
+        <div>vendor.name: Lakeshore Lodge</div>
+        <div>net_amount: 2,640,000</div>
+        <div>wht_5pct: <span class="rem">132,000</span></div>
+        <div>gross_amount: <span class="rem">2,772,000</span></div>
+        <div>routing_note: <span class="rem">"—"</span></div>
+        <div style="margin-top:14px;padding-top:10px;border-top:1px dashed #cbd2dc"><b>Attachments</b></div>
+        <div>• Activity report.pdf</div>
+        <div>• Attendance scans (12).pdf</div>
+        <div>• <span class="rem">Vendor TPIN cert · MISSING</span></div>
+      </div>
+      <div class="r"><h4>v2 · 5 May 2026 · Resubmitted</h4>
+        <div>vendor.tpin: <span class="add">31472896</span> ✓ verified</div>
+        <div>vendor.name: Lakeshore Lodge</div>
+        <div>net_amount: 2,640,000</div>
+        <div>wht_15pct: <span class="add">396,000</span></div>
+        <div>gross_amount: <span class="add">3,036,000</span></div>
+        <div>routing_note: <span class="add">"WHT recalculated at 15% per resident-supplier rule"</span></div>
+        <div style="margin-top:14px;padding-top:10px;border-top:1px dashed #cbd2dc"><b>Attachments</b></div>
+        <div>• Activity report.pdf</div>
+        <div>• Attendance scans (12).pdf</div>
+        <div>• <span class="add">Vendor TPIN certificate.pdf</span></div>
+      </div>
+    </div>
+    <p class="muted small" style="margin-top:12px;text-align:right">Diff generated from snapshot hashes · cryptographic chain verified ✓</p>
+  </div></div>`;
+}
+
+/* ---------------- SIMULATOR ---------------- */
+function paneSim(){
+  // Calculate impact
+  const ars=MACRO.list('ars');
+  const pvs=MACRO.list('pvs');
+
+  let baseAvg=4.2; // base avg approval days
+  let baseAuto=0;
+  let baseLoad={'U-HOP':12,'U-FM':18,'U-GFO':14,'U-ED':9};
+
+  let projAvg=baseAvg, projAuto=baseAuto, projLoad={...baseLoad};
+  let summary='';
+
+  if (SIM.scenario==='auto-low'){
+    // Auto-approve PV < 500K
+    const auto=pvs.filter(p=>p.net<500_000).length;
+    projAuto=Math.round(auto/pvs.length*100);
+    projAvg=2.8;
+    projLoad={'U-HOP':12,'U-FM':14,'U-GFO':9,'U-ED':9};
+    summary='Auto-approve any PV under MK 500K. GFO load drops 36%; FM load drops 22%.';
+  } else if (SIM.scenario==='ed-skip'){
+    projAvg=3.1;
+    projLoad={'U-HOP':12,'U-FM':22,'U-GFO':14,'U-ED':4};
+    summary='Skip ED on AR < MK 2M. ED queue drops 56%; FM queue grows 22%.';
+  } else if (SIM.scenario==='dual-approve'){
+    projAvg=5.6;
+    projLoad={'U-HOP':12,'U-FM':18,'U-GFO':14,'U-ED':9};
+    summary='Require dual signature on PV > MK 5M. Cycle time grows 33%; controls strengthen.';
+  } else if (SIM.scenario==='reassign'){
+    projAvg=3.7;
+    projLoad={'U-HOP':16,'U-FM':14,'U-GFO':14,'U-ED':9};
+    summary='Re-route low-value AR (< MK 1M) directly to HoP without FM. FM load drops 22%; HoP load grows 33%.';
+  }
+
+  return `<div class="page-head"><h1 class="page-title">Workflow simulator</h1>
+    <div class="actions"><button class="btn">Reset</button><button class="btn primary" data-act="commit-sim">Commit changes</button></div></div>
+  <p class="page-sub" style="margin-bottom:14px">Test approval-matrix changes against the last 90 days of real submissions before activating. Nothing changes in production until you click <b>Commit</b>.</p>
+
+  <div class="grid-3" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">
+    ${[
+      {id:'auto-low', t:'Auto-approve micro PVs', d:'Anything &lt; MK 500K bypasses GFO and routes straight to FM with auto-approve.'},
+      {id:'ed-skip',  t:'Skip ED for low-value AR', d:'AR &lt; MK 2M completes at FM level, ED out of loop.'},
+      {id:'dual-approve', t:'Dual sign-off on big PVs', d:'PV &gt; MK 5M requires 2-of-3 ED+FM+Board signatures.'},
+      {id:'reassign', t:'Re-route low AR to HoP', d:'AR &lt; MK 1M skips FM; HoP becomes terminal approver.'},
+    ].map(s=>`<div class="scenario-card ${SIM.scenario===s.id?'on':''}" data-sim="${s.id}">
+      <h4>${s.t}</h4><p>${s.d}</p>
+      <div style="margin-top:auto">${SIM.scenario===s.id?UI.pill('Active','blue'):UI.pill('Try','gray')}</div>
+    </div>`).join('')}
+  </div>
+
+  ${SIM.scenario?`<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Projected impact (90-day backtest)</h3>
+    <span class="muted small">${summary}</span></div><div class="card-b">
+    <div class="impact-grid">
+      <div class="impact"><div class="l">Avg cycle time</div><div class="v">${projAvg.toFixed(1)} d</div><div class="delta ${projAvg<baseAvg?'down':'up'}">${projAvg<baseAvg?'−':'+'}${Math.abs(projAvg-baseAvg).toFixed(1)} d vs current</div></div>
+      <div class="impact"><div class="l">% auto-approved</div><div class="v">${projAuto}%</div><div class="delta ${projAuto>baseAuto?'down':'up'}">${projAuto>baseAuto?'+':''}${projAuto-baseAuto} pts</div></div>
+      <div class="impact"><div class="l">FM queue depth</div><div class="v">${projLoad['U-FM']}</div><div class="delta ${projLoad['U-FM']<baseLoad['U-FM']?'down':'up'}">${projLoad['U-FM']<baseLoad['U-FM']?'−':'+'}${Math.abs(projLoad['U-FM']-baseLoad['U-FM'])} items</div></div>
+      <div class="impact"><div class="l">ED queue depth</div><div class="v">${projLoad['U-ED']}</div><div class="delta ${projLoad['U-ED']<baseLoad['U-ED']?'down':'up'}">${projLoad['U-ED']<baseLoad['U-ED']?'−':'+'}${Math.abs(projLoad['U-ED']-baseLoad['U-ED'])} items</div></div>
+    </div>
+  </div></div>`:''}
+
+  <div class="card"><div class="card-h"><h3>Approval matrix · current vs proposed</h3></div>
+    <table class="matrix"><thead><tr><th>Entity</th><th>Threshold</th><th>Current route</th><th>Proposed route</th></tr></thead><tbody>
+    ${MATRIX_BASE.map(m=>{
+      let proposed=m.route;let changed=false;
+      if (SIM.scenario==='auto-low'&&m.key==='PV<1M'){proposed=['(auto)','FM'];changed=true;}
+      if (SIM.scenario==='ed-skip'&&m.key==='AR<2M'){proposed=['HoP','FM'];changed=false;}
+      if (SIM.scenario==='ed-skip'&&m.key==='AR2-10M'){proposed=['HoP','FM'];changed=true;}
+      if (SIM.scenario==='dual-approve'&&m.key==='PV>5M'){proposed=['GFO','FM','ED','+Board'];changed=true;}
+      if (SIM.scenario==='reassign'&&m.key==='AR<2M'){proposed=['HoP'];changed=true;}
+      return `<tr class="${changed?'changed':''}">
+        <td>${m.entity}</td><td>${m.threshold}</td>
+        <td>${m.route.join(' → ')}</td>
+        <td>${proposed.join(' → ')}${changed?' ✦':''}</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>
+  </div>`;
+}
+
+function bindLocal(){
+  document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{v=b.dataset.tab;SEL.clear();render();}));
+  // Bulk
+  document.querySelectorAll('input[data-pv]').forEach(c=>c.addEventListener('change',()=>{const id=c.dataset.pv;if(c.checked)SEL.add(id);else SEL.delete(id);render();}));
+  const selA=document.getElementById('selAll');
+  if (selA) selA.addEventListener('change',()=>{
+    const ids=[...document.querySelectorAll('input[data-pv]')].map(x=>x.dataset.pv);
+    if (selA.checked) ids.forEach(i=>SEL.add(i)); else SEL.clear();
+    render();
+  });
+  document.querySelectorAll('[data-bulk]').forEach(b=>b.addEventListener('click',async()=>{
+    const act=b.dataset.bulk;
+    if (act==='clear'){SEL.clear();render();return;}
+    if (act==='approve'){
+      const r=await UI.confirm({title:`Approve ${SEL.size} vouchers`,body:'Each transitions independently. Audit log records one entry per voucher.',ok:'Approve all',tone:'primary'});
+      if (!r.ok) return;
+      [...SEL].forEach(id=>{MACRO.audit('PV',id,'fm-approve',ME,'Bulk approval');MACRO.update('pvs',id,{stage:'ED Approved'});MACRO.notify('U-ED',`${id} bulk-approved by FM`,id);});
+      UI.toast(`${SEL.size} vouchers approved`,'green');SEL.clear();render();
+    }
+    if (act==='return'){
+      const r=await UI.confirm({title:`Return ${SEL.size} vouchers`,body:'All selected vouchers return to PO.',note:'Reason (applied to all)',ok:'Return all',tone:'red'});
+      if (!r.ok) return;
+      [...SEL].forEach(id=>{MACRO.audit('PV',id,'return',ME,r.note||'Bulk return');MACRO.update('pvs',id,{stage:'Returned',returnedBy:ME,returnReason:r.note});MACRO.notify('U-PO',`${id} returned: ${r.note}`,id);});
+      UI.toast(`${SEL.size} vouchers returned`,'amber');SEL.clear();render();
+    }
+    if (act==='reassign'){UI.toast('Reassign flow not in scope of this simulator','blue');}
+  }));
+  // Recurring
+  document.querySelectorAll('[data-rec]').forEach(s=>s.addEventListener('click',()=>{
+    const id=s.dataset.rec;const r=RECURRING.find(x=>x.id===id);if(!r)return;r.on=!r.on;UI.toast(`${id} ${r.on?'activated':'paused'}`,r.on?'green':'amber');render();
+  }));
+  // Simulator
+  document.querySelectorAll('[data-sim]').forEach(c=>c.addEventListener('click',()=>{SIM.scenario=SIM.scenario===c.dataset.sim?null:c.dataset.sim;render();}));
+  const com=document.querySelector('[data-act="commit-sim"]');
+  if (com) com.addEventListener('click',async()=>{
+    if (!SIM.scenario){UI.toast('Choose a scenario first','amber');return;}
+    const r=await UI.confirm({title:'Commit matrix change',body:'New routing applies to all submissions raised after commit. Existing in-flight items continue under old route.',ok:'Commit',tone:'primary'});
+    if (!r.ok) return;
+    UI.toast('Matrix committed · effective immediately','green');
+    MACRO.audit('SYS','MATRIX',`commit-${SIM.scenario}`,ME,'Approval matrix updated via simulator');
+  });
+}
+MACRO.subscribe(()=>render());
+render();
+</script>
+</body>
+</html>

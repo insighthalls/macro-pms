@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS · Head of Programs</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/macro-styles.css" />
+</head>
+<body>
+<div class="app" id="app"></div>
+<script src="shared/macro-core.js"></script>
+<script src="shared/macro-shell.js"></script>
+<script>
+const ME = 'U-HOP';
+const VIEWS = [
+  {id:'queue',     icon:'inbox', label:'My Queue'},
+  {id:'recommend', icon:'flag',  label:'AR recommendations'},
+  {id:'procure',   icon:'cart',  label:'Procurement requests'},
+  {id:'activities',icon:'list',  label:'Programme activities'},
+  {id:'aps',       icon:'pin',   label:'Action points'},
+  {id:'team',      icon:'users', label:'Field officers'},
+];
+
+function counts(){
+  const arQ = MACRO.list('ars', r => r.stage === 'PO Submitted').length;
+  const prQ = MACRO.list('prs', r => r.stage === 'Submitted').length;
+  const apQ = MACRO.list('aps', r => r.owner === ME && r.stage !== 'Closed').length;
+  return { arQ, prQ, apQ, total: arQ+prQ };
+}
+
+function render(){
+  const c = counts();
+  const items = VIEWS.map(v => Object.assign({}, v,
+    v.id==='recommend' ? {badge: c.arQ||null} :
+    v.id==='procure'   ? {badge: c.prQ||null} :
+    v.id==='aps'       ? {badge: c.apQ||null, badgeQ:true} :
+    v.id==='queue'     ? {badge: c.total||null} : {}
+  ));
+  document.getElementById('app').innerHTML =
+    UI.sidebar({userId:ME, label:'Head of Programs · HQ', cls:'hop'}, items, currentView, 'v4.0 · Sandbox') +
+    `<div class="main">${UI.topbar({}, ['Programmes', label(currentView)], 'IMP')}<div class="page">${pageBody()}</div></div>`;
+  UI.bindNav(id => { currentView = id; render(); });
+  bindActions();
+}
+function label(id){ const v=VIEWS.find(v=>v.id===id); return v?v.label:''; }
+
+let currentView = 'queue';
+
+function pageBody(){
+  if (currentView==='queue')      return viewQueue();
+  if (currentView==='recommend')  return viewRecommend();
+  if (currentView==='procure')    return viewProcure();
+  if (currentView==='activities') return viewActivities();
+  if (currentView==='aps')        return viewAps();
+  if (currentView==='team')       return viewTeam();
+  return '';
+}
+
+function viewQueue(){
+  const ars = MACRO.list('ars', r => r.stage === 'PO Submitted');
+  const prs = MACRO.list('prs', r => r.stage === 'Submitted');
+  const aps = MACRO.list('aps', r => r.owner === ME && r.stage !== 'Closed');
+  const me = MACRO.user(ME);
+  return `
+    <div class="hello">
+      <div class="hello-card red">
+        <div>
+          <h1>Good morning, ${me.name.split(' ')[0]}.</h1>
+          <div class="sub">${ars.length+prs.length} item${ars.length+prs.length===1?'':'s'} need your recommendation across IMPACT KP, LINK RISE & AGYW Plus.</div>
+        </div>
+        <div class="hello-stats">
+          <div class="hs ${ars.length?'warn':'good'}"><div class="v">${ars.length}</div><div class="l">AR recommendations</div></div>
+          <div class="hs ${prs.length?'warn':'good'}"><div class="v">${prs.length}</div><div class="l">PR approvals</div></div>
+          <div class="hs ${aps.length?'alert':'good'}"><div class="v">${aps.length}</div><div class="l">Open action points</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-h"><h3>Needs your action</h3><span class="sub">prioritised by oldest first</span><div class="right"><span class="pill">${ars.length+prs.length} items</span></div></div>
+      <div>
+        ${[...ars.map(r => row('AR', r)), ...prs.map(r => row('PR', r))].join('') || `<div class="empty"><div class="ico">✓</div>You're all caught up — no items waiting on Programmes review.</div>`}
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h"><h3>Active programme activities</h3></div>
+        ${tableActivities()}
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Open action points · me</h3></div>
+        <div>${aps.slice(0,5).map(a => apRow(a)).join('') || `<div class="empty">No open action points.</div>`}</div>
+      </div>
+    </div>
+  `;
+}
+
+function row(kind, r){
+  if (kind==='AR'){
+    const u = MACRO.user(r.requestedBy);
+    return `<div class="ix"><div class="ico">AR</div>
+      <div><div class="t">${r.title}</div>
+        <div class="m"><span class="ref mono">${r.id}</span><span>·</span><span>${u?u.name:r.requestedBy}</span><span>·</span><span class="mono">${r.dip}</span><span>·</span><b>${MACRO.fmt.mwk(r.amount)}</b><span>·</span><span>submitted ${MACRO.fmt.since(r.submitted)}</span></div>
+      </div>
+      <div class="row">
+        <button class="btn sm" data-act="return" data-kind="AR" data-id="${r.id}">Return</button>
+        <button class="actbtn green" data-act="recommend" data-kind="AR" data-id="${r.id}">Recommend</button>
+      </div></div>`;
+  }
+  if (kind==='PR'){
+    return `<div class="ix"><div class="ico" style="background:var(--amber-bg);color:var(--amber)">PR</div>
+      <div><div class="t">${r.desc}</div>
+        <div class="m"><span class="ref mono">${r.id}</span><span>·</span><span class="mono">${r.dip}</span><span>·</span><b>${MACRO.fmt.mwk(r.amount)}</b><span>·</span><span>raised ${MACRO.fmt.since(r.raised)}</span></div>
+      </div>
+      <div class="row">
+        <button class="btn sm" data-act="reject" data-kind="PR" data-id="${r.id}">Reject</button>
+        <button class="actbtn green" data-act="approve" data-kind="PR" data-id="${r.id}">Approve</button>
+      </div></div>`;
+  }
+}
+
+function apRow(a){
+  return `<div class="ix"><div class="ico">AP</div>
+    <div><div class="t">${a.title}</div>
+      <div class="m"><span class="ref mono">${a.id}</span><span>·</span>${UI.pill(a.priority, a.priority==='High'?'red':a.priority==='Medium'?'amber':'gray')}<span>due ${MACRO.fmt.until(a.due)}</span><span>·</span><span>${a.source}</span></div>
+    </div>
+    <button class="actbtn" data-act="ap-resolve" data-id="${a.id}">Mark resolved</button></div>`;
+}
+
+function viewRecommend(){
+  const all = MACRO.list('ars', r => ['PO Submitted','HoP Recommended'].includes(r.stage));
+  return `
+    <div class="page-head"><h1 class="page-title">AR recommendations</h1>
+      <div class="actions"><span class="pill">${all.filter(r=>r.stage==='PO Submitted').length} pending</span><span class="pill green">${all.filter(r=>r.stage==='HoP Recommended').length} forwarded</span></div>
+    </div>
+    <div class="card">
+      <table class="tbl"><thead><tr>
+        <th>AR ref</th><th>Activity</th><th>DIP</th><th>Officer</th><th class="num">Amount</th><th>Submitted</th><th>Stage</th><th></th>
+      </tr></thead><tbody>
+        ${all.map(r => `<tr>
+          <td><span class="ref">${r.id}</span></td>
+          <td>${r.title}</td>
+          <td class="mono">${r.dip}</td>
+          <td>${(MACRO.user(r.requestedBy)||{}).name||r.requestedBy}</td>
+          <td class="num">${MACRO.fmt.mwk(r.amount)}</td>
+          <td class="muted">${MACRO.fmt.since(r.submitted)}</td>
+          <td>${UI.pill(r.stage, MACRO.stageTone('AR',r.stage))}</td>
+          <td>${r.stage==='PO Submitted' ? `<button class="btn sm" data-act="return" data-kind="AR" data-id="${r.id}">Return</button> <button class="btn sm primary" data-act="recommend" data-kind="AR" data-id="${r.id}">Recommend</button>` : `<span class="muted small">forwarded</span>`}</td>
+        </tr>`).join('') || `<tr><td colspan="8" class="empty">No items.</td></tr>`}
+      </tbody></table>
+    </div>`;
+}
+
+function viewProcure(){
+  const all = MACRO.list('prs');
+  return `
+    <div class="page-head"><h1 class="page-title">Procurement requisitions</h1>
+      <div class="actions"><span class="pill">${all.filter(r=>r.stage==='Submitted').length} pending</span></div>
+    </div>
+    <div class="card">
+      <table class="tbl"><thead><tr><th>PR ref</th><th>Description</th><th>DIP</th><th>Officer</th><th class="num">Amount</th><th>Raised</th><th>Stage</th><th></th></tr></thead><tbody>
+        ${all.map(r => `<tr>
+          <td><span class="ref">${r.id}</span></td>
+          <td>${r.desc}</td>
+          <td class="mono">${r.dip}</td>
+          <td>${(MACRO.user(r.requestedBy)||{}).name||r.requestedBy}</td>
+          <td class="num">${MACRO.fmt.mwk(r.amount)}</td>
+          <td class="muted">${MACRO.fmt.since(r.raised)}</td>
+          <td>${UI.pill(r.stage, MACRO.stageTone('PR',r.stage))}</td>
+          <td>${r.stage==='Submitted' ? `<button class="btn sm primary" data-act="approve" data-kind="PR" data-id="${r.id}">Approve</button>` : `<span class="muted small">in pipeline</span>`}</td>
+        </tr>`).join('')}
+      </tbody></table>
+    </div>`;
+}
+
+function tableActivities(){
+  const acts = MACRO.list('activities').slice(0,8);
+  return `<table class="tbl"><thead><tr><th>Activity</th><th>DIP</th><th class="num">Budget</th><th>Stage</th></tr></thead><tbody>
+    ${acts.map(a => `<tr><td><div class="bold">${a.title}</div><div class="muted small mono">${a.id}</div></td>
+      <td class="mono">${a.dip}</td><td class="num">${MACRO.fmt.short(a.budget)}</td>
+      <td>${UI.pill(a.stage, a.stage==='Liquidate'?'amber':a.stage==='Execute'?'blue':'gray')}</td></tr>`).join('')}
+  </tbody></table>`;
+}
+
+function viewActivities(){
+  const acts = MACRO.list('activities');
+  return `<div class="page-head"><h1 class="page-title">Programme activities</h1></div>
+    <div class="kpis">
+      <div class="kpi"><div class="l">Total this period</div><div class="v">${acts.length}</div></div>
+      <div class="kpi blue"><div class="l">In execution</div><div class="v">${acts.filter(a=>a.stage==='Execute').length}</div></div>
+      <div class="kpi amber"><div class="l">Awaiting liquidation</div><div class="v">${acts.filter(a=>a.stage==='Liquidate').length}</div></div>
+      <div class="kpi green"><div class="l">Total budget</div><div class="v">${MACRO.fmt.short(acts.reduce((s,a)=>s+a.budget,0))}</div></div>
+    </div>
+    <div class="card"><table class="tbl">
+      <thead><tr><th>Activity</th><th>DIP</th><th>Officer</th><th class="num">Budget</th><th class="num">Spent</th><th>Stage</th></tr></thead>
+      <tbody>${acts.map(a => `<tr>
+        <td><div class="bold">${a.title}</div><div class="muted small mono">${a.id}</div></td>
+        <td class="mono">${a.dip}</td>
+        <td>${(MACRO.user(a.officer)||{}).name||a.officer}</td>
+        <td class="num">${MACRO.fmt.mwk(a.budget)}</td>
+        <td class="num">${MACRO.fmt.mwk(a.spent)}</td>
+        <td>${UI.pill(a.stage, a.stage==='Liquidate'?'amber':'blue')}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+function viewAps(){
+  const aps = MACRO.list('aps', a => a.owner===ME);
+  return `<div class="page-head"><h1 class="page-title">Action points · me</h1></div>
+    <div class="card"><table class="tbl"><thead><tr><th>Ref</th><th>Title</th><th>Source</th><th>Priority</th><th>Due</th><th>Stage</th><th></th></tr></thead><tbody>
+      ${aps.map(a => `<tr>
+        <td><span class="ref">${a.id}</span></td><td>${a.title}</td><td>${a.source}</td>
+        <td>${UI.pill(a.priority, a.priority==='High'?'red':a.priority==='Medium'?'amber':'gray')}</td>
+        <td>${MACRO.fmt.until(a.due)}</td>
+        <td>${UI.pill(a.stage, MACRO.stageTone('AP',a.stage))}</td>
+        <td>${a.stage==='Closed'?'':`<button class="btn sm" data-act="ap-resolve" data-id="${a.id}">Resolve</button>`}</td>
+      </tr>`).join('') || `<tr><td colspan="7" class="empty">No items.</td></tr>`}
+    </tbody></table></div>`;
+}
+
+function viewTeam(){
+  const officers = MACRO.USERS.filter(u => u.role==='Project Officer' || u.role==='Procurement Officer');
+  return `<div class="page-head"><h1 class="page-title">Field officers</h1></div>
+    <div class="grid-3">${officers.map(u => `
+      <div class="card"><div class="card-b">
+        <div class="row" style="gap:12px">
+          <div class="role-card" style="margin:0;background:var(--blue-50);border-color:var(--blue-100);flex:1"><div class="av">${u.init}</div><div><b style="color:var(--ink)">${u.name}</b><small style="color:var(--ink-3)">${u.role} · ${u.region}</small></div></div>
+        </div>
+        <div class="kvs" style="margin-top:14px">
+          <dt>Email</dt><dd class="mono small">${u.email}</dd>
+          <dt>Active activities</dt><dd>${MACRO.list('activities', a=>a.officer===u.id).length}</dd>
+          <dt>Open ARs</dt><dd>${MACRO.list('ars', r=>r.requestedBy===u.id && !['Liquidated','Rejected'].includes(r.stage)).length}</dd>
+        </div>
+      </div></div>
+    `).join('')}</div>`;
+}
+
+// ---- Actions ----
+function bindActions(){
+  document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', async () => {
+    const act = b.getAttribute('data-act');
+    const kind = b.getAttribute('data-kind');
+    const id = b.getAttribute('data-id');
+    if (act==='recommend'){
+      MACRO.transition('AR','ars',id,'recommend',ME,'Recommended by Head of Programs');
+      MACRO.notify('U-FM', id+' recommended — awaiting FM approval', id);
+      UI.toast(id+' recommended → FM queue','green'); render();
+    } else if (act==='return' && kind==='AR'){
+      const c = await UI.confirm({title:'Return advance request',body:'This will send the AR back to the requesting Project Officer.',note:'Reason for return',ok:'Return',tone:'amber'});
+      if (!c.ok) return;
+      MACRO.transition('AR','ars',id,'return',ME,c.note||'Returned for clarification',{returnedBy:ME, returnReason:c.note||''});
+      const r = MACRO.get('ars', id); MACRO.notify(r.requestedBy, id+' returned by HoP', id);
+      UI.toast(id+' returned to PO','amber'); render();
+    } else if (act==='approve' && kind==='PR'){
+      MACRO.transition('PR','prs',id,'approve',ME,'Approved by HoP');
+      MACRO.notify('U-PRC', id+' approved — issue RFQ', id);
+      UI.toast(id+' approved → Procurement','green'); render();
+    } else if (act==='ap-resolve'){
+      MACRO.update('aps', id, {stage:'Resolved'});
+      MACRO.audit('AP', id, 'resolve', ME, 'Resolved');
+      UI.toast(id+' resolved','green'); render();
+    }
+  }));
+}
+
+MACRO.subscribe(() => render());
+render();
+</script>
+</body>
+</html>

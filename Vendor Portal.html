@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS · Vendor Portal</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/macro-styles.css" />
+</head>
+<body>
+<div class="app" id="app"></div>
+<script src="shared/macro-core.js"></script>
+<script src="shared/macro-shell.js"></script>
+<script>
+const ME='U-VND';
+const VENDOR_ID='V-001';
+const VIEWS=[
+  {id:'home',     icon:'home',  label:'My dashboard'},
+  {id:'invoices', icon:'file',  label:'My invoices'},
+  {id:'submit',   icon:'plus',  label:'Submit invoice'},
+  {id:'lpos',     icon:'truck', label:'My LPOs'},
+  {id:'profile',  icon:'cog',   label:'Vendor profile'},
+];
+let currentView='home';
+
+function myInvoices(){ return MACRO.list('pvs', r=>r.vendorId===VENDOR_ID); }
+function counts(){
+  const inv=myInvoices();
+  return {open:inv.filter(r=>!['Posted','Paid'].includes(r.stage)).length, paid:inv.filter(r=>r.stage==='Posted'||r.stage==='Paid').length};
+}
+
+function render(){
+  const c=counts();
+  const items=VIEWS.map(v=>Object.assign({},v, v.id==='invoices'?{badge:c.open||null}:{}));
+  document.getElementById('app').innerHTML=
+    UI.sidebar({userId:ME,label:'Vendor · Sunbird Stationers',cls:'vnd'},items,currentView,'v4.0 · Sandbox')+
+    `<div class="main">${UI.topbar({},['Vendor portal',label(currentView)],'IMP')}<div class="page">${pageBody()}</div></div>`;
+  UI.bindNav(id=>{currentView=id;render();});
+  bindActions();
+}
+function label(id){return (VIEWS.find(v=>v.id===id)||{}).label||'';}
+function pageBody(){return ({home:viewHome,invoices:viewInvoices,submit:viewSubmit,lpos:viewLpos,profile:viewProfile}[currentView]||(()=>'')) ();}
+
+function viewHome(){
+  const v=MACRO.list('vendors',x=>x.id===VENDOR_ID)[0]||{};
+  const inv=myInvoices();
+  const totalPaid=inv.filter(r=>r.stage==='Paid'||r.stage==='Posted').reduce((s,r)=>s+r.gross,0);
+  const totalOut =inv.filter(r=>!['Paid','Posted'].includes(r.stage)).reduce((s,r)=>s+r.gross,0);
+  return `
+    <div class="hello"><div class="hello-card green">
+      <div><h1>Welcome, ${v.name||'Vendor'}.</h1>
+        <div class="sub">${inv.length} invoice${inv.length===1?'':'s'} on record · MK ${(totalPaid/1e6).toFixed(2)}M paid this period.</div></div>
+      <div class="hello-stats">
+        <div class="hs"><div class="v">${inv.length}</div><div class="l">Invoices</div></div>
+        <div class="hs ${counts().open?'warn':'good'}"><div class="v">${counts().open}</div><div class="l">In review</div></div>
+        <div class="hs good"><div class="v">${MACRO.fmt.short(totalPaid)}</div><div class="l">Paid YTD</div></div>
+      </div></div></div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="l">Outstanding</div><div class="v">${MACRO.fmt.short(totalOut)}</div></div>
+      <div class="kpi green"><div class="l">Paid YTD</div><div class="v">${MACRO.fmt.short(totalPaid)}</div></div>
+      <div class="kpi"><div class="l">Avg payment cycle</div><div class="v">11d</div></div>
+      <div class="kpi blue"><div class="l">Payment terms</div><div class="v">${v.terms||'Net 30'}</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>Latest invoices</h3><div class="right"><button class="btn primary" data-act="goto-submit">+ Submit invoice</button></div></div>
+      <table class="tbl"><thead><tr><th>PV ref</th><th>Description</th><th class="num">Gross</th><th>Submitted</th><th>Stage</th><th>Action</th></tr></thead><tbody>
+        ${inv.slice(0,8).map(r=>`<tr>
+          <td><span class="ref">${r.id}</span></td><td>${r.title}</td>
+          <td class="num">${MACRO.fmt.mwk(r.gross)}</td>
+          <td class="muted">${MACRO.fmt.since(r.submitted)}</td>
+          <td>${UI.pill(stageLabel(r.stage),vendorTone(r.stage))}</td>
+          <td><span class="muted small">${vendorAction(r.stage)}</span></td>
+        </tr>`).join('')||`<tr><td colspan="6" class="empty">No invoices yet — submit your first.</td></tr>`}
+      </tbody></table>
+    </div>`;
+}
+
+function stageLabel(s){
+  // Translate internal workflow into vendor-friendly labels
+  if (['PO Submitted','GFO Reviewed','FM Approved','ED Approved'].includes(s)) return 'In review';
+  if (s==='Paid'||s==='Posted') return 'Paid';
+  if (s==='Returned') return 'Action needed';
+  if (s==='Rejected') return 'Rejected';
+  return s;
+}
+function vendorTone(s){
+  if (s==='Paid'||s==='Posted') return 'green';
+  if (s==='Returned'||s==='Rejected') return 'red';
+  return 'blue';
+}
+function vendorAction(s){
+  if (s==='Returned') return 'Re-submit with corrections';
+  if (s==='Paid') return 'Funds released';
+  if (s==='Posted') return 'Payment confirmed';
+  if (s==='Rejected') return 'See rejection note';
+  return 'No action needed';
+}
+
+function viewInvoices(){
+  const inv=myInvoices();
+  return `<div class="page-head"><h1 class="page-title">My invoices</h1>
+    <div class="actions"><button class="btn primary" data-act="goto-submit">+ Submit invoice</button></div></div>
+    <div class="card"><table class="tbl"><thead><tr><th>PV ref</th><th>Description</th><th>DIP</th><th class="num">Gross</th><th class="num">WHT</th><th class="num">Net</th><th>Stage</th><th>Submitted</th></tr></thead><tbody>
+      ${inv.map(r=>`<tr><td><span class="ref">${r.id}</span></td><td>${r.title}${r.returnReason?`<div class="muted small" style="color:var(--red)">↳ ${r.returnReason}</div>`:''}</td>
+        <td class="mono">${r.dip}</td><td class="num">${MACRO.fmt.mwk(r.gross)}</td>
+        <td class="num">${MACRO.fmt.mwk(r.wht)}</td><td class="num">${MACRO.fmt.mwk(r.net)}</td>
+        <td>${UI.pill(stageLabel(r.stage),vendorTone(r.stage))}</td>
+        <td class="muted">${MACRO.fmt.since(r.submitted)}</td></tr>`).join('')||`<tr><td colspan="8" class="empty">No invoices yet.</td></tr>`}
+    </tbody></table></div>`;
+}
+
+function viewSubmit(){
+  return `<div class="page-head"><h1 class="page-title">Submit invoice</h1></div>
+    <div class="card"><div class="card-b">
+      <div class="fld-row">
+        <div class="fld"><label>Invoice / description</label><input id="i-t" placeholder="e.g. Workshop printing · Mzuzu"/></div>
+        <div class="fld"><label>DIP line</label><select id="i-d">${MACRO.DIP.map(d=>`<option value="${d.code}">${d.code} · ${d.label}</option>`).join('')}</select></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>Gross amount (MK)</label><input id="i-g" type="number" placeholder="e.g. 1240000"/></div>
+        <div class="fld"><label>Withholding tax (MK)</label><input id="i-w" type="number" placeholder="auto-computed"/></div>
+      </div>
+      <div class="fld"><label>Linked LPO (optional)</label><input id="i-lpo" placeholder="e.g. LPO-0052"/></div>
+      <div class="fld"><label>Attachments</label><div class="muted small">[ PDF · invoice.pdf ]   [ PDF · delivery-note.pdf ]   <a href="#" class="ghost">+ Add file</a></div></div>
+      <div class="row" style="margin-top:14px;justify-content:flex-end;gap:8px">
+        <button class="btn">Save draft</button>
+        <button class="btn primary" data-act="i-submit">Submit to MACRO</button>
+      </div>
+      <div class="muted small" style="margin-top:8px">Once submitted, the Project Officer at MACRO assigns it to a payment voucher and routes through GFO → FM → ED → Pay. You'll see status updates here.</div>
+    </div></div>`;
+}
+
+function viewLpos(){
+  return `<div class="page-head"><h1 class="page-title">My LPOs</h1></div>
+    <div class="card"><div class="empty"><div class="ico">📦</div>No active LPOs from MACRO at this time.<br/><span class="muted small">When MACRO Procurement issues an LPO to Sunbird Stationers, it will appear here with delivery instructions.</span></div></div>`;
+}
+
+function viewProfile(){
+  const v=MACRO.list('vendors',x=>x.id===VENDOR_ID)[0]||{};
+  return `<div class="page-head"><h1 class="page-title">Vendor profile</h1></div>
+    <div class="grid-2e">
+      <div class="card"><div class="card-h"><h3>Business details</h3></div><div class="card-b">
+        <div class="kvs">
+          <dt>Vendor name</dt><dd>${v.name||'—'}</dd>
+          <dt>TPIN</dt><dd class="mono">${v.tpin||'—'}</dd>
+          <dt>Category</dt><dd>${v.cat||'—'}</dd>
+          <dt>Status</dt><dd>${UI.pill(v.status||'Active', v.status==='Active'?'green':'amber')}</dd>
+          <dt>Payment terms</dt><dd>${v.terms||'Net 30'}</dd>
+          <dt>Contact email</dt><dd class="mono small">${v.contact||'—'}</dd>
+          <dt>Paid YTD</dt><dd class="mono">${MACRO.fmt.mwk(v.paid_ytd||0)}</dd>
+        </div>
+      </div></div>
+      <div class="card"><div class="card-h"><h3>Compliance documents</h3></div><div class="card-b">
+        <div class="kvs">
+          <dt>TPIN cert</dt><dd>${UI.pill('On file','green')} · uploaded 12 Mar 2025</dd>
+          <dt>VAT cert</dt><dd>${UI.pill('On file','green')} · uploaded 12 Mar 2025</dd>
+          <dt>Trading licence</dt><dd>${UI.pill('Renewed','green')} · expires 31 Dec 2026</dd>
+          <dt>Bank confirmation</dt><dd>${UI.pill('On file','green')}</dd>
+        </div>
+        <div class="row" style="margin-top:14px"><button class="btn">Upload document</button></div>
+      </div></div>
+    </div>`;
+}
+
+function bindActions(){
+  document.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>{
+    const act=b.getAttribute('data-act');
+    if (act==='goto-submit'){currentView='submit';render();}
+    else if (act==='i-submit'){
+      const t=document.getElementById('i-t').value||'New invoice';
+      const d=document.getElementById('i-d').value;
+      const g=parseFloat(document.getElementById('i-g').value)||0;
+      const w=parseFloat(document.getElementById('i-w').value)||Math.round(g*0.1);
+      const seq=((MACRO.state().seq||{}).pv||1248)+1;
+      const id='PV-2026-'+String(seq).padStart(4,'0');
+      MACRO.create('pvs',{id,proj:'IMP',dip:d,payee:'Sunbird Stationers',vendorId:VENDOR_ID,gross:g,wht:w,net:g-w,stage:'PO Submitted',submitted:new Date().toISOString().slice(0,10),title:t});
+      MACRO.state().seq.pv=seq; MACRO.save();
+      MACRO.audit('PV',id,'submit','U-VND','Submitted by vendor');
+      MACRO.notify('U-GFO', id+' new vendor invoice from Sunbird Stationers', id);
+      UI.toast('Invoice '+id+' submitted to MACRO','green');
+      currentView='invoices'; render();
+    }
+  }));
+}
+MACRO.subscribe(()=>render());
+render();
+</script>
+</body>
+</html>

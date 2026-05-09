@@ -1,0 +1,787 @@
+openapi: 3.0.3
+info:
+  title: MACRO PMS API
+  description: |
+    Project Management System for MACRO. Backs the role-based prototype:
+    Project Officer, Head of Programs, Grant Finance Officer, Finance Manager,
+    Executive Director, Procurement Officer, Administrator/M&E, and Vendor portal.
+
+    All money fields are MWK minor units (kwacha × 100) as int64.
+    All timestamps are RFC 3339 UTC; clients render in Africa/Blantyre.
+    Auth: Bearer JWT. See auth.md for the RBAC matrix.
+  version: 1.0.0
+servers:
+  - url: https://api.macro-pms.org/v1
+    description: Production
+  - url: http://localhost:4000/v1
+    description: Local dev
+
+security:
+  - bearerAuth: []
+
+tags:
+  - { name: Auth }
+  - { name: Projects }
+  - { name: DipLines }
+  - { name: Activities }
+  - { name: AdvanceRequests }
+  - { name: PaymentVouchers }
+  - { name: ProcurementRequisitions }
+  - { name: GRNs }
+  - { name: Vendors }
+  - { name: ActionPoints }
+  - { name: BudgetRevisions }
+  - { name: EftBatches }
+  - { name: Notifications }
+  - { name: Reports }
+  - { name: VendorPortal }
+  - { name: Admin }
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Email/password login
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/LoginReq' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/LoginRes' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Rotate access token
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [refreshToken], properties: { refreshToken: { type: string } } } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/LoginRes' } } } }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke refresh token
+      responses: { '204': { description: No content } }
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Current user
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } } }
+
+  /projects:
+    get:
+      tags: [Projects]
+      summary: List projects user has access to
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Project' } } } } } }
+  /projects/{id}:
+    get:
+      tags: [Projects]
+      parameters: [{ $ref: '#/components/parameters/PathId' }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Project' } } } } }
+
+  /dip-lines:
+    get:
+      tags: [DipLines]
+      parameters:
+        - in: query
+          name: projId
+          schema: { type: string }
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/DipLine' } } } } } }
+
+  /activities:
+    get:
+      tags: [Activities]
+      parameters:
+        - { in: query, name: projId, schema: { type: string } }
+        - { in: query, name: stage, schema: { $ref: '#/components/schemas/ActStage' } }
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Activity' } } } } } }
+    post:
+      tags: [Activities]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ActivityCreate' } } } }
+      responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Activity' } } } } }
+  /activities/{id}:
+    get:
+      tags: [Activities]
+      parameters: [{ $ref: '#/components/parameters/PathId' }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Activity' } } } } }
+
+  /advance-requests:
+    get:
+      tags: [AdvanceRequests]
+      parameters:
+        - { in: query, name: projId, schema: { type: string } }
+        - { in: query, name: stage, schema: { $ref: '#/components/schemas/ArStage' } }
+        - { in: query, name: requestedBy, schema: { type: string } }
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/AdvanceRequest' } } } } } }
+    post:
+      tags: [AdvanceRequests]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AdvanceRequestCreate' } } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/AdvanceRequest' } } } }
+        '422': { $ref: '#/components/responses/RuleViolation' }
+  /advance-requests/{id}:
+    get: { tags: [AdvanceRequests], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdvanceRequest' } } } } } }
+  /advance-requests/{id}/recommend:
+    post: { tags: [AdvanceRequests], parameters: [{ $ref: '#/components/parameters/PathId' }], requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/NoteBody' } } } }, responses: { '200': { $ref: '#/components/responses/StageChanged' }, '409': { $ref: '#/components/responses/InvalidTransition' } } }
+  /advance-requests/{id}/fm-approve:
+    post: { tags: [AdvanceRequests], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /advance-requests/{id}/ed-approve:
+    post: { tags: [AdvanceRequests], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /advance-requests/{id}/disburse:
+    post: { tags: [AdvanceRequests], parameters: [{ $ref: '#/components/parameters/PathId' }], requestBody: { required: true, content: { application/json: { schema: { type: object, required: [eftRef, disbursedOn], properties: { eftRef: { type: string }, disbursedOn: { type: string, format: date } } } } } }, responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /advance-requests/{id}/return:
+    post: { tags: [AdvanceRequests], parameters: [{ $ref: '#/components/parameters/PathId' }], requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/NoteBody' } } } }, responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /advance-requests/{id}/submit-liquidation:
+    post: { tags: [AdvanceRequests], parameters: [{ $ref: '#/components/parameters/PathId' }], requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LiquidationBody' } } } }, responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /advance-requests/{id}/accept-liquidation:
+    post: { tags: [AdvanceRequests], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+
+  /payment-vouchers:
+    get:
+      tags: [PaymentVouchers]
+      parameters:
+        - { in: query, name: projId, schema: { type: string } }
+        - { in: query, name: stage, schema: { $ref: '#/components/schemas/PvStage' } }
+        - { in: query, name: vendorId, schema: { type: string } }
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/PaymentVoucher' } } } } } }
+    post:
+      tags: [PaymentVouchers]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PaymentVoucherCreate' } } } }
+      responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/PaymentVoucher' } } } } }
+  /payment-vouchers/{id}:
+    get: { tags: [PaymentVouchers], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PaymentVoucher' } } } } } }
+  /payment-vouchers/{id}/gfo-review:
+    post: { tags: [PaymentVouchers], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /payment-vouchers/{id}/fm-approve:
+    post: { tags: [PaymentVouchers], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /payment-vouchers/{id}/ed-approve:
+    post: { tags: [PaymentVouchers], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /payment-vouchers/{id}/post:
+    post: { tags: [PaymentVouchers], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /payment-vouchers/{id}/return:
+    post: { tags: [PaymentVouchers], parameters: [{ $ref: '#/components/parameters/PathId' }], requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/NoteBody' } } } }, responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /payment-vouchers/{id}/bundle:
+    get:
+      tags: [PaymentVouchers]
+      parameters: [{ $ref: '#/components/parameters/PathId' }]
+      summary: Generate Voucher Bundle PDF (form 10.4)
+      responses: { '200': { description: PDF, content: { application/pdf: {} } } }
+
+  /procurement-requisitions:
+    get:
+      tags: [ProcurementRequisitions]
+      parameters:
+        - { in: query, name: projId, schema: { type: string } }
+        - { in: query, name: stage, schema: { $ref: '#/components/schemas/PrStage' } }
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ProcurementRequisition' } } } } } }
+    post:
+      tags: [ProcurementRequisitions]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PrCreate' } } } }
+      responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/ProcurementRequisition' } } } } }
+  /procurement-requisitions/{id}/hop-approve:
+    post: { tags: [ProcurementRequisitions], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /procurement-requisitions/{id}/issue-rfq:
+    post: { tags: [ProcurementRequisitions], parameters: [{ $ref: '#/components/parameters/PathId' }], requestBody: { required: true, content: { application/json: { schema: { type: object, required: [vendorIds, closesOn], properties: { vendorIds: { type: array, items: { type: string }, minItems: 3 }, closesOn: { type: string, format: date } } } } } }, responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /procurement-requisitions/{id}/quotes:
+    post: { tags: [ProcurementRequisitions], parameters: [{ $ref: '#/components/parameters/PathId' }], requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/QuotesBody' } } } }, responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /procurement-requisitions/{id}/evaluate:
+    post: { tags: [ProcurementRequisitions], parameters: [{ $ref: '#/components/parameters/PathId' }], requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/EvaluationBody' } } } }, responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /procurement-requisitions/{id}/issue-lpo:
+    post: { tags: [ProcurementRequisitions], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { description: OK, content: { application/json: { schema: { type: object, properties: { lpoId: { type: string }, stage: { $ref: '#/components/schemas/PrStage' } } } } } } } }
+
+  /grns:
+    post:
+      tags: [GRNs]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/GrnCreate' } } } }
+      responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Grn' } } } } }
+
+  /vendors:
+    get:
+      tags: [Vendors]
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Vendor' } } } } } }
+    post:
+      tags: [Vendors]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/VendorCreate' } } } }
+      responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Vendor' } } } } }
+  /vendors/{id}:
+    get:  { tags: [Vendors], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Vendor' } } } } } }
+    patch:{ tags: [Vendors], parameters: [{ $ref: '#/components/parameters/PathId' }], requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/VendorPatch' } } } }, responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Vendor' } } } } } }
+
+  /action-points:
+    get:
+      tags: [ActionPoints]
+      parameters:
+        - { in: query, name: ownerId, schema: { type: string } }
+        - { in: query, name: stage, schema: { $ref: '#/components/schemas/ApStage' } }
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ActionPoint' } } } } } }
+    post:
+      tags: [ActionPoints]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ApCreate' } } } }
+      responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/ActionPoint' } } } } }
+  /action-points/{id}/resolve:
+    post: { tags: [ActionPoints], parameters: [{ $ref: '#/components/parameters/PathId' }], requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/NoteBody' } } } }, responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+
+  /budget-revisions:
+    post:
+      tags: [BudgetRevisions]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/BrCreate' } } } }
+      responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/BudgetRevision' } } } } }
+  /budget-revisions/{id}/ed-approve:
+    post: { tags: [BudgetRevisions], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+
+  /eft-batches:
+    post:
+      tags: [EftBatches]
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [voucherIds], properties: { voucherIds: { type: array, items: { type: string }, minItems: 1 } } } } } }
+      responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/EftBatch' } } } } }
+  /eft-batches/{id}/lock:
+    post: { tags: [EftBatches], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /eft-batches/{id}/release:
+    post: { tags: [EftBatches], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { $ref: '#/components/responses/StageChanged' } } }
+  /eft-batches/{id}/pacs008.xml:
+    get:  { tags: [EftBatches], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '200': { description: ISO 20022, content: { application/xml: {} } } } }
+
+  /notifications:
+    get:  { tags: [Notifications], responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Notification' } } } } } } }
+  /notifications/{id}/read:
+    post: { tags: [Notifications], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '204': { description: No content } } }
+  /notifications/read-all:
+    post: { tags: [Notifications], responses: { '204': { description: No content } } }
+
+  /reports/burn-down:
+    get:
+      tags: [Reports]
+      parameters: [{ in: query, name: projId, schema: { type: string }, required: true }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/BurnDown' } } } } }
+  /reports/donor:
+    get:
+      tags: [Reports]
+      parameters:
+        - { in: query, name: projId, required: true, schema: { type: string } }
+        - { in: query, name: periodStart, required: true, schema: { type: string, format: date } }
+        - { in: query, name: periodEnd, required: true, schema: { type: string, format: date } }
+        - { in: query, name: template, schema: { type: string, enum: [PEPFAR, GLOBAL_FUND, UN_WOMEN, GENERIC] } }
+      responses: { '200': { description: PDF URL, content: { application/json: { schema: { type: object, properties: { url: { type: string } } } } } } }
+  /reports/sage-export:
+    get:
+      tags: [Reports]
+      parameters:
+        - { in: query, name: periodStart, required: true, schema: { type: string, format: date } }
+        - { in: query, name: periodEnd, required: true, schema: { type: string, format: date } }
+      responses: { '200': { description: CSV URL, content: { application/json: { schema: { type: object, properties: { url: { type: string } } } } } } }
+
+  /vendor-portal/invoices:
+    post:
+      tags: [VendorPortal]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/VendorInvoiceCreate' } } } }
+      responses: { '201': { description: Created, content: { application/json: { schema: { type: object, properties: { pvId: { type: string }, stage: { $ref: '#/components/schemas/PvStage' } } } } } } }
+  /vendor-portal/payments:
+    get:
+      tags: [VendorPortal]
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/VendorPayment' } } } } } }
+
+  /admin/users:
+    get:  { tags: [Admin], responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/User' } } } } } } }
+    post: { tags: [Admin], requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/UserCreate' } } } }, responses: { '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } } } }
+  /admin/users/{id}:
+    patch: { tags: [Admin], parameters: [{ $ref: '#/components/parameters/PathId' }], requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/UserPatch' } } } }, responses: { '200': { description: OK } } }
+  /admin/users/{id}/revoke-sessions:
+    post:  { tags: [Admin], parameters: [{ $ref: '#/components/parameters/PathId' }], responses: { '204': { description: No content } } }
+  /admin/approval-matrix:
+    get:  { tags: [Admin], responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ApprovalRule' } } } } } } }
+    post: { tags: [Admin], requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ApprovalRule' } } } }, responses: { '201': { description: Created } } }
+  /admin/feature-flags:
+    get:  { tags: [Admin], responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/FeatureFlag' } } } } } } }
+    post: { tags: [Admin], requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/FeatureFlag' } } } }, responses: { '200': { description: OK } } }
+  /admin/audit:
+    get:
+      tags: [Admin]
+      parameters:
+        - { in: query, name: entity, schema: { type: string } }
+        - { in: query, name: entityId, schema: { type: string } }
+      responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/AuditEntry' } } } } } }
+  /admin/audit/verify:
+    post: { tags: [Admin], summary: Verify hash chain integrity, responses: { '200': { description: OK, content: { application/json: { schema: { type: object, properties: { ok: { type: boolean }, brokenAt: { type: string, nullable: true } } } } } } } }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PathId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+  responses:
+    Unauthorized:
+      description: Missing or invalid token
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Forbidden:
+      description: Role / project access denied
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    InvalidTransition:
+      description: Workflow transition not allowed
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    RuleViolation:
+      description: Business rule blocked the request
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    RateLimited:
+      description: Too many requests
+    StageChanged:
+      description: OK
+      content: { application/json: { schema: { type: object, properties: { id: { type: string }, stage: { type: string } } } } }
+  schemas:
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:   { type: string }
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+
+    LoginReq:
+      type: object
+      required: [email, password]
+      properties:
+        email:    { type: string, format: email }
+        password: { type: string, format: password, minLength: 12 }
+        mfaCode:  { type: string }
+    LoginRes:
+      type: object
+      properties:
+        accessToken:  { type: string }
+        refreshToken: { type: string }
+        user:         { $ref: '#/components/schemas/User' }
+
+    User:
+      type: object
+      properties:
+        id:       { type: string, example: U-PO }
+        fullName: { type: string }
+        role:     { $ref: '#/components/schemas/Role' }
+        email:    { type: string, format: email }
+        region:   { type: string, nullable: true }
+        projects: { type: array, items: { type: string } }
+        primaryProj: { type: string, nullable: true }
+        initials: { type: string }
+    UserCreate:
+      type: object
+      required: [fullName, role, email, projects]
+      properties:
+        fullName: { type: string }
+        role:     { $ref: '#/components/schemas/Role' }
+        email:    { type: string, format: email }
+        region:   { type: string }
+        projects: { type: array, items: { type: string } }
+    UserPatch:
+      type: object
+      properties:
+        role:     { $ref: '#/components/schemas/Role' }
+        projects: { type: array, items: { type: string } }
+        active:   { type: boolean }
+
+    Role:
+      type: string
+      enum: [PROJECT_OFFICER, HEAD_OF_PROGRAMS, GRANT_FINANCE_OFFICER, FINANCE_MANAGER, EXECUTIVE_DIRECTOR, PROCUREMENT_OFFICER, ADMINISTRATOR, VENDOR]
+
+    Project:
+      type: object
+      properties:
+        id:          { type: string, example: IMP }
+        code:        { type: string }
+        name:        { type: string }
+        donor:       { type: string }
+        colorHex:    { type: string }
+        ccy:         { type: string, example: MWK }
+        budgetTotal: { type: integer, format: int64 }
+        spentTotal:  { type: integer, format: int64 }
+        periodStart: { type: string, format: date }
+        periodEnd:   { type: string, format: date }
+
+    DipLine:
+      type: object
+      properties:
+        code:         { type: string, example: DIP-2.4.1 }
+        projId:       { type: string }
+        label:        { type: string }
+        budgetAmount: { type: integer, format: int64 }
+        committed:    { type: integer, format: int64 }
+        spent:        { type: integer, format: int64 }
+        watchLevel:   { type: string, enum: [GREEN, AMBER, RED] }
+
+    ActStage:
+      type: string
+      enum: [CONCEPT, SOW, ADVANCE, EXECUTE, LIQUIDATE, CLOSED]
+    Activity:
+      type: object
+      properties:
+        id:             { type: string, example: ACT-2026-0151 }
+        projId:         { type: string }
+        dipCode:        { type: string }
+        title:          { type: string }
+        officerId:      { type: string }
+        stage:          { $ref: '#/components/schemas/ActStage' }
+        budgetAmount:   { type: integer, format: int64 }
+        advanceAmount:  { type: integer, format: int64 }
+        spentAmount:    { type: integer, format: int64 }
+        startDate:      { type: string, format: date }
+        dueLiqDate:     { type: string, format: date }
+    ActivityCreate:
+      type: object
+      required: [projId, dipCode, title, budgetAmount, startDate, dueLiqDate]
+      properties:
+        projId:        { type: string }
+        dipCode:       { type: string }
+        title:         { type: string }
+        budgetAmount:  { type: integer, format: int64 }
+        startDate:     { type: string, format: date }
+        dueLiqDate:    { type: string, format: date }
+
+    ArStage:
+      type: string
+      enum: [DRAFT, PO_SUBMITTED, HOP_RECOMMENDED, FM_APPROVED, ED_APPROVED, DISBURSED, LIQUIDATION_PENDING, LIQUIDATED, RETURNED, REJECTED]
+    AdvanceRequest:
+      type: object
+      properties:
+        id:           { type: string, example: AR-2026-0181 }
+        activityId:   { type: string }
+        projId:       { type: string }
+        dipCode:      { type: string }
+        title:        { type: string }
+        amount:       { type: integer, format: int64 }
+        requestedBy:  { type: string }
+        stage:        { $ref: '#/components/schemas/ArStage' }
+        nextApproverRole: { $ref: '#/components/schemas/Role', nullable: true }
+        submittedAt:  { type: string, format: date-time, nullable: true }
+        disbursedOn:  { type: string, format: date, nullable: true }
+        dueLiqDate:   { type: string, format: date, nullable: true }
+    AdvanceRequestCreate:
+      type: object
+      required: [activityId, amount, title]
+      properties:
+        activityId:   { type: string }
+        amount:       { type: integer, format: int64 }
+        title:        { type: string }
+
+    PvStage:
+      type: string
+      enum: [DRAFT, PO_SUBMITTED, GFO_REVIEWED, FM_APPROVED, ED_APPROVED, POSTED, PAID, RETURNED, REJECTED]
+    PaymentVoucher:
+      type: object
+      properties:
+        id:           { type: string, example: PV-2026-1248 }
+        projId:       { type: string }
+        dipCode:      { type: string }
+        vendorId:     { type: string, nullable: true }
+        payeeName:    { type: string }
+        netAmount:    { type: integer, format: int64 }
+        vatAmount:    { type: integer, format: int64 }
+        whtAmount:    { type: integer, format: int64 }
+        grossAmount:  { type: integer, format: int64 }
+        title:        { type: string }
+        stage:        { $ref: '#/components/schemas/PvStage' }
+        submittedAt:  { type: string, format: date-time, nullable: true }
+        attachments:  { type: array, items: { $ref: '#/components/schemas/Attachment' } }
+        threeWayMatched: { type: boolean }
+    PaymentVoucherCreate:
+      type: object
+      required: [projId, dipCode, payeeName, netAmount, title]
+      properties:
+        projId:       { type: string }
+        dipCode:      { type: string }
+        vendorId:     { type: string, nullable: true }
+        payeeName:    { type: string }
+        netAmount:    { type: integer, format: int64 }
+        vatAmount:    { type: integer, format: int64 }
+        whtAmount:    { type: integer, format: int64 }
+        title:        { type: string }
+        lpoId:        { type: string, nullable: true }
+        attachmentIds: { type: array, items: { type: string } }
+
+    PrStage:
+      type: string
+      enum: [DRAFT, SUBMITTED, HOP_APPROVED, RFQ_ISSUED, QUOTES_RECEIVED, EVALUATED, LPO_ISSUED, GOODS_RECEIVED, CLOSED, CANCELLED]
+    ProcurementRequisition:
+      type: object
+      properties:
+        id:           { type: string, example: PR-2026-0050 }
+        projId:       { type: string }
+        dipCode:      { type: string }
+        requestedBy:  { type: string }
+        description:  { type: string }
+        amount:       { type: integer, format: int64 }
+        stage:        { $ref: '#/components/schemas/PrStage' }
+        raisedAt:     { type: string, format: date-time }
+    PrCreate:
+      type: object
+      required: [projId, dipCode, description, amount]
+      properties:
+        projId:      { type: string }
+        dipCode:     { type: string }
+        description: { type: string }
+        amount:      { type: integer, format: int64 }
+    QuotesBody:
+      type: object
+      required: [quotes]
+      properties:
+        quotes:
+          type: array
+          minItems: 3
+          items:
+            type: object
+            required: [vendorId, amount]
+            properties:
+              vendorId:     { type: string }
+              amount:       { type: integer, format: int64 }
+              deliveryDays: { type: integer }
+    EvaluationBody:
+      type: object
+      required: [awardVendorId, scores]
+      properties:
+        awardVendorId: { type: string }
+        scores:        { type: object, additionalProperties: { type: number } }
+        rationale:     { type: string }
+
+    Grn:
+      type: object
+      properties:
+        id:         { type: string }
+        lpoId:      { type: string }
+        receivedOn: { type: string, format: date }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              description: { type: string }
+              qty:         { type: number }
+              unitPrice:   { type: integer, format: int64 }
+    GrnCreate:
+      type: object
+      required: [lpoId, receivedOn, items]
+      properties:
+        lpoId:      { type: string }
+        receivedOn: { type: string, format: date }
+        items:
+          type: array
+          items:
+            type: object
+            required: [description, qty, unitPrice]
+            properties:
+              description: { type: string }
+              qty:         { type: number }
+              unitPrice:   { type: integer, format: int64 }
+
+    Vendor:
+      type: object
+      properties:
+        id:            { type: string, example: V-001 }
+        name:          { type: string }
+        tpin:          { type: string }
+        category:      { type: string }
+        contactEmail:  { type: string, format: email }
+        paymentTerms:  { type: string }
+        status:        { type: string, enum: [ACTIVE, PENDING, SUSPENDED] }
+        wtecExpiry:    { type: string, format: date, nullable: true }
+        moaExpiry:     { type: string, format: date, nullable: true }
+        paidYtd:       { type: integer, format: int64 }
+    VendorCreate:
+      type: object
+      required: [name, tpin, category]
+      properties:
+        name:         { type: string }
+        tpin:         { type: string, pattern: '^[0-9]{8}$' }
+        category:     { type: string }
+        contactEmail: { type: string, format: email }
+        paymentTerms: { type: string }
+    VendorPatch:
+      type: object
+      properties:
+        status:       { type: string, enum: [ACTIVE, PENDING, SUSPENDED] }
+        wtecExpiry:   { type: string, format: date }
+        moaExpiry:    { type: string, format: date }
+        contactEmail: { type: string, format: email }
+        paymentTerms: { type: string }
+
+    ApStage:
+      type: string
+      enum: [OPEN, IN_PROGRESS, RESOLVED, CLOSED]
+    ActionPoint:
+      type: object
+      properties:
+        id:        { type: string, example: AP-0480 }
+        title:     { type: string }
+        source:    { type: string }
+        priority:  { type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL] }
+        ownerId:   { type: string }
+        dueDate:   { type: string, format: date }
+        stage:     { $ref: '#/components/schemas/ApStage' }
+        linkKind:  { type: string, nullable: true }
+        linkId:    { type: string, nullable: true }
+        escalated: { type: boolean }
+    ApCreate:
+      type: object
+      required: [title, ownerId, dueDate, priority]
+      properties:
+        title:    { type: string }
+        source:   { type: string }
+        priority: { type: string }
+        ownerId:  { type: string }
+        dueDate:  { type: string, format: date }
+        linkKind: { type: string }
+        linkId:   { type: string }
+
+    BudgetRevision:
+      type: object
+      properties:
+        id:         { type: string, example: BR-2026-0007 }
+        projId:     { type: string }
+        rationale:  { type: string }
+        stage:      { type: string, enum: [DRAFT, FM_SUBMITTED, ED_APPROVED, APPLIED, REJECTED] }
+        lines:
+          type: array
+          items:
+            type: object
+            properties:
+              dipCode: { type: string }
+              delta:   { type: integer, format: int64 }
+        donorAuthDocId: { type: string, nullable: true }
+    BrCreate:
+      type: object
+      required: [projId, lines, rationale, donorAuthDocId]
+      properties:
+        projId:    { type: string }
+        rationale: { type: string }
+        lines:
+          type: array
+          minItems: 2
+          items:
+            type: object
+            required: [dipCode, delta]
+            properties:
+              dipCode: { type: string }
+              delta:   { type: integer, format: int64 }
+        donorAuthDocId: { type: string }
+
+    EftBatch:
+      type: object
+      properties:
+        id:           { type: string, example: EFT-2026-0034 }
+        voucherIds:   { type: array, items: { type: string } }
+        totalAmount:  { type: integer, format: int64 }
+        stage:        { type: string, enum: [DRAFT, LOCKED, RELEASED, SETTLED, CANCELLED] }
+        createdBy:    { type: string }
+        releasedBy:   { type: string, nullable: true }
+        createdAt:    { type: string, format: date-time }
+
+    Attachment:
+      type: object
+      properties:
+        id:        { type: string }
+        filename:  { type: string }
+        mimeType:  { type: string }
+        sizeBytes: { type: integer }
+        url:       { type: string }
+        uploadedBy:{ type: string }
+        uploadedAt:{ type: string, format: date-time }
+
+    Notification:
+      type: object
+      properties:
+        id:        { type: string }
+        recipient: { type: string }
+        text:      { type: string }
+        linkKind:  { type: string, nullable: true }
+        linkId:    { type: string, nullable: true }
+        readAt:    { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    NoteBody:
+      type: object
+      properties:
+        note: { type: string }
+    LiquidationBody:
+      type: object
+      required: [spentAmount]
+      properties:
+        spentAmount:    { type: integer, format: int64 }
+        varianceNote:   { type: string }
+        attachments:    { type: array, items: { type: string } }
+
+    BurnDown:
+      type: object
+      properties:
+        projId:        { type: string }
+        budgetTotal:   { type: integer, format: int64 }
+        spentTotal:    { type: integer, format: int64 }
+        forecastEnd:   { type: string, format: date }
+        monthly:
+          type: array
+          items:
+            type: object
+            properties:
+              month:  { type: string, example: '2026-04' }
+              spent:  { type: integer, format: int64 }
+              cumulative: { type: integer, format: int64 }
+              plannedCumulative: { type: integer, format: int64 }
+
+    VendorInvoiceCreate:
+      type: object
+      required: [lpoId, invoiceNumber, issueDate, lines]
+      properties:
+        lpoId:         { type: string }
+        invoiceNumber: { type: string }
+        issueDate:     { type: string, format: date }
+        lines:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [description, qty, unitPrice]
+            properties:
+              description: { type: string }
+              qty:         { type: number }
+              unitPrice:   { type: integer, format: int64 }
+              vatable:     { type: boolean }
+    VendorPayment:
+      type: object
+      properties:
+        pvId:        { type: string }
+        invoiceNo:   { type: string }
+        gross:       { type: integer, format: int64 }
+        stage:       { $ref: '#/components/schemas/PvStage' }
+        paidOn:      { type: string, format: date, nullable: true }
+        eftRef:      { type: string, nullable: true }
+
+    ApprovalRule:
+      type: object
+      properties:
+        id:             { type: string }
+        entityKind:     { type: string, enum: [AR, PV, PR] }
+        thresholdLow:   { type: integer, format: int64 }
+        thresholdHigh:  { type: integer, format: int64, nullable: true }
+        route:          { type: array, items: { type: string } }
+    FeatureFlag:
+      type: object
+      properties:
+        key:        { type: string }
+        enabled:    { type: boolean }
+        rollout:    { type: number, minimum: 0, maximum: 1 }
+        description:{ type: string }
+    AuditEntry:
+      type: object
+      properties:
+        at:         { type: string, format: date-time }
+        who:        { type: string }
+        entity:     { type: string }
+        entityId:   { type: string }
+        action:     { type: string }
+        note:       { type: string }
+        prevHash:   { type: string }
+        hash:       { type: string }

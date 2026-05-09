@@ -1,0 +1,1262 @@
+
+
+
+
+MALAWI AIDS COUNSELLING AND RESOURCE ORGANISATION
+
+(MACRO)
+
+
+
+
+
+
+SYSTEM DESIGN DOCUMENT
+
+Online Project Management System  (MACRO PMS)
+
+Optimised Edition — Event-Driven Architecture, Zero-Trust Security,
+
+Observability, Feature Flags, Integration Layer,
+
+Data Archival, and Production Hardening
+
+
+
+
+
+
+
+
+Version: 4.0  (Optimised Edition)
+
+Prepared by: MACRO ICT / Systems Team
+
+Date: May 2026
+
+Classification: Internal
+
+
+
+
+
+
+
+
+Table of Contents
+TOC \h \o "1-3"
+
+
+
+
+0. Version 4.0 Change Summary
+
+This section summarises all architectural optimisations introduced in v4.0 relative to v3.0. Sections marked [NEW] are entirely new; sections marked [CHANGED] contain material modifications to existing v3.0 content. All other sections are carried forward from v3.0 without modification.
+
+
+
+Optimisation Area
+
+Summary of Change
+
+Event-Driven Architecture (4.3)
+
+Side effects decoupled from the FSM transition function into an asynchronous event bus. Transitions emit domain events; subscribers handle notifications, PDF generation, and budget postings independently. Enables retry, replay, and future integrations without modifying core workflow logic.
+
+Zero-Trust Security Model (4.1)
+
+Extends RBAC with field-level access control, request signing for inter-service calls, and mandatory mTLS between backend services. Removes implicit trust of network boundaries.
+
+Observability Stack (4.14)
+
+New module. Structured JSON logging with correlation IDs, distributed tracing via OpenTelemetry, SLI/SLO definitions, and runbook-linked alerting replace ad-hoc monitoring.
+
+Feature Flag System (4.15)
+
+New module. All new functionality ships behind feature flags. Enables phased rollout per project, per role, or percentage-based. Kill switch for instant rollback without redeployment.
+
+Integration and Webhook Layer (4.16)
+
+New module. Outbound webhook system for donor reporting systems (PEPFAR DATIM). Signed payloads, retry with exponential backoff, and dead-letter queue for failed deliveries.
+
+Data Archival and Retention (4.17)
+
+New module. Tiered data lifecycle: hot (active), warm (read-only, 2 years), cold (compressed archive, 7 years). Automated promotion between tiers. Satisfies PEPFAR record-retention requirements.
+
+Caching Strategy (3.2, 8)
+
+Formalised cache invalidation patterns. Write-through for budget balances, event-driven invalidation for dashboard aggregations, stale-while-revalidate for reference data.
+
+Deployment Strategy (9.3)
+
+Blue/green deployment replaces rolling updates. Enables instant rollback, pre-production smoke testing against real infrastructure, and zero-downtime database migrations.
+
+Circuit Breaker Patterns (8, 9)
+
+Circuit breakers on all external dependencies: email provider, S3, payment gateway. Prevents cascade failures. Half-open probe after configurable cooldown.
+
+Database Partitioning (5, App. E)
+
+AuditLog and BudgetTransaction tables partitioned by month using PostgreSQL declarative partitioning. Old partitions detach cleanly into cold storage.
+
+API Versioning and Contract Testing (4.1)
+
+OpenAPI 3.1 spec as single source of truth. Contract tests auto-generated from spec. Breaking changes require explicit v2 namespace.
+
+Tenant Isolation Readiness (5)
+
+All entities gain a tenant_id column (defaults to MACRO). Enables future multi-organisation deployment without schema migration.
+
+
+
+
+
+1. Introduction
+
+
+1.1  Background
+
+The Malawi AIDS Counselling and Resource Organisation (MACRO) currently manages its project activities, procurement processes, and financial transactions using paper-based forms. These include Vehicle/Equipment Maintenance and Service Request Forms, Payment Request Forms, Payment Vouchers, Advance Request Forms, Scope of Work documents, Attendance Sheets, Expense Reports, Goods Received Notes, Local Purchase Orders, and Advance Liquidation Checklists, among others.
+
+While this paper-based approach has served the organisation, it presents significant challenges in terms of traceability, retrieval, approval timeliness, and accountability to donors such as PEPFAR. MACRO operates across multiple projects including the IMPACT Project (KP Project), with activities spanning Lilongwe, Blantyre, and Mzuzu.
+
+
+
+
+1.2  Purpose of this Document
+
+This System Design Document (v4.0) is the optimised, production-hardened evolution of v3.0. It preserves the full functional specification of v3.0 and introduces twelve architectural optimisations that address production readiness gaps: event-driven side-effect handling, zero-trust security posture, full-stack observability, feature flag governance, an outbound integration layer for donor systems, a formal data archival and retention policy, formalised cache invalidation, blue/green deployment, circuit breaker resilience, database partitioning for high-volume tables, API contract testing, and tenant isolation readiness.
+
+
+
+
+1.3  Scope
+
+All functional scope from v3.0 is retained without modification. The following areas are added or materially changed:
+
+
+Event-driven architecture replacing synchronous side effects in the workflow engine
+
+
+Zero-trust inter-service security with mTLS and request signing
+
+
+Observability module: structured logging, distributed tracing, SLI/SLO definitions
+
+
+Feature flag system for phased rollout and instant rollback
+
+
+Outbound webhook and integration layer for donor reporting (PEPFAR DATIM)
+
+
+Data archival and retention policy with tiered lifecycle management
+
+
+Formalised cache invalidation strategy (write-through, event-driven, stale-while-revalidate)
+
+
+Blue/green deployment strategy with instant rollback
+
+
+Circuit breaker patterns on all external dependencies
+
+
+Database partitioning for AuditLog and BudgetTransaction tables
+
+
+OpenAPI 3.1 contract as single source of truth with auto-generated contract tests
+
+
+Tenant isolation column on all entities for future multi-org deployment
+
+
+
+
+1.4  Intended Audience
+
+This document is intended for the MACRO management team, ICT staff, and any development partners or vendors engaged to build or review the system.
+
+
+
+
+1.5  Document Version History [CHANGED]
+
+Version
+
+Date
+
+Author
+
+Summary of Changes
+
+1.0
+
+May 2026
+
+MACRO ICT Team
+
+Initial system design covering activity management and procurement modules.
+
+2.0
+
+May 2026
+
+MACRO ICT Team
+
+Integrated edition. Adds procurement threshold rules, MoA contract exemptions, budget management with auto-offsetting and overdraft alerts, and system-generated payment vouchers.
+
+3.0
+
+May 2026
+
+MACRO ICT Team
+
+Complete edition. Adds Security and Infrastructure, formal Workflow Engine with state machine specification, Data Integrity, Search and Filtering, User Experience Standards, expanded NFR section, Infrastructure Architecture, and Appendices D and E.
+
+4.0
+
+May 2026
+
+MACRO ICT Team
+
+Optimised edition. Event-driven architecture, zero-trust security, observability, feature flags, integration layer, data archival, cache strategy, blue/green deployment, circuit breakers, DB partitioning, API contract testing, tenant isolation readiness.
+
+
+
+
+
+2. Current State Analysis
+
+Current state analysis is unchanged from v3.0. Refer to v3.0 Section 2 for the full paper-based process review and pain point analysis.
+
+
+
+
+
+3. System Overview
+
+
+3.1  System Vision
+
+MACRO PMS will be a secure, web-based platform that digitizes all current paper forms and enforces the organisation's approval hierarchies, compliance rules, and audit requirements electronically. Every document type currently produced on paper will have a corresponding digital form in the system. The system will maintain a complete, immutable audit trail of all approvals, modifications, and financial transactions, and will automatically manage budget balances in real time.
+
+
+
+
+3.2  Architecture Layers [CHANGED]
+
+The v4.0 architecture introduces two new layers (Event Bus and Integration Layer) and restructures caching into a first-class concern with explicit invalidation patterns.
+
+
+
+Layer
+
+Description
+
+Presentation
+
+Role-based web dashboards and mobile-responsive forms accessible via browser. Each user role sees only the actions and data relevant to their function. All views comply with the UX Standards defined in Module 4.13. Feature flags gate access to new functionality.
+
+Core Modules
+
+Fifteen functional modules (thirteen from v3.0 plus Observability and Feature Flags) covering activity management, procurement, budget, reporting, voucher generation, security, data integrity, search, UX, observability, and feature governance.
+
+Event Bus
+
+[NEW] In-process event emitter (Node.js EventEmitter or Django signals) for domain events. All workflow side effects are subscribers, not inline calls. Events are persisted to an outbox table for guaranteed delivery, replay, and integration forwarding. Future migration path to a dedicated message broker (RabbitMQ or SQS) if throughput exceeds single-process capacity.
+
+Backend Services
+
+Authentication service (JWT with refresh token rotation, Redis blocklist), formal workflow engine (FSM with event-driven side effects), document service (S3, versioning, hash verification), and budget engine (real-time balance computation with row-level locking). All inter-service calls signed and verified (zero-trust). Circuit breakers on all external dependencies.
+
+API Gateway
+
+REST API v1 (OpenAPI 3.1 contract) with WAF, rate limiting, CORS policy, security headers, idempotency key enforcement, correlation ID injection, and comprehensive audit logging. Contract tests auto-generated from spec.
+
+Caching Layer
+
+[CHANGED] Redis with formalised invalidation: write-through on BudgetLine balance (invalidate on every BudgetTransaction INSERT), event-driven invalidation on dashboard aggregations (subscriber listens for relevant domain events and purges affected keys), stale-while-revalidate (TTL 300s, background refresh) on reference data (Vendor Registry, Contracts Register, project list). Cache-aside pattern prohibited — all cache writes go through defined invalidation paths.
+
+Data Layer
+
+PostgreSQL primary for writes; read replica for reporting, search, and exports. PgBouncer connection pool. Soft-delete on all master data. Append-only audit log. AuditLog and BudgetTransaction partitioned by month. All entities carry tenant_id for future multi-org readiness.
+
+Integration Layer
+
+[NEW] Outbound webhook dispatcher for donor reporting systems (PEPFAR DATIM). Listens to domain events, transforms payloads to required format, delivers with signed headers, retries with exponential backoff, and routes failures to a dead-letter queue for manual review.
+
+Delivery Layer
+
+AWS CloudFront CDN for static assets and document downloads. Presigned S3 URLs for time-limited file access.
+
+
+
+
+3.3  User Roles
+
+User roles are unchanged from v3.0. Refer to v3.0 Section 3.3 for the complete role matrix.
+
+
+
+
+
+4. Functional Modules
+
+Modules 1-13 are defined in v3.0 and carried forward. This section documents only the material changes to existing modules and the four new modules (4.14-4.17).
+
+
+
+
+4.1  Module 1: Security, Authorization, and Infrastructure (Optimised) [CHANGED]
+
+All v3.0 security controls are retained. The following optimisations extend the module to a zero-trust posture.
+
+
+
+
+4.1.7  Zero-Trust Inter-Service Security [NEW]
+
+v3.0 relied on network-level isolation (private subnets) as the primary trust boundary between backend components. v4.0 removes implicit trust of network boundaries and enforces identity verification on every inter-service call:
+
+
+All backend-to-backend HTTP calls (API server to worker, API server to PDF generator) use mutual TLS (mTLS). Each service has its own TLS certificate issued by a private CA managed in AWS Private Certificate Authority or HashiCorp Vault.
+
+
+Every inter-service request carries a signed Authorization header using HMAC-SHA256 over the request body and timestamp. The receiving service verifies the signature against a shared secret rotated every 90 days.
+
+
+Service-to-database connections are authenticated using individual PostgreSQL roles per service (api_service, worker_service, migration_service). Each role has only the minimum permissions required for its function. The api_service role cannot execute DDL statements; the migration_service role cannot read financial data at rest.
+
+
+Redis connections use ACL-based authentication (Redis 7 ACLs). The API service can read and write session keys but cannot FLUSHALL. The worker service can manage job queues but cannot read session tokens.
+
+
+
+
+4.1.8  Field-Level Access Control [NEW]
+
+Certain data fields require stricter access than the entity-level RBAC provides. v4.0 introduces a field-level access control layer that masks or redacts sensitive fields based on the requesting user's role:
+
+Entity
+
+Sensitive Field
+
+Access Rule
+
+Vendor
+
+Bank account number
+
+Visible only to Grant Finance Officer and Finance Manager. All other roles see last 4 digits masked.
+
+User
+
+Password hash, MFA secret
+
+Never exposed via any API endpoint. Accessible only to the authentication service internally.
+
+PaymentVoucher
+
+Gross/net amounts, tax lines
+
+Visible to Finance roles and Executive Director. Program Staff see status and narration only.
+
+OverdraftAlert
+
+Justification text
+
+Visible only to the author, Finance Manager, and Executive Director.
+
+
+
+
+4.1.9  API Contract and Versioning [NEW]
+
+The REST API is defined by an OpenAPI 3.1 specification file maintained in the project repository as the single source of truth. All request and response schemas, path parameters, query parameters, and error codes are defined in the spec. Contract tests are auto-generated from the spec and run in CI on every pull request. Any endpoint that fails its contract test blocks merge.
+
+Breaking changes (removal of a field, change of field type, removal of an endpoint) require a new API version namespace (/api/v2/). The previous version continues to be served for a minimum of six months after v2 goes live, with a deprecation header on all v1 responses.
+
+
+
+
+
+4.3  Module 3: Review and Approval Workflow Engine (Optimised) [CHANGED]
+
+The FSM transition function, state definitions, and guard conditions from v3.0 are unchanged. The material change in v4.0 is the decoupling of side effects from the transition function into an asynchronous, event-driven architecture.
+
+
+
+
+4.3.4  Event-Driven Side Effects [CHANGED]
+
+In v3.0, side effects (budget posting, voucher generation, notification delivery) executed synchronously within the same database transaction as the state transition. This created tight coupling: a failure in email delivery could roll back a valid budget commitment, and adding a new side effect required modifying the core workflow engine.
+
+v4.0 decouples side effects using a transactional outbox pattern:
+
+
+
+
+The workflow engine's attemptTransition function performs only two operations within its database transaction: (a) update the document state, and (b) insert a domain event record into the outbox table (event_type, payload, created_at, processed_at = NULL).
+
+
+A background poller (running on a configurable interval, default 500ms) reads unprocessed events from the outbox, dispatches them to registered subscribers, and marks them as processed.
+
+
+Each subscriber handles exactly one concern: BudgetSubscriber posts commitments and disbursements, VoucherSubscriber generates payment vouchers, NotificationSubscriber sends emails and push notifications, IntegrationSubscriber forwards events to the webhook layer (Module 4.16).
+
+
+Subscriber failures do not affect the transition or other subscribers. A failed subscriber's event is retried up to five times with exponential backoff (1s, 2s, 4s, 8s, 16s). After five failures, the event is moved to a dead-letter queue and an alert is sent to the System Administrator.
+
+
+The outbox table provides a complete, ordered log of all domain events. This enables event replay for debugging, re-processing after a bug fix, and building new read models or integrations without touching historical data.
+
+
+
+The domain events emitted by each transition are listed below. Each event carries the full document snapshot and the actor's identity:
+
+Transition
+
+Domain Event
+
+Subscribers
+
+AdvanceRequest PENDING_ED to APPROVED
+
+advance.approved
+
+BudgetSubscriber (post commitment), VoucherSubscriber (generate DRAFT voucher), NotificationSubscriber (notify GFO), IntegrationSubscriber (forward to DATIM if configured).
+
+ProcurementRequest IPC_PENDING to LPO_ISSUED
+
+lpo.issued
+
+BudgetSubscriber (post commitment), DocumentSubscriber (generate LPO PDF), NotificationSubscriber (email vendor), IntegrationSubscriber.
+
+Invoice three-way match PASSED
+
+invoice.matched
+
+VoucherSubscriber (generate DRAFT voucher), NotificationSubscriber (notify GFO).
+
+PaymentVoucher FINAL to PAID
+
+voucher.paid
+
+BudgetSubscriber (convert commitment to disbursement, reconcile advance), NotificationSubscriber, IntegrationSubscriber.
+
+ActionPoint any to OVERDUE
+
+actionpoint.overdue
+
+NotificationSubscriber (notify responsible person and supervisor).
+
+Any document state change
+
+[doctype].state_changed
+
+AuditSubscriber (write to AuditLog), ObservabilitySubscriber (emit metric and trace span).
+
+
+
+
+4.3.6  Outbox Table Schema [NEW]
+
+The outbox table stores domain events for guaranteed delivery:
+
+Column
+
+Type
+
+Description
+
+id
+
+BIGSERIAL
+
+Primary key.
+
+event_type
+
+VARCHAR(100)
+
+Domain event name (e.g. advance.approved, lpo.issued).
+
+aggregate_type
+
+VARCHAR(50)
+
+Document type that produced the event.
+
+aggregate_id
+
+UUID
+
+ID of the document that transitioned.
+
+payload
+
+JSONB
+
+Full event payload including document snapshot and actor identity.
+
+created_at
+
+TIMESTAMPTZ
+
+Event creation time (same as transition time).
+
+processed_at
+
+TIMESTAMPTZ NULL
+
+Set when all subscribers have successfully processed the event.
+
+retry_count
+
+SMALLINT DEFAULT 0
+
+Number of delivery attempts.
+
+dead_lettered_at
+
+TIMESTAMPTZ NULL
+
+Set when the event exceeds max retries and is moved to dead-letter.
+
+tenant_id
+
+VARCHAR(50) DEFAULT 'MACRO'
+
+Tenant identifier for future multi-org support.
+
+
+
+
+
+4.14  Module 14: Observability [NEW]
+
+This module replaces the ad-hoc monitoring described in v3.0 NFR Section 7.5 with a structured, three-pillar observability stack: logs, traces, and metrics. All three pillars share a common correlation ID that links a user action to every log line, trace span, and metric data point it produces.
+
+
+
+
+4.14.1  Structured Logging
+
+All application logs are emitted in structured JSON format with the following mandatory fields: timestamp (ISO 8601 with timezone), level (DEBUG/INFO/WARN/ERROR), correlation_id (UUID injected by API gateway middleware on every inbound request), service (api, worker, scheduler), message, and context (JSONB with endpoint, user_id, role, tenant_id). Log levels are configurable per environment via environment variable without restart. Sensitive data (passwords, tokens, bank account numbers) is never logged — a static analysis rule in CI rejects any log statement referencing a field on the sensitive-fields list.
+
+
+
+
+4.14.2  Distributed Tracing
+
+Distributed tracing is implemented using OpenTelemetry SDK instrumentation. Every inbound API request starts a root trace span. The span propagates through all internal calls (database queries, Redis operations, S3 uploads, event bus dispatches, and worker job executions) as child spans. Trace context is propagated via the W3C Trace Context header (traceparent).
+
+Key spans are annotated with domain-specific attributes: workflow transitions carry document_type and from_state/to_state; budget operations carry budget_line_id and transaction_amount; search operations carry query_text and result_count. Traces are exported to Jaeger (self-hosted) or AWS X-Ray and retained for 30 days.
+
+
+
+
+4.14.3  Metrics and SLI/SLO Definitions
+
+The following Service Level Indicators (SLIs) are defined, each with a corresponding Service Level Objective (SLO):
+
+SLI
+
+Measurement
+
+SLO Target
+
+Availability
+
+Successful responses / total requests (excluding 4xx)
+
+99.5% over a rolling 30-day window during business hours (Mon-Fri 07:00-18:00 CAT).
+
+API Latency (p95)
+
+Duration from request receipt to response sent
+
+Under 400ms for standard endpoints; under 200ms for cached reads. Measured per endpoint.
+
+Workflow Transition Latency
+
+Duration of attemptTransition function
+
+Under 150ms (p99). Measures core FSM logic excluding async side effects.
+
+Event Processing Lag
+
+Time from event creation to all subscribers processed
+
+Under 5 seconds (p95). Measures end-to-end side effect delivery.
+
+Error Rate
+
+5xx responses / total responses
+
+Under 0.5% over a rolling 1-hour window. Alert fires at 1%.
+
+Budget Calculation Freshness
+
+Cache age of budget balance at read time
+
+Under 2 seconds. Write-through invalidation ensures near-real-time accuracy.
+
+
+
+SLO burn-rate alerts are configured: if the error budget for the 30-day SLO is consumed at a rate that would exhaust it within 1 hour (fast burn) or within 3 days (slow burn), an alert fires to the on-call engineer. Burn-rate alerts replace simple threshold alerts because they account for both severity and duration.
+
+
+
+
+4.14.4  Alerting and Runbooks
+
+Every alert is linked to a runbook document in the project wiki. The runbook contains: alert description, likely root causes, diagnostic steps (including specific log queries and trace searches), remediation actions, and escalation path. Alerts without a linked runbook are not permitted — the CI pipeline rejects alert rule changes that do not include a runbook URL.
+
+
+
+
+
+4.15  Module 15: Feature Flags [NEW]
+
+All new functionality in MACRO PMS is shipped behind feature flags. A feature flag is a runtime-configurable boolean or percentage gate that controls whether a specific feature is active for a given user, role, project, or percentage of traffic.
+
+
+
+
+4.15.1  Flag Types
+
+Flag Type
+
+Behaviour
+
+Boolean
+
+On or off globally. Used for kill switches and completed rollouts awaiting cleanup.
+
+Role-based
+
+Active for specified roles only. Used during phased rollout: enable for System Administrator first, then Finance, then all staff.
+
+Project-based
+
+Active for specified projects only. Used to pilot a feature on the IMPACT project before rolling out to all projects.
+
+Percentage
+
+Active for N% of users, determined by a hash of user ID (stable — same user always gets the same result). Used for gradual rollout with monitoring between increments.
+
+
+
+
+4.15.2  Flag Lifecycle
+
+Every flag has a lifecycle: CREATED (defined in code, defaults to off), ROLLING_OUT (actively being enabled for segments), FULLY_ROLLED_OUT (on for all users), and RETIRED (code path for the old behaviour removed). Flags that remain in FULLY_ROLLED_OUT state for more than 30 days trigger a cleanup reminder in the weekly engineering report. Flag state is stored in the database and cached in Redis with a 60-second TTL. Flag evaluation is synchronous and adds less than 1ms to request processing time.
+
+
+
+
+4.15.3  Kill Switch
+
+Any flag can be instantly set to off via an admin endpoint or the System Administrator UI. This immediately disables the feature for all users without a deployment. Kill switch activations are logged in the audit trail and trigger a notification to the engineering team. This is the primary rollback mechanism for features that cause production issues — faster and safer than redeploying the previous code version.
+
+
+
+
+
+4.16  Module 16: Integration and Webhook Layer [NEW]
+
+This module provides a structured mechanism for MACRO PMS to push data to external systems, starting with the PEPFAR DATIM reporting platform. It is designed as a generic webhook dispatcher that can be extended to additional integrations without modifying core application logic.
+
+
+
+
+4.16.1  Webhook Configuration
+
+Each integration is configured as a webhook subscription stored in the database:
+
+Field
+
+Description
+
+subscription_id
+
+UUID primary key.
+
+name
+
+Human-readable label (e.g. PEPFAR DATIM Activity Sync).
+
+target_url
+
+HTTPS endpoint to deliver payloads to.
+
+event_types
+
+Array of domain event types this subscription listens to (e.g. [advance.approved, voucher.paid]).
+
+signing_secret
+
+HMAC-SHA256 secret used to sign payloads. Stored encrypted in AWS Secrets Manager.
+
+transform_template
+
+JSONata or Handlebars template that transforms the domain event payload into the format required by the target system.
+
+active
+
+Boolean. Inactive subscriptions are skipped by the dispatcher.
+
+retry_policy
+
+Max retries (default 5), backoff base (default 2s), backoff multiplier (default 2x).
+
+
+
+
+4.16.2  Delivery Guarantees
+
+The webhook dispatcher is an event bus subscriber (IntegrationSubscriber). When it receives a domain event, it: (1) evaluates which subscriptions match the event type, (2) applies the transform template to produce the outbound payload, (3) computes an HMAC-SHA256 signature over the payload using the subscription's signing secret and includes it in the X-Webhook-Signature header, (4) delivers the payload via HTTPS POST, (5) expects a 2xx response within 10 seconds.
+
+On failure (network error, non-2xx response, timeout), the delivery is retried with exponential backoff up to the configured maximum. After all retries are exhausted, the event is moved to a dead-letter queue. The System Administrator can view the dead-letter queue, inspect payloads, and manually retry or discard failed deliveries. A daily digest alert lists any events in the dead-letter queue.
+
+
+
+
+
+4.17  Module 17: Data Archival and Retention [NEW]
+
+This module defines a formal data lifecycle policy that balances operational performance with long-term compliance requirements (PEPFAR requires seven-year record retention for grant-funded transactions).
+
+
+
+
+4.17.1  Data Tiers
+
+Tier
+
+Retention
+
+Storage
+
+Access
+
+Hot
+
+Current + 1 fiscal year
+
+PostgreSQL primary
+
+Full read-write. All application queries. No restrictions.
+
+Warm
+
+2-3 years
+
+PostgreSQL read replica, separate tablespace
+
+Read-only. Accessible via reporting and search interfaces. No write operations permitted.
+
+Cold
+
+4-7 years
+
+Compressed Parquet files in S3 Glacier
+
+Restore-on-request only. System Administrator initiates restore; data available within 12 hours. Used for audit investigations.
+
+Deleted
+
+After 7 years
+
+Permanently purged
+
+Irreversible. Purge job runs annually with Finance Manager sign-off.
+
+
+
+
+4.17.2  Archival Process
+
+Tier promotion runs as a scheduled job on the first day of each fiscal year. The job identifies all records in the hot tier whose associated project's grant period ended more than one fiscal year ago. These records are copied to the warm tier (read-only tablespace), verified by row-count and checksum comparison, and then removed from the hot tier's active partitions. The same process promotes warm-tier data to cold storage after the 3-year threshold.
+
+Archival operations are idempotent — running the job twice produces no duplicate data. Each archival run is logged with record counts, source and destination checksums, and execution duration. Failures halt the job and alert the System Administrator; no partial archives are committed.
+
+
+
+
+4.17.3  Impact on Application Queries
+
+Application queries default to the hot tier. Users can opt in to searching warm-tier data via a Historical data toggle on search and filter panels. This toggle routes the query to the read replica's warm tablespace. Cold-tier data is not queryable inline — it must be restored to the warm tier first. The data tier of each record is displayed as a subtle badge (e.g. Archived - 2024) on record detail views.
+
+
+
+
+
+5. Data Model
+
+
+5.1  Core Entities (Optimised) [CHANGED]
+
+All entities from v3.0 are retained. The following cross-cutting changes apply to every entity:
+
+
+
+
+tenant_id (VARCHAR(50), DEFAULT 'MACRO') added to all entities. Enables future multi-organisation deployment. All application queries include a WHERE tenant_id = :current_tenant filter enforced by the ORM's global scope.
+
+
+AuditLog and BudgetTransaction tables are now partitioned by month using PostgreSQL declarative partitioning (PARTITION BY RANGE on created_at). Each partition covers one calendar month. Partitions older than the hot tier threshold are detached and archived per Module 4.17.
+
+
+A new DomainEventOutbox table (defined in Section 4.3.6) stores all workflow events for guaranteed async delivery.
+
+
+A new WebhookSubscription table (defined in Section 4.16.1) stores integration configurations.
+
+
+A new WebhookDeliveryLog table tracks every outbound webhook delivery attempt: subscription_id, event_id, status_code, response_body (truncated to 1KB), delivered_at, retry_count.
+
+
+A new FeatureFlag table: flag_key (VARCHAR(100), unique), flag_type (boolean/role/project/percentage), value (JSONB), description, created_by FK, created_at, updated_at.
+
+
+
+
+
+6. Workflow Rules and Business Logic
+
+All workflow rules from v3.0 Sections 6.1 through 6.6 are retained without modification. The rules themselves are unchanged; only the execution mechanism for side effects has been decoupled (see Section 4.3.4).
+
+
+
+
+
+7. Non-Functional Requirements
+
+
+7.1  Availability and Reliability [CHANGED]
+
+Requirement
+
+Specification (v4.0 Optimisation in Bold)
+
+Availability
+
+99.5% uptime during business hours (Mon-Fri 07:00-18:00 CAT), upgraded from 99% in v3.0. Measured by SLI defined in Module 4.14. Error budget tracking replaces simple uptime percentage.
+
+Recovery Time Objective
+
+RTO: 2 hours (reduced from 4 hours). Blue/green deployment enables instant rollback for application-level failures. Database failover via Multi-AZ (RTO < 60 seconds).
+
+Recovery Point Objective
+
+RPO: 1 hour (reduced from 24 hours). WAL-based continuous archiving to S3 replaces nightly pg_dump. Point-in-time recovery to any second within the retention window.
+
+Backup testing
+
+Full restore drill conducted monthly (increased from quarterly). Automated: restore to temporary instance, run integrity checks, compare row counts, tear down. Results logged and alerted on failure.
+
+
+
+
+7.2  Performance
+
+Performance targets are unchanged from v3.0. The event-driven architecture improves apparent API response times because side effects no longer block the response. The SLI/SLO framework in Module 4.14 provides continuous measurement against targets.
+
+
+
+
+7.3  Scalability [CHANGED]
+
+Requirement
+
+Specification (v4.0 Additions)
+
+Concurrent users
+
+100 concurrent authenticated users. Unchanged. Load test now includes event bus throughput: 100 concurrent users generating 50 workflow transitions per minute must not exceed 5-second event processing lag (p95).
+
+Database partitioning
+
+[NEW] AuditLog and BudgetTransaction partitioned by month. Partition pruning reduces query scan to current month for operational queries. Old partitions detach without downtime for archival.
+
+Event bus throughput
+
+[NEW] In-process event bus handles up to 500 events/minute on a single API instance. If throughput exceeds this, migration path to external broker (SQS or RabbitMQ) is documented.
+
+Cache hit rate target
+
+[NEW] Budget summary cache: 90% hit rate target. Reference data (Vendor, Contract): 95% hit rate target. Monitored via Prometheus gauge. Alert fires if hit rate drops below target for 15 minutes.
+
+
+
+
+7.4-7.6  Security, Monitoring, Additional NFRs
+
+Security NFRs are unchanged from v3.0, supplemented by the zero-trust controls in Section 4.1.7-4.1.9. Monitoring NFRs are superseded by the Observability module (4.14). Additional NFRs are unchanged.
+
+
+
+
+
+8. Recommended Technology Stack
+
+
+8.1  New and Changed Components [CHANGED]
+
+All v3.0 technology choices are retained. The following components are new or changed:
+
+
+
+Component
+
+Recommendation and Rationale
+
+Event Bus (in-process)
+
+[NEW] Node.js EventEmitter (or Django signals). Lightweight, zero-infrastructure event dispatch within a single process. Paired with a PostgreSQL outbox table for guaranteed delivery. Migration path to SQS or RabbitMQ documented for future scale.
+
+Observability: Tracing
+
+[NEW] OpenTelemetry SDK for auto-instrumentation (HTTP, PostgreSQL, Redis, S3). Traces exported to Jaeger (self-hosted, Docker) or AWS X-Ray. 30-day retention.
+
+Observability: Metrics
+
+[NEW] Prometheus client library in application code. Metrics exposed via /metrics endpoint scraped by Prometheus server. Grafana dashboards for SLI/SLO visualisation. SLO burn-rate alerts via Prometheus Alertmanager.
+
+Observability: Logging
+
+[CHANGED] Structured JSON logs (pino for Node.js or structlog for Python) replacing unstructured console output. Correlation ID injected by middleware. Shipped to ELK or CloudWatch Logs. Sensitive-field redaction enforced by CI static analysis.
+
+Feature Flags
+
+[NEW] Custom lightweight implementation: FeatureFlag table + Redis cache (60s TTL) + evaluation middleware. No external dependency. If scale or complexity warrants, migration path to Unleash (open-source) documented.
+
+API Contract
+
+[NEW] OpenAPI 3.1 spec in /docs/openapi.yaml. Contract tests generated by Prism or Dredd. Run in CI on every PR. Spec published as interactive docs via Swagger UI.
+
+Circuit Breaker
+
+[NEW] opossum (Node.js) or pybreaker (Python). Applied to: email provider (SendGrid), S3 operations, and any external webhook endpoint. Open threshold: 5 failures in 60 seconds. Half-open probe after 30 seconds.
+
+WAL Archiving
+
+[CHANGED] PostgreSQL WAL continuous archiving to S3 replaces nightly pg_dump as primary backup mechanism. Enables point-in-time recovery. pg_dump retained as weekly full snapshot for cold storage.
+
+mTLS CA
+
+[NEW] AWS Private CA or HashiCorp Vault PKI engine. Issues short-lived (90-day) certificates per service identity. Auto-rotation via cert-manager or custom cron.
+
+
+
+
+
+9. Infrastructure Architecture
+
+
+9.1  Network Topology
+
+Network topology is unchanged from v3.0 (public subnet for ALB/WAF/NAT, private subnet for all application and data components). The addition of mTLS (Section 4.1.7) means that even within the private subnet, all inter-component communication is encrypted and mutually authenticated.
+
+
+
+
+9.2  Component Topology
+
+Component topology and sizing are unchanged from v3.0. One addition: the Prometheus and Jaeger containers are deployed on the worker instance or a dedicated monitoring instance (t3.small), separate from the API servers, to avoid resource contention during high observability load.
+
+
+
+
+9.3  Deployment Strategy: Blue/Green [CHANGED]
+
+v3.0 used a rolling update deployment strategy. v4.0 upgrades to blue/green deployment for safer, faster rollbacks:
+
+
+
+
+Two identical production environments (Blue and Green) are maintained behind the Application Load Balancer. At any time, one is live (serving traffic) and the other is idle (standby).
+
+
+On deployment, the new Docker image is deployed to the idle environment. Smoke tests run against the idle environment using a dedicated internal URL — not live traffic.
+
+
+Database migrations run before the traffic switch. All migrations must be backward-compatible (additive columns, new tables) so that the live environment continues to operate against the migrated schema. Destructive migrations (column drops, renames) are deferred to a cleanup migration in a subsequent release after the old code path is no longer in use.
+
+
+Once smoke tests pass and the System Administrator gives manual approval, the ALB target group is switched from the live environment to the idle environment. Traffic cutover is instant (single ALB target group swap, typically under 5 seconds).
+
+
+The previous live environment is retained as a rollback target for 24 hours. If a production issue is detected, the ALB target group is switched back to the previous environment — rollback time is under 30 seconds.
+
+
+After the 24-hour rollback window, the old environment is updated to match the new release, becoming the new standby for the next deployment.
+
+
+
+This replaces the rolling update strategy from v3.0. The key advantages are: instant rollback (ALB swap vs. redeployment), full pre-production smoke testing against real infrastructure (not just health checks), and elimination of the mixed-version window that rolling updates create.
+
+
+
+
+9.4  Disaster Recovery [CHANGED]
+
+WAL-based continuous archiving to S3 replaces nightly pg_dump as the primary backup mechanism. This reduces RPO from 24 hours to under 1 hour (bounded by WAL shipping lag, typically under 30 seconds). Point-in-time recovery is available to any second within the WAL retention window (default 7 days).
+
+Weekly full pg_dump snapshots are retained as a secondary backup for cold-storage archival. Monthly automated restore drills (upgraded from quarterly) verify both WAL-based recovery and pg_dump recovery paths. Document store backups via S3 versioning and cross-region replication are unchanged from v3.0.
+
+
+
+
+
+10. Implementation Plan
+
+
+10.1  Phased Approach [CHANGED]
+
+The three-phase timeline from v3.0 is retained. v4.0 optimisations are integrated into each phase rather than added as a separate phase:
+
+
+
+Phase
+
+Duration
+
+v4.0 Additions to Phase Scope
+
+Phase 1
+
+Months 1-3
+
+Add: Event bus with outbox table. Structured logging with correlation IDs. OpenTelemetry instrumentation. Feature flag infrastructure. Blue/green deployment pipeline. mTLS between API and worker. Circuit breaker on email provider. tenant_id column on all entities. WAL archiving replaces nightly backup.
+
+Phase 2
+
+Months 4-6
+
+Add: Webhook integration layer with DATIM subscription (if PEPFAR requirements are available). AuditLog and BudgetTransaction partitioning. Circuit breaker on S3. API contract tests in CI. Field-level access control on Vendor and PaymentVoucher.
+
+Phase 3
+
+Months 7-9
+
+Add: Prometheus + Grafana dashboards with SLI/SLO visualisation. SLO burn-rate alerting. Data archival job (first run). Feature flag cleanup process. Runbook completion for all alerts. Monthly restore drill automation. Production observability review and tuning.
+
+
+
+
+10.2-10.4  Data Migration, Training, Change Management
+
+Unchanged from v3.0. Training materials should include feature flag awareness for System Administrators (how to enable/disable features, how to check flag status) and the observability dashboard for the ICT team.
+
+
+
+
+
+11. Risks and Mitigations
+
+All v3.0 risks are retained. The following additional risks are introduced or re-assessed by v4.0 optimisations:
+
+
+
+Risk
+
+Likelihood
+
+Mitigation
+
+Event bus message loss
+
+Low
+
+[NEW] Transactional outbox pattern guarantees at-least-once delivery. Events are committed in the same DB transaction as the state change. Background poller retries with exponential backoff. Dead-letter queue for investigation.
+
+Event subscriber ordering issues
+
+Low
+
+[NEW] Outbox events are processed in creation order (BIGSERIAL PK). Each subscriber processes events sequentially. No cross-subscriber ordering dependency.
+
+Feature flag misconfiguration
+
+Medium
+
+[NEW] All flag changes are audit-logged. Kill switch provides instant rollback. Flag changes require System Administrator role. Percentage rollouts use stable hashing to prevent user experience oscillation.
+
+Webhook delivery failure to DATIM
+
+Medium
+
+[NEW] Exponential backoff retries (up to 5). Dead-letter queue with daily digest alert. Manual retry capability. Circuit breaker prevents cascading failures if DATIM is down for extended periods.
+
+Observability data volume exceeds storage
+
+Low
+
+[NEW] Trace sampling at 10% for non-error requests in production (100% in staging). Log retention: 90 days hot, then cold storage. Metric retention: 15-second resolution for 24 hours, downsampled to 1-minute for 30 days.
+
+Blue/green deployment with incompatible DB migration
+
+Low
+
+[NEW] All migrations must be backward-compatible (expand-contract pattern). Destructive changes deferred to cleanup migration. Migration CI step validates backward compatibility by running the migration and then booting the previous application version against the migrated schema.
+
+mTLS certificate expiry causes service outage
+
+Low
+
+[NEW] 90-day certificates with auto-rotation at 60 days. Monitoring alert fires at 14 days before expiry. Rotation runs as a scheduled job with failure alerting.
+
+Data archival corrupts or loses records
+
+Low
+
+[NEW] Archival is idempotent and transactional. Row-count and checksum verification before deletion from source tier. Archival job halts on any mismatch. Finance Manager sign-off required for permanent deletion at 7-year mark.
+
+
+
+
+
+12. Appendices
+
+Appendices A (Paper Forms), B (Budget Alert Thresholds), C (Glossary), and D (State Machine Reference) are unchanged from v3.0.
+
+
+
+
+Appendix E: Database Index Strategy (Optimised) [CHANGED]
+
+All v3.0 indexes are retained. The following indexes are added for v4.0 entities:
+
+
+
+Table
+
+Index
+
+Rationale
+
+DomainEventOutbox
+
+(processed_at, created_at ASC) PARTIAL WHERE processed_at IS NULL
+
+Poller query: fetch unprocessed events in creation order. Partial index keeps it small.
+
+DomainEventOutbox
+
+(dead_lettered_at) PARTIAL WHERE dead_lettered_at IS NOT NULL
+
+Dead-letter queue dashboard.
+
+DomainEventOutbox
+
+(aggregate_type, aggregate_id, created_at DESC)
+
+Event history lookup for a specific document.
+
+WebhookDeliveryLog
+
+(subscription_id, delivered_at DESC)
+
+Delivery history per subscription.
+
+WebhookDeliveryLog
+
+(status_code) PARTIAL WHERE status_code >= 400
+
+Failed delivery investigation.
+
+FeatureFlag
+
+(flag_key) UNIQUE
+
+Flag lookup by key (evaluation hot path).
+
+AuditLog (partitioned)
+
+(table_name, record_id, created_at DESC) LOCAL
+
+Same as v3.0 but LOCAL to each monthly partition.
+
+BudgetTransaction (partitioned)
+
+(budget_line_id, type, created_at DESC) LOCAL
+
+Same as v3.0 but LOCAL to each monthly partition.
+
+
+
+
+Appendix F: Glossary Additions (v4.0) [NEW]
+
+Term
+
+Definition
+
+Blue/Green Deployment
+
+A deployment strategy that maintains two identical production environments and switches traffic between them for zero-downtime releases and instant rollback.
+
+Circuit Breaker
+
+A resilience pattern that detects failures to an external dependency and stops making requests until the dependency recovers, preventing cascade failures.
+
+Correlation ID
+
+A UUID assigned to every inbound API request and propagated through all internal processing, linking logs, traces, and metrics to a single user action.
+
+DATIM
+
+Data for Accountability, Transparency, and Impact Monitoring — PEPFAR's reporting platform.
+
+Dead-Letter Queue
+
+A holding area for messages or events that could not be processed after exhausting all retry attempts. Requires manual intervention.
+
+Domain Event
+
+A record of something that happened in the system (e.g. advance.approved). Stored in the outbox table and dispatched to subscribers asynchronously.
+
+Feature Flag
+
+A runtime-configurable gate that controls whether a specific feature is active, enabling phased rollout and instant rollback without redeployment.
+
+mTLS
+
+Mutual TLS — a TLS connection where both client and server present and verify certificates, ensuring both parties are authenticated.
+
+OpenAPI
+
+A specification format for describing REST APIs. Used as the single source of truth for the MACRO PMS API contract.
+
+OpenTelemetry
+
+An open-source observability framework for generating, collecting, and exporting traces, metrics, and logs.
+
+Outbox Pattern
+
+A pattern where domain events are written to a database table within the same transaction as the state change, then dispatched asynchronously by a background process.
+
+SLI
+
+Service Level Indicator — a quantitative measure of system behaviour (e.g. request latency, availability).
+
+SLO
+
+Service Level Objective — a target value for an SLI over a defined period (e.g. 99.5% availability over 30 days).
+
+WAL
+
+Write-Ahead Log — PostgreSQL's transaction log. Continuous archiving of WAL enables point-in-time recovery.
+
+
+
+
+END OF DOCUMENT
+
+MACRO PMS  |  System Design Document v4.0  |  Optimised Edition  |  May 2026
+
+

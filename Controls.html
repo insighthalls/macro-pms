@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS · Controls &amp; Compliance</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/macro-styles.css" />
+<style>
+  .tabs{display:flex;gap:4px;background:#fff;padding:6px;border-radius:12px;border:1px solid var(--line);margin-bottom:18px;width:fit-content}
+  .tabs button{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--ink-3)}
+  .tabs button.active{background:var(--blue);color:#fff}
+  .tabs button .b{margin-left:8px;font-size:10.5px;background:rgba(255,255,255,.18);padding:1px 7px;border-radius:99px;font-weight:700}
+  .tabs button:not(.active) .b{background:var(--blue-50);color:var(--blue)}
+  .pane{display:none}.pane.active{display:block}
+  .three-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .three-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+  .three-card .h{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin-bottom:10px}
+  .three-card .ref{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--blue);font-weight:700;margin-bottom:8px}
+  .three-card .v{font-size:22px;font-weight:800;font-family:"JetBrains Mono",monospace}
+  .three-card.ok{border-left:3px solid var(--green)}
+  .three-card.warn{border-left:3px solid var(--amber)}
+  .three-card.bad{border-left:3px solid var(--red)}
+  .match-bar{margin-top:18px;padding:14px 16px;border-radius:10px;background:var(--green-bg);color:var(--green);font-weight:700;display:flex;justify-content:space-between;align-items:center}
+  .match-bar.warn{background:var(--amber-bg);color:var(--amber)}
+  .match-bar.bad{background:var(--red-bg);color:var(--red)}
+  .ovr-banner{background:var(--red-bg);border:2px solid var(--red);border-radius:10px;padding:14px 18px;margin-bottom:14px}
+  .ovr-banner .t{color:var(--red);font-weight:800;font-size:13px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .ovr-banner .body{font-size:13px;color:var(--ink-2);margin-bottom:10px}
+  .ovr-banner .actions{display:flex;gap:8px}
+  .ovr-banner textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit;font-size:13px;background:#fff;margin-top:8px}
+  .matrix{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .matrix-head{display:grid;grid-template-columns:160px repeat(5,1fr);padding:12px 16px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);background:var(--bg);border-bottom:1px solid var(--line)}
+  .matrix-row{display:grid;grid-template-columns:160px repeat(5,1fr);padding:14px 16px;align-items:center;border-bottom:1px solid var(--line-2)}
+  .matrix-row:last-child{border-bottom:0}
+  .matrix-row .doc{font-weight:700;font-size:13px}
+  .matrix-row .doc .sub{font-size:11px;color:var(--ink-3);font-weight:500;margin-top:2px}
+  .step{background:var(--blue-50);border:1px dashed var(--blue);color:var(--blue);border-radius:8px;padding:8px 10px;text-align:center;font-size:11.5px;font-weight:700;cursor:grab}
+  .step.empty{background:#f5f7fa;border:1px dashed var(--line);color:var(--ink-4);font-style:italic;font-weight:500}
+  .step .who{display:block;font-size:10.5px;font-weight:600;opacity:.85;margin-top:2px;letter-spacing:.04em;text-transform:uppercase}
+  .arr{color:var(--ink-4);font-size:14px}
+  .expiry-row{display:grid;grid-template-columns:32px 1fr 110px 130px 110px;gap:12px;padding:11px 14px;align-items:center;border-bottom:1px solid var(--line-2)}
+  .expiry-row:last-child{border-bottom:0}
+  .expiry-row .ic{width:32px;height:32px;border-radius:8px;background:var(--gray-bg);color:var(--gray);display:grid;place-items:center;font-weight:800;font-size:11px}
+  .expiry-row.crit .ic{background:var(--red-bg);color:var(--red)}
+  .expiry-row.warn .ic{background:var(--amber-bg);color:var(--amber)}
+  .bar{height:6px;border-radius:99px;background:var(--gray-bg);overflow:hidden;margin-top:4px}
+  .bar > i{display:block;height:100%;background:var(--green)}
+  .bar.warn > i{background:var(--amber)}
+  .bar.bad > i{background:var(--red)}
+  .blocked-card{background:var(--red-bg);border:2px solid var(--red);border-radius:12px;padding:18px}
+  .blocked-card .t{color:var(--red);font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script src="shared/macro-core.js"></script>
+<script src="shared/macro-shell.js"></script>
+<script>
+const ME='U-FM';
+const VIEWS=[
+  {id:'match',  icon:'shield', label:'Three-way match'},
+  {id:'overdraft',icon:'pin',  label:'Overdraft approval'},
+  {id:'block',  icon:'home',   label:'Outstanding-advance block'},
+  {id:'expiry', icon:'truck',  label:'WTEC &amp; MoA expiry'},
+  {id:'matrix', icon:'cog',    label:'Approval matrix'},
+];
+let v='match';
+
+function render(){
+  document.getElementById('app').innerHTML=
+    UI.sidebar({userId:ME,label:'Controls &amp; Compliance',cls:'fm'},VIEWS,v,'v4.0 · Tier 1+2')+
+    `<div class="main">${UI.topbar({},['Controls', (VIEWS.find(x=>x.id===v)||{}).label],'IMP')}<div class="page">
+      ${tabsBar()}
+      <div class="pane ${v==='match'?'active':''}">${paneMatch()}</div>
+      <div class="pane ${v==='overdraft'?'active':''}">${paneOverdraft()}</div>
+      <div class="pane ${v==='block'?'active':''}">${paneBlock()}</div>
+      <div class="pane ${v==='expiry'?'active':''}">${paneExpiry()}</div>
+      <div class="pane ${v==='matrix'?'active':''}">${paneMatrix()}</div>
+    </div></div>`;
+  UI.bindNav(id=>{v=id;render();});
+  bindLocal();
+}
+function tabsBar(){
+  return `<div class="tabs">${VIEWS.map(x=>`<button data-tab="${x.id}" class="${v===x.id?'active':''}">${x.label}</button>`).join('')}</div>`;
+}
+
+function paneMatch(){
+  return `<div class="page-head"><h1 class="page-title">Three-way match · LPO ↔ GRN ↔ Invoice</h1>
+    <div class="actions"><span class="pill blue">PR-2026-0053 · Vehicle hire</span></div></div>
+    <p class="page-sub" style="margin-bottom:18px">A Payment Voucher cannot be raised until LPO value, GRN value, and supplier invoice reconcile within the permitted variance (default 5%). Variances above threshold require Finance Manager override.</p>
+
+    <div class="three-grid">
+      <div class="three-card ok"><div class="h">① Local Purchase Order</div>
+        <div class="ref mono">LPO-2026-0192</div>
+        <div class="muted small">Issued ${MACRO.fmt.full('2026-04-21')} · AfriRide Logistics</div>
+        <div class="v" style="margin-top:14px">2,800,000</div>
+        <div class="muted small">30-day vehicle hire · Lilongwe</div>
+        <div class="muted small" style="margin-top:8px">Signed by W. Lungu, R. Mwale</div>
+      </div>
+      <div class="three-card ok"><div class="h">② Goods Received Note</div>
+        <div class="ref mono">GRN-2026-0188</div>
+        <div class="muted small">Received ${MACRO.fmt.full('2026-05-01')} · F. Mhone</div>
+        <div class="v" style="margin-top:14px">2,800,000</div>
+        <div class="muted small">Vehicle deployed full 30-day period</div>
+        <div class="muted small" style="margin-top:8px">No quality variance noted</div>
+      </div>
+      <div class="three-card warn"><div class="h">③ Vendor Tax Invoice</div>
+        <div class="ref mono">INV-V002-2026-0142</div>
+        <div class="muted small">Issued ${MACRO.fmt.full('2026-05-03')} · TPIN 30471284</div>
+        <div class="v" style="margin-top:14px">2,924,000</div>
+        <div class="muted small">Includes after-hours surcharge MK 124,000</div>
+        <div class="muted small" style="margin-top:8px">WTEC valid · expires 31 Dec 2026</div>
+      </div>
+    </div>
+
+    <div class="match-bar warn" style="margin-top:18px">
+      <div>⚠ Variance 4.4% (LPO 2,800,000 → Invoice 2,924,000) · within 5% threshold</div>
+      <div><span class="pill amber">REQUIRES NOTE</span></div>
+    </div>
+
+    <div class="card" style="margin-top:18px"><div class="card-h"><h3>Variance breakdown</h3></div>
+      <table class="tbl"><thead><tr><th>Source</th><th>Reference</th><th>Date</th><th class="num">Value (MK)</th><th class="num">Δ vs LPO</th><th>Status</th></tr></thead><tbody>
+        <tr><td>LPO</td><td class="ref">LPO-2026-0192</td><td>${MACRO.fmt.full('2026-04-21')}</td><td class="num">2,800,000</td><td class="num">—</td><td>${UI.pill('Baseline','blue')}</td></tr>
+        <tr><td>GRN</td><td class="ref">GRN-2026-0188</td><td>${MACRO.fmt.full('2026-05-01')}</td><td class="num">2,800,000</td><td class="num">0.0%</td><td>${UI.pill('Match','green')}</td></tr>
+        <tr><td>Invoice</td><td class="ref">INV-V002-2026-0142</td><td>${MACRO.fmt.full('2026-05-03')}</td><td class="num">2,924,000</td><td class="num" style="color:var(--amber)">+4.4%</td><td>${UI.pill('Within 5%','amber')}</td></tr>
+      </tbody></table>
+    </div>
+
+    <div class="card" style="margin-top:14px"><div class="card-b">
+      <b>Finance Manager note (required to proceed)</b>
+      <textarea id="match-note" placeholder="Explain variance source — e.g. after-hours surcharge per RFQ clause 4.2, agreed at quotation stage." style="width:100%;min-height:80px;border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:8px;font:inherit">After-hours surcharge MK 124,000 per RFQ clause 4.2, agreed at quotation stage and disclosed in IPC minutes. Overall under 5% threshold.</textarea>
+      <div class="row" style="margin-top:10px;justify-content:flex-end;gap:8px">
+        <button class="btn">Reject &amp; return to vendor</button>
+        <button class="btn primary" data-act="match-ok">Accept variance &amp; raise PV</button>
+      </div>
+    </div></div>`;
+}
+
+function paneOverdraft(){
+  const dip=MACRO.dip('DIP-2.4.1')||{};
+  const proposed=1240000;
+  const projected=(dip.committed||0)+(dip.spent||0)+proposed;
+  const overage=projected-(dip.budget||0);
+  return `<div class="page-head"><h1 class="page-title">Overdraft approval — required justification</h1></div>
+    <p class="page-sub" style="margin-bottom:14px">Per Rule 59, an approver who advances a transaction that creates or worsens an overdraft must enter a written justification. The justification is permanently printed on the Payment Voucher and travels with the Voucher Bundle.</p>
+
+    <div class="ovr-banner">
+      <div class="t">⚠ Budget overdraft will result from this approval</div>
+      <div class="body">
+        <b>AR-2026-0177 · Lilongwe weekend KP outreach · MK ${proposed.toLocaleString()}</b><br/>
+        Charging to <span class="mono">DIP-2.4.1 · Peer-led case finding</span><br/>
+        Approved budget MK ${dip.budget.toLocaleString()} · Already committed + spent MK ${(dip.committed+dip.spent).toLocaleString()} · Projected balance after this transaction: <b style="color:var(--red)">overdraft of MK ${overage.toLocaleString()}</b>
+      </div>
+      <textarea id="ovr-just" placeholder="Required: written justification for proceeding with this overdraft…">Reallocation pending donor approval; activity is mission-critical and committed under prior MoU. Offset by underspend on DIP-2.4.2 noted in May variance review.</textarea>
+      <div class="actions" style="margin-top:10px">
+        <button class="btn red" data-act="ovr-reject">Reject</button>
+        <button class="btn" data-act="ovr-return">Return for revision</button>
+        <button class="btn amber" data-act="ovr-approve">Approve with justification</button>
+      </div>
+    </div>
+
+    <div class="card"><div class="card-h"><h3>Notification chain</h3></div><div class="card-b">
+      <div class="muted">When this approval is recorded, the system will:</div>
+      <ul style="margin-top:8px;padding-left:20px;line-height:1.8">
+        <li>Email <b>Executive Director · Eleanor Phiri</b> — overdraft pending final approval</li>
+        <li>Email <b>Head of Programs · Chimwemwe Banda</b> — DIP-2.4.1 line on weekly Budget Status Report</li>
+        <li>Print justification text on the resulting Payment Voucher under "Overdraft Justification — Rule 59"</li>
+        <li>Include the justification in the Voucher Bundle cover sheet</li>
+        <li>Record the decision on the immutable audit ledger</li>
+      </ul>
+    </div></div>`;
+}
+
+function paneBlock(){
+  return `<div class="page-head"><h1 class="page-title">Outstanding-advance block — Rule 50</h1></div>
+    <p class="page-sub" style="margin-bottom:18px">A new Advance Request cannot be submitted while the requester has any unliquidated advance on record. The system shows the offending reference and the path to clear it.</p>
+
+    <div class="grid-2">
+      <div>
+        <div class="blocked-card">
+          <div class="t">⛔ Submission blocked</div>
+          <p style="margin:0 0 12px;font-size:13.5px">Tendai Phiri (Project Officer · KP) attempted to submit <b>AR-2026-0182 · Karonga referral mapping · MK 2,180,000</b>.</p>
+          <p style="margin:0 0 12px"><b>Reason:</b> Existing unliquidated advance on record.</p>
+          <div class="card" style="background:#fff;border:1px solid var(--red)">
+            <div class="card-b">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px">
+                <div>
+                  <div class="ref mono" style="color:var(--red)">AR-2026-0166</div>
+                  <div style="font-weight:700;margin-top:2px">Lilongwe peer-educator stand-down</div>
+                  <div class="muted small" style="margin-top:4px">DIP-2.4.1 · disbursed ${MACRO.fmt.full('2026-04-06')} · MK 1,840,000</div>
+                </div>
+                <span class="pill red">19 days overdue</span>
+              </div>
+              <div class="muted small" style="margin-top:10px">Activity ended ${MACRO.fmt.full('2026-04-19')} · Liquidation deadline ${MACRO.fmt.full('2026-04-19')} +30d</div>
+            </div>
+          </div>
+          <p style="margin:14px 0 0;font-size:12.5px;color:var(--ink-2)"><b>Action required:</b> liquidate AR-2026-0166 before this submission can proceed. Click below to open the liquidation form pre-filled with the outstanding amount.</p>
+          <div style="margin-top:10px"><a class="btn primary" href="Project Officer.html">Open liquidation form →</a></div>
+        </div>
+      </div>
+      <div>
+        <div class="card"><div class="card-h"><h3>Rule 50 — flow</h3></div><div class="card-b">
+          <ol style="padding-left:20px;line-height:1.85;font-size:13px">
+            <li>Project Officer fills new Advance Request form</li>
+            <li>System checks <span class="mono">requestedBy</span> against <span class="mono">ars[]</span> for any with stage in {Disbursed, Liquidation Pending}</li>
+            <li>If found → submission rejected; offending AR is shown with link to liquidation</li>
+            <li>If none → submission proceeds to Head of Programs queue</li>
+          </ol>
+        </div></div>
+        <div class="card" style="margin-top:14px"><div class="card-h"><h3>Other officers' status</h3></div>
+          <table class="tbl"><thead><tr><th>Officer</th><th>Outstanding</th><th>Days held</th><th>Can submit?</th></tr></thead><tbody>
+            <tr><td><b>Tendai Phiri</b></td><td class="ref">AR-2026-0166</td><td><span class="pill red">19d overdue</span></td><td>${UI.pill('Blocked','red')}</td></tr>
+            <tr><td>Florence Mhone (Admin)</td><td class="ref">AR-2026-0174</td><td><span class="pill amber">15d</span></td><td>${UI.pill('Blocked','red')}</td></tr>
+            <tr><td>Watson Lungu</td><td>—</td><td>—</td><td>${UI.pill('Clear','green')}</td></tr>
+            <tr><td>Other officers (4)</td><td>—</td><td>—</td><td>${UI.pill('Clear','green')}</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </div>`;
+}
+
+function paneExpiry(){
+  return `<div class="page-head"><h1 class="page-title">WTEC &amp; MoA expiry watch</h1></div>
+    <p class="page-sub" style="margin-bottom:18px">The system continuously monitors vendor Withholding Tax Exemption Certificates and active MoA contracts. Alerts fire 30 days before expiry; ceiling-reached contracts auto-revert to Standard procurement rules.</p>
+
+    <div class="kpis">
+      <div class="kpi red"><div class="l">WTEC expiring ≤30d</div><div class="v">2</div><div class="s">Reagent Supplies, AfriRide</div></div>
+      <div class="kpi amber"><div class="l">MoA expiring ≤30d</div><div class="v">1</div><div class="s">Capital Print House</div></div>
+      <div class="kpi amber"><div class="l">Ceiling ≥85% used</div><div class="v">2</div><div class="s">Sunbird, AfriRide</div></div>
+      <div class="kpi green"><div class="l">All compliant vendors</div><div class="v">14 / 17</div></div>
+    </div>
+
+    <div class="card" style="margin-top:14px"><div class="card-h"><h3>WTEC expiry watch</h3></div>
+      ${[
+        {n:'Reagent Supplies Mw',tpin:'29384726',exp:'2026-05-22',days:14,cls:'crit'},
+        {n:'AfriRide Logistics',tpin:'30471284',exp:'2026-06-04',days:27,cls:'warn'},
+        {n:'Capital Print House',tpin:'20183746',exp:'2026-08-12',days:96,cls:''},
+        {n:'Sunbird Stationers',tpin:'21048372',exp:'2026-12-31',days:237,cls:''},
+        {n:'Lakeshore Lodge',tpin:'18374625',exp:'2027-01-15',days:252,cls:''},
+      ].map(r=>`<div class="expiry-row ${r.cls}">
+        <div class="ic">${r.cls==='crit'?'!':r.cls==='warn'?'⚠':'✓'}</div>
+        <div><b>${r.n}</b><div class="muted small">TPIN ${r.tpin}</div></div>
+        <div class="muted small">Expires ${MACRO.fmt.full(r.exp)}</div>
+        <div>${r.days<=14?UI.pill(r.days+'d left','red'):r.days<=30?UI.pill(r.days+'d left','amber'):UI.pill(r.days+'d left','green')}</div>
+        <div style="text-align:right">${r.days<=30?'<button class="btn sm primary">Request renewal</button>':'<span class="muted small">Compliant</span>'}</div>
+      </div>`).join('')}
+    </div>
+
+    <div class="card" style="margin-top:14px"><div class="card-h"><h3>MoA contract ceilings &amp; expiry</h3></div>
+      <table class="tbl"><thead><tr><th>Contract</th><th>Vendor</th><th>Category</th><th class="num">Ceiling</th><th>Used</th><th>Expires</th><th>Status</th></tr></thead><tbody>
+        ${[
+          {c:'MOA-2025-0008',v:'AfriRide Logistics',cat:'Vehicle hire',ceil:80_000_000,used:74_400_000,exp:'2026-12-31',pct:93,cls:'warn'},
+          {c:'MOA-2025-0011',v:'Sunbird Stationers',cat:'Printing & stationery',ceil:42_000_000,used:36_800_000,exp:'2026-09-30',pct:88,cls:'warn'},
+          {c:'MOA-2025-0014',v:'Capital Print House',cat:'Printing & stationery',ceil:18_000_000,used:6_240_000,exp:'2026-06-04',pct:35,cls:'warn'},
+          {c:'MOA-2024-0021',v:'Reagent Supplies Mw',cat:'Lab supplies',ceil:120_000_000,used:78_400_000,exp:'2027-03-31',pct:65,cls:''},
+          {c:'MOA-2025-0019',v:'PetroMax Ltd',cat:'Fuel & lubricants',ceil:30_000_000,used:14_800_000,exp:'2027-01-31',pct:49,cls:''},
+        ].map(r=>`<tr>
+          <td><span class="ref">${r.c}</span></td><td>${r.v}</td><td>${r.cat}</td>
+          <td class="num">${MACRO.fmt.short(r.ceil)}</td>
+          <td><div style="font-size:11.5px;font-weight:700">${r.pct}% · ${MACRO.fmt.short(r.used)}</div><div class="bar ${r.pct>=85?'bad':r.pct>=70?'warn':''}"><i style="width:${r.pct}%"></i></div></td>
+          <td class="muted">${MACRO.fmt.full(r.exp)}</td>
+          <td>${r.pct>=85?UI.pill('Ceiling watch','red'):r.cls==='warn'?UI.pill('Expiring soon','amber'):UI.pill('Healthy','green')}</td>
+        </tr>`).join('')}
+      </tbody></table>
+    </div>
+
+    <p class="muted small" style="margin-top:10px">When a contract reaches its ceiling or expires, the system automatically reverts the vendor to Standard procurement (3 quotes required) until renewal.</p>`;
+}
+
+function paneMatrix(){
+  const docTypes=[
+    {id:'AR',name:'Advance Request',sub:'Activity funds',chain:['Project Officer','Head of Programs','Finance Manager','Executive Director','—']},
+    {id:'PV',name:'Payment Voucher',sub:'Vendor / imprest',chain:['Grant Finance Officer','Finance Manager','Executive Director','—','—']},
+    {id:'PR',name:'Procurement Requisition',sub:'Standard ≥ MK 500k',chain:['Project Officer','Head of Programs','Procurement Officer','Finance Manager','Executive Director']},
+    {id:'PRL',name:'Procurement Requisition',sub:'Low-value < MK 500k',chain:['Project Officer','Head of Programs','Grant Finance Officer','—','—']},
+    {id:'BR',name:'Budget Revision',sub:'Donor authorised',chain:['Finance Manager','Executive Director','—','—','—']},
+    {id:'LPO',name:'Local Purchase Order',sub:'Supplier order',chain:['Procurement Officer','Finance Manager','—','—','—']},
+  ];
+  return `<div class="page-head"><h1 class="page-title">Approval matrix configuration</h1>
+    <div class="actions"><button class="btn">Revert to defaults</button><button class="btn primary">Save matrix</button></div></div>
+    <p class="page-sub" style="margin-bottom:18px">Each document type has a defined approval chain. Drag steps to reorder, or click an empty slot to add an approver. Changes audit-log on save and apply to all documents created after activation. Director-level final approval is mandatory above MK 50M.</p>
+
+    <div class="matrix">
+      <div class="matrix-head"><div>Document type</div><div>Step 1</div><div>Step 2</div><div>Step 3</div><div>Step 4</div><div>Step 5</div></div>
+      ${docTypes.map(d=>`<div class="matrix-row" data-doc="${d.id}">
+        <div class="doc">${d.name}<div class="sub">${d.sub}</div></div>
+        ${d.chain.map((c,i)=>{
+          if (c==='—') return `<div class="step empty">+ add</div>`;
+          return `<div class="step" draggable="true">${i+1}. ${c.split(' ').slice(0,2).join(' ')}<span class="who">${c}</span></div>`;
+        }).join('')}
+      </div>`).join('')}
+    </div>
+
+    <div class="grid-2" style="margin-top:18px">
+      <div class="card"><div class="card-h"><h3>Threshold rules</h3></div><div class="card-b">
+        <table class="tbl"><thead><tr><th>Amount band (MK)</th><th>Required final approval</th></tr></thead><tbody>
+          <tr><td>< 5M</td><td>${UI.pill('Project Officer','blue')}</td></tr>
+          <tr><td>5M – 15M</td><td>${UI.pill('Head of Programs','blue')}</td></tr>
+          <tr><td>15M – 50M</td><td>${UI.pill('Finance Manager','blue')}</td></tr>
+          <tr><td>≥ 50M</td><td>${UI.pill('Executive Director','blue')}</td></tr>
+        </tbody></table>
+      </div></div>
+      <div class="card"><div class="card-h"><h3>Delegation &amp; out-of-office</h3></div><div class="card-b">
+        <table class="tbl"><thead><tr><th>Approver</th><th>Delegate to</th><th>Period</th></tr></thead><tbody>
+          <tr><td><b>Eleanor Phiri</b> · ED</td><td>R. Mwale (FM)</td><td>—</td></tr>
+          <tr><td><b>Ruth Mwale</b> · FM</td><td>D. Nkhata (GFO)</td><td>—</td></tr>
+          <tr><td><b>Chimwemwe Banda</b> · HoP</td><td>—</td><td>Out 12-19 May → C. Banda Snr</td></tr>
+        </tbody></table>
+        <button class="btn sm" style="margin-top:10px">+ Add delegation</button>
+      </div></div>
+    </div>`;
+}
+
+function bindLocal(){
+  document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{v=b.dataset.tab;render();}));
+  document.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>{
+    const a=b.dataset.act;
+    if (a==='match-ok'){UI.toast('Variance accepted · PV draft created','green');MACRO.audit('PR','PR-2026-0053','match-accept',ME,'4.4% variance accepted');}
+    else if (a==='ovr-approve'){const txt=document.getElementById('ovr-just').value;if (!txt.trim()){UI.toast('Justification required','red');return;}UI.toast('Approved with justification · routing to ED','amber');MACRO.audit('AR','AR-2026-0177','fm-approve-overdraft',ME,'Approved with overdraft justification');}
+    else if (a==='ovr-reject'){UI.toast('AR-2026-0177 rejected','red');}
+    else if (a==='ovr-return'){UI.toast('AR-2026-0177 returned for revision','amber');}
+  }));
+}
+MACRO.subscribe(()=>render());
+render();
+</script>
+</body>
+</html>

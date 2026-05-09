@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS · EFT Batch Processor</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/macro-styles.css" />
+<style>
+  .pick-row{display:grid;grid-template-columns:36px 130px 1fr 130px 110px 130px 100px;gap:10px;padding:11px 16px;align-items:center;border-bottom:1px solid var(--line-2);font-size:13px}
+  .pick-row.head{background:#fafbfc;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700;border-bottom:1px solid var(--line)}
+  .pick-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--blue)}
+  .summary-card{background:linear-gradient(135deg,#1F4E79,#2E75B6);color:#fff;border-radius:14px;padding:18px 22px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:14px}
+  .summary-card .l{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.78;font-weight:700}
+  .summary-card .v{font-size:22px;font-weight:800;font-family:"JetBrains Mono",monospace;margin-top:6px}
+  .batch-row{display:grid;grid-template-columns:140px 1fr 110px 130px 110px 110px;gap:10px;padding:13px 16px;align-items:center;border-bottom:1px solid var(--line-2);font-size:13px}
+  .batch-row.head{background:#fafbfc;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700;border-bottom:1px solid var(--line)}
+  .step-bar{display:flex;gap:0;background:var(--bg);border-radius:10px;overflow:hidden;border:1px solid var(--line);margin-bottom:18px}
+  .step-bar .s{flex:1;padding:12px 14px;font-size:12px;font-weight:700;color:var(--ink-3);position:relative}
+  .step-bar .s.done{color:var(--green);background:var(--green-bg)}
+  .step-bar .s.now{color:#fff;background:var(--blue)}
+  .step-bar .s + .s::before{content:"›";position:absolute;left:-8px;top:50%;transform:translateY(-50%);color:var(--ink-4);font-weight:700}
+  .file-preview{font-family:"JetBrains Mono",monospace;font-size:11.5px;background:#0E1A2B;color:#a8d6ff;padding:14px 16px;border-radius:8px;line-height:1.55;max-height:240px;overflow:auto}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script src="shared/macro-core.js"></script>
+<script src="shared/macro-shell.js"></script>
+<script>
+const ME='U-GFO';
+const STATE={picked:new Set(['PV-2026-1242','PV-2026-1241'])}; // by default pre-pick the ED-Approved
+const VIEWS=[
+  {id:'queue',  icon:'inbox', label:'Pending payment queue'},
+  {id:'compose',icon:'file',  label:'Compose batch'},
+  {id:'history',icon:'list',  label:'Batch history'},
+];
+let v='compose';
+
+function pendingPVs(){ return MACRO.list('pvs', p => p.stage==='ED Approved' || p.stage==='Paid' || p.stage==='Posted'); }
+function approvedForPay(){ return MACRO.list('pvs', p => p.stage==='ED Approved'); }
+
+function render(){
+  document.getElementById('app').innerHTML=
+    UI.sidebar({userId:ME,label:'Grant Finance Officer',cls:'gfo'},VIEWS,v,'EFT Batch Processor · v4')+
+    `<div class="main">${UI.topbar({userId:ME},['EFT Batch', (VIEWS.find(x=>x.id===v)||{}).label],'IMP')}<div class="page">
+      ${v==='queue'?paneQueue():v==='compose'?paneCompose():paneHistory()}
+    </div></div>`;
+  UI.bindNav(id=>{v=id;render();});
+  bindLocal();
+}
+
+function paneQueue(){
+  const list=approvedForPay();
+  const total=list.reduce((s,p)=>s+(p.net||0),0);
+  return `<div class="page-head"><h1 class="page-title">Pending payment queue</h1><div class="actions"><button class="btn primary" data-act="goto-compose">Compose batch (${list.length})</button></div></div>
+    <p class="page-sub" style="margin-bottom:14px">Vouchers that have completed all approval stages and are ready to be packaged into an electronic funds transfer batch for the bank.</p>
+    <div class="kpis">
+      <div class="kpi green"><div class="l">Approved · ready to pay</div><div class="v">${list.length}</div><div class="s">total MK ${(total/1e6).toFixed(2)}M</div></div>
+      <div class="kpi blue"><div class="l">Awaiting earlier approvals</div><div class="v">${MACRO.list('pvs',p=>['PO Submitted','GFO Reviewed','FM Approved'].includes(p.stage)).length}</div></div>
+      <div class="kpi amber"><div class="l">Returned to PO</div><div class="v">${MACRO.list('pvs',p=>p.stage==='Returned').length}</div></div>
+      <div class="kpi"><div class="l">Paid YTD (count)</div><div class="v">${MACRO.list('pvs',p=>['Paid','Posted'].includes(p.stage)).length}</div></div>
+    </div>
+    <div class="card">
+      <div class="pick-row head"><div></div><div>Voucher</div><div>Payee · narration</div><div>Bank · A/c</div><div>DIP</div><div class="num">Net (MK)</div><div>Approved</div></div>
+      ${list.map(p=>{const v=MACRO.list('vendors',x=>x.id===p.vendorId)[0]||{};return `<div class="pick-row">
+        <input type="checkbox" disabled checked />
+        <div class="ref mono">${p.id}</div>
+        <div><b>${p.payee}</b><div class="muted small">${p.title}</div></div>
+        <div class="muted small">${v.id==='V-001'?'NBM · 1014328400':v.id==='V-002'?'STD · 1009274516':v.id==='V-003'?'NBM · 1027183642':'NBM · '+(1000000000+Math.floor(Math.random()*99999999))}</div>
+        <div class="ref">${p.dip}</div>
+        <div class="num">${(p.net||0).toLocaleString()}</div>
+        <div class="muted small">${MACRO.fmt.since(p.submitted)}</div>
+      </div>`}).join('')||'<div class="empty">No vouchers ready for payment.</div>'}
+    </div>`;
+}
+
+function paneCompose(){
+  const list=approvedForPay();
+  const picked=list.filter(p=>STATE.picked.has(p.id));
+  const total=picked.reduce((s,p)=>s+(p.net||0),0);
+  const wht=picked.reduce((s,p)=>s+(p.wht||0),0);
+  return `<div class="page-head"><h1 class="page-title">Compose EFT batch</h1>
+    <div class="actions"><button class="btn">Cancel</button><button class="btn primary" data-act="confirm-batch" ${picked.length===0?'disabled':''}>Generate &amp; lock batch</button></div></div>
+    <p class="page-sub" style="margin-bottom:14px">Bundle approved vouchers into a single electronic funds transfer file for upload to the bank's host. On generation, the system locks each voucher (no further edits) and marks it Paid on bank confirmation.</p>
+
+    <div class="step-bar">
+      <div class="s ${picked.length>0?'done':'now'}">1 · Select vouchers</div>
+      <div class="s ${picked.length>0?'now':''}">2 · Review &amp; balance</div>
+      <div class="s">3 · Generate file</div>
+      <div class="s">4 · Bank confirmation</div>
+      <div class="s">5 · Mark paid &amp; lock</div>
+    </div>
+
+    <div class="summary-card">
+      <div><div class="l">Vouchers selected</div><div class="v">${picked.length}<span style="font-size:13px;opacity:.7"> / ${list.length}</span></div></div>
+      <div><div class="l">Gross total (MK)</div><div class="v">${picked.reduce((s,p)=>s+(p.gross||0),0).toLocaleString()}</div></div>
+      <div><div class="l">Withholding tax (MK)</div><div class="v">${wht.toLocaleString()}</div></div>
+      <div><div class="l">Net to disburse (MK)</div><div class="v">${total.toLocaleString()}</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-h"><h3>Select vouchers for this batch</h3><span class="muted small">Click a row to add or remove · Default selection = all approved</span></div>
+      <div class="pick-row head"><div></div><div>Voucher</div><div>Payee · narration</div><div>Beneficiary bank</div><div>DIP</div><div class="num">Net (MK)</div><div></div></div>
+      ${list.map(p=>{const v=MACRO.list('vendors',x=>x.id===p.vendorId)[0]||{};const sel=STATE.picked.has(p.id);return `<div class="pick-row" data-pv="${p.id}" style="cursor:pointer;${sel?'background:#f0f6fc':''}">
+        <input type="checkbox" ${sel?'checked':''} data-pv="${p.id}" />
+        <div class="ref mono">${p.id}</div>
+        <div><b>${p.payee}</b><div class="muted small">${p.title}</div></div>
+        <div class="muted small">${v.id==='V-001'?'NBM · 1014328400':v.id==='V-002'?'STD · 1009274516':v.id==='V-003'?'NBM · 1027183642':'NBM · '+(1014000000+(parseInt(p.id.replace(/\\D/g,''))||0)%1000000)}</div>
+        <div class="ref">${p.dip}</div>
+        <div class="num">${(p.net||0).toLocaleString()}</div>
+        <div>${UI.pill(p.stage,'green')}</div>
+      </div>`}).join('')}
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-h"><h3>EFT file preview · pacs.008 (ISO 20022)</h3>
+        <div class="actions"><span class="pill blue">Standard Bank · Corp Banking</span></div></div>
+      <div class="card-b">
+        <div class="file-preview">${picked.length===0?'-- no vouchers selected --':[
+          '&lt;Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08"&gt;',
+          '  &lt;FIToFICstmrCdtTrf&gt;',
+          '    &lt;GrpHdr&gt;',
+          '      &lt;MsgId&gt;EFT-2026-'+(2025001).toString()+'&lt;/MsgId&gt;',
+          '      &lt;CreDtTm&gt;'+new Date().toISOString().slice(0,19)+'&lt;/CreDtTm&gt;',
+          '      &lt;NbOfTxs&gt;'+picked.length+'&lt;/NbOfTxs&gt;',
+          '      &lt;CtrlSum&gt;'+total.toLocaleString()+'&lt;/CtrlSum&gt;',
+          '      &lt;InstgAgt&gt;&lt;FinInstnId&gt;&lt;BICFI&gt;SBICMWMW&lt;/BICFI&gt;&lt;/FinInstnId&gt;&lt;/InstgAgt&gt;',
+          '    &lt;/GrpHdr&gt;',
+          ...picked.flatMap((p,i)=>{const v=MACRO.list('vendors',x=>x.id===p.vendorId)[0]||{};return [
+          '    &lt;CdtTrfTxInf&gt;',
+          '      &lt;PmtId&gt;&lt;EndToEndId&gt;'+p.id+'&lt;/EndToEndId&gt;&lt;/PmtId&gt;',
+          '      &lt;Amt&gt;&lt;InstdAmt Ccy="MWK"&gt;'+(p.net||0)+'&lt;/InstdAmt&gt;&lt;/Amt&gt;',
+          '      &lt;Cdtr&gt;&lt;Nm&gt;'+p.payee+'&lt;/Nm&gt;&lt;/Cdtr&gt;',
+          '      &lt;CdtrAcct&gt;&lt;Id&gt;'+(1014000000+(parseInt(p.id.replace(/\\D/g,''))||0)%1000000)+'&lt;/Id&gt;&lt;/CdtrAcct&gt;',
+          '      &lt;RmtInf&gt;&lt;Ustrd&gt;'+p.title+'&lt;/Ustrd&gt;&lt;/RmtInf&gt;',
+          '    &lt;/CdtTrfTxInf&gt;'
+          ];}),
+          '  &lt;/FIToFICstmrCdtTrf&gt;',
+          '&lt;/Document&gt;'
+        ].join('\\n')}</div>
+      </div>
+    </div>
+
+    <div class="card"><div class="card-h"><h3>Pre-flight checks</h3></div><div class="card-b">
+      <table class="tbl"><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+        <tr><td>All vouchers in stage <span class="mono">ED Approved</span></td><td>${UI.pill('Pass','green')}</td></tr>
+        <tr><td>All vendors have valid bank a/c on file</td><td>${UI.pill('Pass','green')}</td></tr>
+        <tr><td>WTEC valid for all WHT-eligible vendors</td><td>${UI.pill('Pass','green')}</td></tr>
+        <tr><td>Sum of net debits = bank file control sum</td><td>${UI.pill('Balanced','green')}</td></tr>
+        <tr><td>Total within FM single-batch ceiling (MK 50M)</td><td>${total>50_000_000?UI.pill('Exceeds','red'):UI.pill('Pass','green')}</td></tr>
+        <tr><td>Daily cumulative within ED daily ceiling (MK 200M)</td><td>${UI.pill('Pass','green')}</td></tr>
+      </tbody></table>
+    </div></div>`;
+}
+
+function paneHistory(){
+  const batches=[
+    {id:'EFT-2026-2024998',date:'2026-05-06',count:3,total:8_980_000,by:'D. Nkhata',stage:'Posted'},
+    {id:'EFT-2026-2024985',date:'2026-04-28',count:5,total:14_240_000,by:'D. Nkhata',stage:'Posted'},
+    {id:'EFT-2026-2024964',date:'2026-04-15',count:4,total:6_120_000,by:'D. Nkhata',stage:'Posted'},
+    {id:'EFT-2026-2024932',date:'2026-04-02',count:2,total:3_840_000,by:'D. Nkhata',stage:'Posted'},
+  ];
+  return `<div class="page-head"><h1 class="page-title">Batch history</h1></div>
+    <div class="card">
+      <div class="batch-row head"><div>Batch ref</div><div>Description</div><div>Vouchers</div><div class="num">Total (MK)</div><div>Submitted by</div><div>Status</div></div>
+      ${batches.map(b=>`<div class="batch-row">
+        <div class="ref mono">${b.id}</div>
+        <div>${b.count} payments · ${MACRO.fmt.full(b.date)}</div>
+        <div>${b.count}</div>
+        <div class="num">${b.total.toLocaleString()}</div>
+        <div class="muted small">${b.by}</div>
+        <div>${UI.pill(b.stage,'green')}</div>
+      </div>`).join('')}
+    </div>`;
+}
+
+function bindLocal(){
+  document.querySelectorAll('[data-act="goto-compose"]').forEach(b=>b.addEventListener('click',()=>{v='compose';render();}));
+  document.querySelectorAll('[data-pv]').forEach(el=>{
+    el.addEventListener('click',e=>{
+      if (e.target.tagName==='INPUT') return;
+      const id=el.dataset.pv;
+      if (STATE.picked.has(id)) STATE.picked.delete(id); else STATE.picked.add(id);
+      render();
+    });
+  });
+  document.querySelectorAll('input[type=checkbox][data-pv]').forEach(c=>{
+    c.addEventListener('click',e=>{e.stopPropagation();const id=c.dataset.pv;if(c.checked)STATE.picked.add(id);else STATE.picked.delete(id);render();});
+  });
+  const conf=document.querySelector('[data-act="confirm-batch"]');
+  if (conf) conf.addEventListener('click', async () => {
+    const picked=[...STATE.picked];
+    if (!picked.length) return;
+    const r=await UI.confirm({title:'Generate &amp; lock batch',body:`This will lock ${picked.length} voucher(s), generate EFT file, and mark them Paid on bank confirmation. Continue?`,ok:'Generate batch',tone:'primary'});
+    if (!r.ok) return;
+    const batchId='EFT-2026-'+(2025001+Math.floor(Math.random()*99));
+    picked.forEach(id=>{
+      MACRO.update('pvs',id,{stage:'Paid',paidOn:new Date().toISOString().slice(0,10),eftRef:batchId});
+      MACRO.audit('PV',id,'pay',ME,'Paid via batch '+batchId);
+    });
+    STATE.picked.clear();
+    UI.toast(`Batch ${batchId} generated · ${picked.length} vouchers marked Paid`,'green');
+    v='history';render();
+  });
+}
+
+MACRO.subscribe(()=>render());
+render();
+</script>
+</body>
+</html>

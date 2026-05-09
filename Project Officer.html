@@ -1,0 +1,1439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS · Project Officer Workspace</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --blue:#1F4E79;--blue-700:#163955;--blue-500:#2E75B6;--blue-50:#EBF3FB;--blue-100:#D9E7F4;
+    --ink:#0E1A2B;--ink-2:#3B4A5E;--ink-3:#6A7689;
+    --line:#E4E9EF;--line-2:#EEF2F6;--bg:#F5F7FA;--paper:#FFFFFF;
+    --green:#1E7E48;--green-bg:#E2EFDA;
+    --amber:#A6791A;--amber-bg:#FFF2CC;
+    --red:#B42318;--red-bg:#FFE2E2;
+    --purple:#5A2BB1;--purple-bg:#EDE3FB;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+
+  /* ===== Shell ===== */
+  .app{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+  .sidebar{background:var(--blue);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .brand{padding:20px 18px 16px;display:flex;gap:11px;align-items:center;border-bottom:1px solid rgba(255,255,255,.1)}
+  .brand-mark{width:38px;height:38px;background:#fff;color:var(--blue);border-radius:9px;display:grid;place-items:center;font-weight:900;font-size:14px;letter-spacing:-.02em;flex:0 0 auto}
+  .brand-name{font-weight:800;font-size:14px;letter-spacing:.02em}
+  .brand-sub{font-size:10.5px;opacity:.7;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+  .role-card{margin:14px 12px 10px;padding:11px 12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);border-radius:10px;display:flex;gap:10px;align-items:center}
+  .role-card .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#FFD479,#E8881C);color:#3a2400;display:grid;place-items:center;font-weight:800;font-size:12.5px;flex:0 0 auto}
+  .role-card b{font-size:13px;line-height:1.15;display:block}
+  .role-card small{font-size:10.5px;opacity:.7;letter-spacing:.04em;text-transform:uppercase;display:block;margin-top:2px}
+  .nav-section{padding:14px 14px 6px;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.45)}
+  .nav{display:flex;flex-direction:column;gap:2px;padding:0 10px;flex:1;overflow:auto}
+  .nav button{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:8px;color:rgba(255,255,255,.82);text-align:left;font-size:13px;font-weight:500;width:100%;transition:.15s}
+  .nav button:hover{background:rgba(255,255,255,.07);color:#fff}
+  .nav button.active{background:#fff;color:var(--blue);font-weight:700}
+  .nav button .badge{margin-left:auto;background:rgba(255,255,255,.18);font-size:11px;padding:1px 7px;border-radius:10px;font-weight:700;min-width:22px;text-align:center}
+  .nav button.active .badge{background:var(--red);color:#fff}
+  .nav button .badge.q{background:var(--amber);color:#3a2400}
+  .nav button.active .badge.q{background:var(--amber);color:#3a2400}
+  .nav svg{width:17px;height:17px;flex:0 0 auto;stroke-width:1.8}
+  .sidebar-foot{padding:12px 14px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:8px}
+  .sidebar-foot .dot{width:7px;height:7px;border-radius:50%;background:#9be0b4;box-shadow:0 0 8px #9be0b4}
+
+  /* ===== Topbar ===== */
+  .main{display:flex;flex-direction:column;min-width:0}
+  .topbar{display:flex;align-items:center;gap:14px;padding:13px 28px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+  .crumbs{font-size:12.5px;color:var(--ink-3);display:flex;gap:6px;align-items:center}
+  .crumbs b{color:var(--ink);font-weight:600}
+  .proj-pill{display:inline-flex;align-items:center;gap:8px;padding:5px 11px 5px 5px;border:1px solid var(--line);border-radius:99px;font-size:12px;font-weight:600}
+  .proj-pill .sw{width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:10px;font-weight:800}
+  .search{margin-left:auto;display:flex;align-items:center;gap:8px;padding:6px 11px;border:1px solid var(--line);border-radius:9px;width:300px;background:#fafbfc}
+  .search input{border:0;outline:0;background:transparent;flex:1;font:inherit;color:var(--ink)}
+  .search kbd{font:600 10.5px "JetBrains Mono",monospace;background:#fff;border:1px solid var(--line);padding:2px 6px;border-radius:4px;color:var(--ink-3)}
+  .icon-btn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);display:grid;place-items:center;background:#fff;position:relative}
+  .icon-btn .dot{position:absolute;top:6px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--red);border:2px solid #fff}
+  .icon-btn svg{width:17px;height:17px;stroke-width:1.8}
+  .new-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:9px;background:var(--blue);color:#fff;font-weight:700;font-size:13px}
+  .new-btn:hover{background:var(--blue-700)}
+  .new-btn svg{width:14px;height:14px;stroke-width:2.5}
+
+  /* ===== Page ===== */
+  .page{padding:22px 28px 60px;max-width:1400px;margin:0 auto;width:100%}
+  .page-head{display:flex;align-items:flex-end;gap:18px;margin-bottom:18px}
+  .page-title{font-size:24px;font-weight:800;letter-spacing:-.01em;line-height:1.1}
+  .page-sub{color:var(--ink-3);font-size:13px;margin-top:4px}
+  .page-head .actions{margin-left:auto;display:flex;gap:8px}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:8px;font-weight:600;font-size:13px;border:1px solid var(--line);background:#fff;color:var(--ink);transition:.15s}
+  .btn:hover{border-color:var(--ink-3)}
+  .btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .btn.primary:hover{background:var(--blue-700)}
+  .btn svg{width:14px;height:14px;stroke-width:2}
+
+  .view{display:none}
+  .view.active{display:block}
+
+  /* ===== Greeting strip ===== */
+  .hello{display:flex;gap:14px;align-items:stretch;margin-bottom:18px}
+  .hello-card{flex:1;background:linear-gradient(135deg,#1F4E79 0%,#2E75B6 100%);color:#fff;padding:22px 24px;border-radius:14px;display:flex;align-items:center;gap:24px;position:relative;overflow:hidden}
+  .hello-card::after{content:"";position:absolute;right:-40px;top:-40px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.06)}
+  .hello-card::before{content:"";position:absolute;right:60px;bottom:-80px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.05)}
+  .hello-card h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.01em}
+  .hello-card .sub{font-size:13px;opacity:.85;margin-top:6px}
+  .hello-stats{display:flex;gap:22px;margin-left:auto;position:relative;z-index:1}
+  .hs{display:flex;flex-direction:column}
+  .hs .v{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1}
+  .hs .l{font-size:11px;opacity:.78;text-transform:uppercase;letter-spacing:.08em;margin-top:5px;font-weight:600}
+  .hs.warn .v{color:#FFD479}
+  .hs.alert .v{color:#FFB3B3}
+
+  /* ===== Inbox / Action queue ===== */
+  .grid-2{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin-bottom:18px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .card-h{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line-2)}
+  .card-h h3{margin:0;font-size:14px;font-weight:700}
+  .card-h .sub{color:var(--ink-3);font-size:12px;margin-left:6px}
+  .card-h .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--blue-50);color:var(--blue)}
+  .pill.warn{background:var(--amber-bg);color:var(--amber)}
+  .pill.red{background:var(--red-bg);color:var(--red)}
+  .pill.green{background:var(--green-bg);color:var(--green)}
+  .ghost{font-size:12px;color:var(--ink-3);font-weight:600;cursor:pointer}
+  .ghost:hover{color:var(--blue)}
+
+  .inbox{padding:6px 0}
+  .ix{display:grid;grid-template-columns:42px 1fr auto;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line-2);align-items:center;cursor:pointer;transition:.15s}
+  .ix:last-child{border-bottom:0}
+  .ix:hover{background:var(--blue-50)}
+  .ix .ico{width:42px;height:42px;border-radius:10px;background:var(--blue-50);color:var(--blue);display:grid;place-items:center;font-weight:800;font-size:11px;letter-spacing:.04em}
+  .ix.urgent .ico{background:var(--red-bg);color:var(--red)}
+  .ix.warn .ico{background:var(--amber-bg);color:var(--amber)}
+  .ix.due .ico{background:var(--purple-bg);color:var(--purple)}
+  .ix .t{font-size:13.5px;font-weight:600;line-height:1.3}
+  .ix .m{font-size:12px;color:var(--ink-3);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
+  .ix .m b{color:var(--ink-2);font-weight:600}
+  .ix .actbtn{padding:6px 12px;border-radius:7px;background:var(--blue);color:#fff;font-size:12px;font-weight:700;border:0}
+  .ix .actbtn.warn{background:var(--amber);color:#3a2400}
+  .ix .actbtn.red{background:var(--red);color:#fff}
+  .ix .age{font-size:11px;color:var(--ink-3);font-weight:600;text-align:right;line-height:1.2}
+  .ix .age b{display:block;color:var(--ink);font-size:12.5px}
+
+  /* ===== Activity funnel cards ===== */
+  .act-list{padding:14px;display:flex;flex-direction:column;gap:12px}
+  .act{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:#fff;transition:.15s;cursor:pointer}
+  .act:hover{border-color:var(--blue);box-shadow:0 4px 12px -8px rgba(31,78,121,.18)}
+  .act-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px}
+  .act-top h4{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .act-top .meta{font-size:12px;color:var(--ink-3);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
+  .act-top .meta b{color:var(--ink-2);font-weight:600}
+  .act-top .right{margin-left:auto;text-align:right}
+  .act-top .amt{font:700 15px "JetBrains Mono",monospace;letter-spacing:-.01em}
+  .act-top .amt small{display:block;color:var(--ink-3);font-size:11px;font-weight:500;margin-top:2px;font-family:"Plus Jakarta Sans"}
+
+  .funnel{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px}
+  .fnl{padding:9px 10px;border-radius:8px;background:var(--line-2);position:relative;font-size:11px}
+  .fnl b{display:block;font-size:11.5px;font-weight:700;color:var(--ink-2);letter-spacing:.02em}
+  .fnl small{color:var(--ink-3);font-size:10.5px;margin-top:2px;display:block}
+  .fnl.done{background:var(--green-bg);color:var(--green)}
+  .fnl.done b{color:var(--green)}
+  .fnl.done small{color:var(--green);opacity:.85}
+  .fnl.now{background:var(--blue);color:#fff}
+  .fnl.now b{color:#fff}
+  .fnl.now small{color:rgba(255,255,255,.85)}
+  .fnl.blocked{background:var(--red-bg);color:var(--red)}
+  .fnl.blocked b{color:var(--red)}
+  .fnl.blocked small{color:var(--red);opacity:.85}
+  .fnl.warn{background:var(--amber-bg);color:var(--amber)}
+  .fnl.warn b{color:var(--amber)}
+  .fnl.warn small{color:var(--amber)}
+  .fnl .nub{position:absolute;top:8px;right:9px;width:14px;height:14px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:9px}
+  .fnl.done .nub{background:var(--green);color:#fff}
+  .fnl.now .nub{background:#fff;color:var(--blue)}
+  .fnl.blocked .nub{background:var(--red);color:#fff}
+  .fnl.warn .nub{background:var(--amber);color:#fff}
+
+  /* ===== Quick actions ===== */
+  .qa{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px}
+  .qa-btn{display:flex;flex-direction:column;align-items:flex-start;padding:14px;border-radius:10px;border:1px solid var(--line);background:#fff;text-align:left;transition:.15s;cursor:pointer}
+  .qa-btn:hover{border-color:var(--blue);background:var(--blue-50)}
+  .qa-btn .qi{width:34px;height:34px;border-radius:9px;background:var(--blue-50);color:var(--blue);display:grid;place-items:center;margin-bottom:10px}
+  .qa-btn:hover .qi{background:var(--blue);color:#fff}
+  .qa-btn .qi svg{width:17px;height:17px;stroke-width:2}
+  .qa-btn b{font-size:13px;font-weight:700}
+  .qa-btn small{color:var(--ink-3);font-size:11.5px;margin-top:3px;line-height:1.3}
+
+  /* ===== Calendar strip ===== */
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:14px}
+  .day{border:1px solid var(--line);border-radius:9px;padding:10px;min-height:108px;background:#fff;display:flex;flex-direction:column;gap:5px}
+  .day.today{border-color:var(--blue);background:var(--blue-50)}
+  .day .dh{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .day .dn{font-size:18px;font-weight:800;color:var(--ink)}
+  .day.today .dn{color:var(--blue)}
+  .ev{font-size:10.5px;font-weight:600;padding:5px 7px;border-radius:6px;line-height:1.2;display:flex;flex-direction:column;gap:1px}
+  .ev.act{background:var(--blue);color:#fff}
+  .ev.due{background:var(--amber-bg);color:var(--amber)}
+  .ev.past{background:var(--green-bg);color:var(--green)}
+  .ev.tr{background:var(--purple-bg);color:var(--purple)}
+  .ev small{font-size:9.5px;font-weight:500;opacity:.85}
+
+  /* ===== Budget envelope ===== */
+  .env{padding:14px 18px}
+  .env-row{padding:10px 0;border-bottom:1px solid var(--line-2)}
+  .env-row:last-child{border-bottom:0}
+  .env-top{display:flex;align-items:center;gap:10px;font-size:13px}
+  .env-top .code{font:700 11px "JetBrains Mono",monospace;background:var(--blue-50);color:var(--blue);padding:2px 7px;border-radius:5px}
+  .env-top .nm{font-weight:600}
+  .env-top .amt{margin-left:auto;font:700 13px "JetBrains Mono",monospace}
+  .env-top .amt small{color:var(--ink-3);font-weight:500;font-family:"Plus Jakarta Sans"}
+  .ebar{height:7px;border-radius:99px;background:var(--line-2);margin-top:7px;overflow:hidden}
+  .ebar div{height:100%;background:var(--blue)}
+  .ebar.warn div{background:var(--amber)}
+  .env-meta{display:flex;gap:14px;font-size:11px;color:var(--ink-3);margin-top:5px;font-weight:500}
+  .env-meta b{color:var(--ink);font-weight:700}
+
+  /* ===== Tables ===== */
+  table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+  table.tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:700;text-align:left;padding:12px 18px;background:#fafbfc;border-bottom:1px solid var(--line-2)}
+  table.tbl td{padding:14px 18px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+  table.tbl tr:last-child td{border-bottom:0}
+  table.tbl tr:hover td{background:#fafbfc;cursor:pointer}
+  .ref{font:700 12px "JetBrains Mono",monospace;color:var(--blue)}
+  .num{font:600 13px "JetBrains Mono",monospace;text-align:right}
+  .chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;letter-spacing:.02em;display:inline-flex;align-items:center;gap:5px}
+  .chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .chip.draft{background:#EEF2F6;color:#52617A}
+  .chip.review{background:var(--blue-50);color:var(--blue)}
+  .chip.approved{background:var(--green-bg);color:var(--green)}
+  .chip.paid{background:var(--purple-bg);color:var(--purple)}
+  .chip.overdue{background:var(--red-bg);color:var(--red)}
+  .chip.warn{background:var(--amber-bg);color:var(--amber)}
+
+  /* ===== Wizard ===== */
+  .wiz{padding:24px;display:grid;grid-template-columns:240px 1fr;gap:28px}
+  .wiz-steps{display:flex;flex-direction:column;gap:4px}
+  .wiz-st{padding:12px 14px;border-radius:10px;display:flex;gap:11px;align-items:flex-start;cursor:pointer;transition:.15s}
+  .wiz-st:hover{background:var(--blue-50)}
+  .wiz-st.active{background:var(--blue);color:#fff}
+  .wiz-st .nb{width:24px;height:24px;border-radius:50%;background:var(--line-2);display:grid;place-items:center;font-weight:800;font-size:11px;flex:0 0 auto}
+  .wiz-st.active .nb{background:#fff;color:var(--blue)}
+  .wiz-st.done .nb{background:var(--green);color:#fff}
+  .wiz-st b{font-size:13px;font-weight:700;display:block}
+  .wiz-st small{font-size:11px;opacity:.7;display:block;margin-top:2px;line-height:1.25}
+  .wiz-body{background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px}
+  .wiz-body h2{margin:0 0 4px;font-size:18px;font-weight:800;letter-spacing:-.01em}
+  .wiz-body .lead{color:var(--ink-3);font-size:13px;margin-bottom:18px}
+  .field{margin-bottom:14px}
+  .field label{font-size:11.5px;font-weight:700;color:var(--ink-2);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:6px}
+  .field input[type=text],.field select,.field textarea{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;color:var(--ink);background:#fff}
+  .field textarea{min-height:80px;resize:vertical}
+  .field .hint{font-size:11px;color:var(--ink-3);margin-top:4px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .budget-pick{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .budget-pick .bh{padding:10px 14px;background:#fafbfc;border-bottom:1px solid var(--line);font-size:11.5px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:10px}
+  .bp{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line-2);font-size:13px;align-items:center;cursor:pointer}
+  .bp:last-child{border-bottom:0}
+  .bp:hover{background:var(--blue-50)}
+  .bp.selected{background:var(--blue-50);box-shadow:inset 4px 0 0 var(--blue)}
+  .bp input[type=radio]{accent-color:var(--blue)}
+  .bp .code{font:700 11.5px "JetBrains Mono",monospace;color:var(--blue)}
+  .bp .nm{font-weight:600}
+  .bp .av{font:700 12.5px "JetBrains Mono",monospace}
+  .bp .av small{display:block;font-size:10.5px;font-weight:500;color:var(--ink-3);font-family:"Plus Jakarta Sans"}
+  .bp.warn .av{color:var(--amber)}
+  .bp.bad .av{color:var(--red)}
+  .wiz-foot{display:flex;justify-content:space-between;margin-top:22px;padding-top:18px;border-top:1px solid var(--line-2)}
+
+  /* ===== Voucher composer ===== */
+  .vc{padding:20px;display:grid;grid-template-columns:1fr 320px;gap:20px}
+  .vc-h{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line-2)}
+  .vc-h h3{margin:0;font-size:17px;font-weight:800}
+  .vc-h .sub{font-size:12.5px;color:var(--ink-3);margin-top:3px}
+  .vc-h .right{margin-left:auto}
+  .line-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px}
+  .line-tbl th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:700;text-align:left;padding:9px 10px;background:#fafbfc;border-bottom:1px solid var(--line-2)}
+  .line-tbl td{padding:8px 10px;border-bottom:1px dashed var(--line-2);vertical-align:middle}
+  .line-tbl input{width:100%;padding:6px 8px;border:1px solid transparent;border-radius:6px;font:inherit;color:var(--ink);background:transparent}
+  .line-tbl input:focus,.line-tbl input:hover{border-color:var(--line);background:#fff;outline:0}
+  .line-tbl .num{text-align:right;font-family:"JetBrains Mono",monospace;font-weight:600}
+  .line-tbl tfoot td{font-weight:700;background:#fafbfc;padding:11px 10px;border-top:2px solid var(--blue)}
+  .add-line{margin-top:6px;padding:9px;width:100%;border:1px dashed var(--line);border-radius:8px;color:var(--ink-3);font-size:12.5px;font-weight:600}
+  .add-line:hover{border-color:var(--blue);color:var(--blue)}
+  .att-list{display:flex;flex-direction:column;gap:7px;margin-top:6px}
+  .att{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.5px}
+  .att .fi{width:26px;height:30px;background:var(--red-bg);color:var(--red);font-size:9px;font-weight:800;border-radius:3px;display:grid;place-items:center}
+  .att.img .fi{background:var(--blue-50);color:var(--blue)}
+  .att .nm{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .att .sz{color:var(--ink-3);font-size:11px}
+  .att .x{color:var(--ink-3);font-size:14px;cursor:pointer}
+  .att.dz{border-style:dashed;justify-content:center;color:var(--ink-3);padding:14px;cursor:pointer}
+  .att.dz:hover{border-color:var(--blue);color:var(--blue)}
+  .vc-side{display:flex;flex-direction:column;gap:14px}
+  .vc-card{border:1px solid var(--line);border-radius:10px;padding:14px}
+  .vc-card h5{margin:0 0 10px;font-size:11.5px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em}
+  .check-row{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--line-2)}
+  .check-row:last-child{border-bottom:0}
+  .check-row .ck{width:18px;height:18px;border-radius:5px;background:var(--green);color:#fff;display:grid;place-items:center;font-weight:900;font-size:11px;flex:0 0 auto}
+  .check-row.fail .ck{background:var(--red)}
+  .check-row.warn .ck{background:var(--amber)}
+  .check-row b{font-weight:700;display:block;margin-bottom:1px}
+  .check-row small{color:var(--ink-3);font-size:11px}
+  .submit-bar{display:flex;gap:10px;align-items:center;margin-top:6px;padding:14px 20px;background:#fafbfc;border-top:1px solid var(--line-2);justify-content:space-between}
+  .submit-bar .meta{font-size:12px;color:var(--ink-3)}
+  .submit-bar .meta b{color:var(--ink-2);font-weight:700}
+
+  /* ===== Resources cards ===== */
+  .res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px}
+  .res{padding:16px;border:1px solid var(--line);border-radius:11px;display:flex;flex-direction:column;gap:10px}
+  .res .ri{width:36px;height:36px;border-radius:9px;background:var(--blue-50);color:var(--blue);display:grid;place-items:center}
+  .res b{font-size:14px;font-weight:700}
+  .res small{color:var(--ink-3);font-size:12px;line-height:1.4}
+  .res .lk{margin-top:auto;font-size:12px;color:var(--blue);font-weight:700;display:flex;align-items:center;gap:4px}
+
+  /* ===== Sign-in ===== */
+  .signin{position:fixed;inset:0;z-index:100;display:grid;grid-template-columns:1.05fr 1fr;background:#fff}
+  .signin.hide{display:none}
+  .si-left{background:linear-gradient(155deg,#163955 0%,#1F4E79 45%,#2E75B6 100%);color:#fff;padding:56px 64px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+  .si-left::before{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;background:rgba(255,255,255,.06)}
+  .si-left::after{content:"";position:absolute;left:-80px;bottom:-80px;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.04)}
+  .si-brand{display:flex;align-items:center;gap:14px;position:relative;z-index:1}
+  .si-brand .mk{width:46px;height:46px;background:#fff;color:var(--blue);border-radius:11px;display:grid;place-items:center;font-weight:900;font-size:18px;letter-spacing:-.02em}
+  .si-brand b{display:block;font-size:18px;font-weight:800;letter-spacing:.02em}
+  .si-brand small{display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.7;margin-top:2px}
+  .si-hero{position:relative;z-index:1;max-width:480px}
+  .si-hero h1{font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:0 0 14px}
+  .si-hero p{font-size:15px;line-height:1.55;opacity:.85;margin:0 0 28px}
+  .si-bullets{display:flex;flex-direction:column;gap:14px;font-size:13px}
+  .si-bullets div{display:flex;gap:10px;align-items:flex-start}
+  .si-bullets .ck{width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.16);display:grid;place-items:center;flex:0 0 auto;font-weight:900;font-size:12px}
+  .si-bullets b{display:block;font-weight:700;margin-bottom:1px}
+  .si-bullets span span{opacity:.75;font-size:12.5px}
+  .si-foot{position:relative;z-index:1;font-size:12px;opacity:.65;display:flex;gap:20px;align-items:center}
+  .si-foot .dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.5)}
+
+  .si-right{display:flex;align-items:center;justify-content:center;padding:48px}
+  .si-form{width:100%;max-width:380px}
+  .si-form h2{margin:0 0 6px;font-size:26px;font-weight:800;letter-spacing:-.01em}
+  .si-form .lead{color:var(--ink-3);font-size:13.5px;margin:0 0 26px}
+  .si-tabs{display:flex;gap:0;border:1px solid var(--line);border-radius:9px;padding:3px;margin-bottom:22px;background:#fafbfc}
+  .si-tab{flex:1;padding:8px 10px;border-radius:7px;font-size:12.5px;font-weight:700;color:var(--ink-3);text-align:center;cursor:pointer}
+  .si-tab.active{background:#fff;color:var(--blue);box-shadow:0 1px 0 rgba(0,0,0,.04), 0 1px 4px rgba(31,78,121,.08)}
+  .si-field{margin-bottom:14px;position:relative}
+  .si-field label{font-size:11.5px;font-weight:700;color:var(--ink-2);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:6px}
+  .si-field .ip{display:flex;align-items:center;border:1px solid var(--line);border-radius:9px;background:#fff;transition:.15s}
+  .si-field .ip:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(31,78,121,.12)}
+  .si-field .ip svg{width:16px;height:16px;color:var(--ink-3);margin:0 10px;flex:0 0 auto;stroke-width:2}
+  .si-field input{flex:1;border:0;outline:0;padding:10px 12px 10px 0;font:inherit;color:var(--ink);background:transparent}
+  .si-field .eye{padding:0 12px;color:var(--ink-3);cursor:pointer;font-size:12px;font-weight:600}
+  .si-field .hint{font-size:11px;color:var(--ink-3);margin-top:5px}
+  .si-row{display:flex;align-items:center;justify-content:space-between;margin:6px 0 18px;font-size:12.5px}
+  .si-row label{display:flex;align-items:center;gap:7px;color:var(--ink-2);font-weight:600;cursor:pointer}
+  .si-row input[type=checkbox]{accent-color:var(--blue);width:14px;height:14px}
+  .si-row a{color:var(--blue);font-weight:700;text-decoration:none}
+  .si-btn{width:100%;padding:12px;border-radius:9px;background:var(--blue);color:#fff;font-weight:700;font-size:14px;border:0;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+  .si-btn:hover{background:var(--blue-700)}
+  .si-btn svg{width:14px;height:14px;stroke-width:2.5}
+  .si-or{display:flex;align-items:center;gap:10px;margin:18px 0;font-size:11px;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+  .si-or::before,.si-or::after{content:"";flex:1;height:1px;background:var(--line)}
+  .si-sso{width:100%;padding:11px;border-radius:9px;border:1px solid var(--line);background:#fff;font-weight:700;font-size:13.5px;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;gap:9px;cursor:pointer}
+  .si-sso:hover{border-color:var(--ink-3)}
+  .si-sso .ms{width:18px;height:18px;display:inline-grid;grid-template-columns:1fr 1fr;gap:1.5px}
+  .si-sso .ms i{display:block}
+  .si-sso .ms i:nth-child(1){background:#F25022}
+  .si-sso .ms i:nth-child(2){background:#7FBA00}
+  .si-sso .ms i:nth-child(3){background:#00A4EF}
+  .si-sso .ms i:nth-child(4){background:#FFB900}
+  .si-bottom{margin-top:22px;text-align:center;font-size:12.5px;color:var(--ink-3)}
+  .si-bottom a{color:var(--blue);font-weight:700;text-decoration:none}
+  .si-demo{margin-top:18px;padding:11px 13px;border:1px dashed var(--line);border-radius:9px;background:#fafbfc;font-size:11.5px;color:var(--ink-3);line-height:1.5}
+  .si-demo b{color:var(--ink);font-weight:700}
+  .si-demo code{font:600 11px "JetBrains Mono",monospace;background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--ink-2)}
+
+  /* ===== Toast ===== */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;opacity:0;pointer-events:none;transition:.25s;display:flex;align-items:center;gap:9px;box-shadow:0 12px 32px -8px rgba(14,26,43,.4)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast .tk{width:18px;height:18px;border-radius:50%;background:#9be0b4;color:#0E1A2B;display:grid;place-items:center;font-weight:900;font-size:11px}
+
+  /* ===== Quick-add strip ===== */
+  .qadd{background:linear-gradient(180deg,#fff,var(--blue-50));border:1px solid var(--blue-100);border-radius:12px;padding:14px 16px;margin-bottom:14px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px}
+  .qadd .qa-title{flex:0 0 100%;font-size:11.5px;font-weight:800;color:var(--blue);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .qadd .qa-title .lbl{background:var(--blue);color:#fff;font-size:10px;padding:2px 7px;border-radius:99px;letter-spacing:.04em}
+  .qadd label{display:flex;flex-direction:column;font-size:10.5px;font-weight:700;color:var(--ink-3);letter-spacing:.04em;text-transform:uppercase;gap:4px}
+  .qadd input,.qadd select{padding:8px 10px;border:1px solid var(--line);border-radius:7px;font:inherit;color:var(--ink);background:#fff;font-weight:500;text-transform:none;letter-spacing:0;min-width:140px}
+  .qadd input:focus,.qadd select:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 3px rgba(31,78,121,.12)}
+  .qadd .grow input{min-width:240px}
+  .qadd .add-btn{padding:9px 16px;border-radius:8px;background:var(--blue);color:#fff;font-weight:700;font-size:12.5px;letter-spacing:.02em;display:inline-flex;gap:6px;align-items:center}
+  .qadd .add-btn:hover{background:var(--blue-700)}
+  .qadd .reset-btn{padding:8px 12px;border-radius:8px;background:#fff;border:1px solid var(--line);color:var(--ink-3);font-weight:600;font-size:12px;margin-left:auto}
+  .qadd .reset-btn:hover{color:var(--red);border-color:var(--red)}
+  .row.fresh td{animation:flash 1.4s ease-out}
+  @keyframes flash{from{background:#FFF6CC}to{background:transparent}}
+  .added-tag{font-size:9.5px;font-weight:800;color:var(--green);background:var(--green-bg);padding:1px 6px;border-radius:99px;margin-left:6px;letter-spacing:.04em}
+</style>
+</head>
+<body>
+
+<!-- ===================== SIGN-IN ===================== -->
+<div class="signin hide" id="signin">
+  <div class="si-left">
+    <div class="si-brand">
+      <div class="mk">M</div>
+      <div><b>MACRO PMS</b><small>Project Management System</small></div>
+    </div>
+
+    <div class="si-hero">
+      <h1>Sign in to your<br/>officer workspace.</h1>
+      <p>Plan activities, request advances, liquidate vouchers, and track your action points — all in one place.</p>
+      <div class="si-bullets">
+        <div><span class="ck">✓</span><span><b>Single source of truth</b><br/><span>One workspace from concept note to liquidation</span></span></div>
+        <div><span class="ck">✓</span><span><b>Live DIP balances</b><br/><span>See available funds before you submit</span></span></div>
+        <div><span class="ck">✓</span><span><b>Auto-routed approvals</b><br/><span>Workflow advances through GFO → FM → ED automatically</span></span></div>
+      </div>
+    </div>
+
+    <div class="si-foot">
+      <span>v4.0 Optimised</span><span class="dot"></span>
+      <span>© MACRO Malawi 2026</span><span class="dot"></span>
+      <span>support@macro.org</span>
+    </div>
+  </div>
+
+  <div class="si-right">
+    <form class="si-form" id="siForm" autocomplete="off">
+      <h2>Welcome back</h2>
+      <p class="lead">Sign in with your MACRO staff credentials to continue.</p>
+
+      <div class="si-tabs">
+        <div class="si-tab active">Email &amp; password</div>
+        <div class="si-tab">Mobile OTP</div>
+      </div>
+
+      <div class="si-field">
+        <label>Work email</label>
+        <div class="ip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+          <input id="siEmail" type="email" value="t.phiri@macro.org" placeholder="firstname.lastname@macro.org" />
+        </div>
+      </div>
+
+      <div class="si-field">
+        <label>Password</label>
+        <div class="ip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <input id="siPwd" type="password" value="••••••••••" />
+          <span class="eye" id="siEye">show</span>
+        </div>
+        <div class="hint">Password expires in 23 days · last changed 14 Apr 2026</div>
+      </div>
+
+      <div class="si-row">
+        <label><input type="checkbox" checked/> Keep me signed in for 8 hours</label>
+        <a href="#">Forgot?</a>
+      </div>
+
+      <button class="si-btn" id="siGo" type="submit">
+        Sign in
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </button>
+
+      <div class="si-or">or</div>
+
+      <button class="si-sso" type="button" id="siSso">
+        <span class="ms"><i></i><i></i><i></i><i></i></span>
+        Continue with MACRO Microsoft 365
+      </button>
+
+      <div class="si-demo">
+        <b>Demo workspace</b> — signed in as <code>t.phiri@macro.org</code> · <b>Project Officer</b> on IMPACT KP. Press <code>Sign in</code> to enter.
+      </div>
+
+      <div class="si-bottom">
+        Need an account? <a href="#">Contact your HR focal point</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="tk">✓</span><span id="toastMsg">Signed in as Tendai Phiri</span></div>
+
+<div class="app">
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">M</div>
+      <div>
+        <div class="brand-name">MACRO PMS</div>
+        <div class="brand-sub">Officer Workspace</div>
+      </div>
+    </div>
+
+    <div class="role-card">
+      <div class="av">TP</div>
+      <div>
+        <b>Tendai Phiri</b>
+        <small>Project Officer · KP</small>
+      </div>
+    </div>
+
+    <div class="nav-section">My Work</div>
+    <div class="nav">
+      <button class="active" data-view="day">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 3v4M19 3v4M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></svg>
+        My Day <span class="badge">5</span>
+      </button>
+      <button data-view="activities">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        My Activities <span class="badge q">3</span>
+      </button>
+      <button data-view="advances">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+        Advance Requests <span class="badge">2</span>
+      </button>
+      <button data-view="vouchers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5zM8 10h8M8 14h6M8 18h4"/></svg>
+        Liquidations <span class="badge">1</span>
+      </button>
+      <button data-view="actions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 12l2 2 4-4M5 5h14v14H5z"/></svg>
+        Action Points <span class="badge">2</span>
+      </button>
+
+      <div class="nav-section">Create</div>
+      <button data-view="newact">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>
+        New Activity
+      </button>
+      <button data-view="newvch">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 3v4a1 1 0 0 0 1 1h4M5 21h14a2 2 0 0 0 2-2V7l-4-4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2zM12 11v6M9 14h6"/></svg>
+        New Voucher
+      </button>
+
+      <div class="nav-section">Reference</div>
+      <button data-view="resources">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/></svg>
+        Forms &amp; Templates
+      </button>
+      <button data-view="rates">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 8c-2 0-3 1-3 2.5s1 2 3 2.5 3 1 3 2.5-1 2.5-3 2.5-3-1-3-2.5M12 6v12"/></svg>
+        DSA &amp; Rates
+      </button>
+    </div>
+
+    <div class="sidebar-foot">
+      <span class="dot"></span>
+      Online · Last sync 09:02 CAT
+    </div>
+  </aside>
+
+  <!-- ===================== MAIN ===================== -->
+  <div class="main">
+
+    <header class="topbar">
+      <div class="crumbs">
+        <span>MACRO PMS</span><span>›</span><span>Officer Workspace</span><span>›</span><b id="crumb-leaf">My Day</b>
+      </div>
+      <div class="proj-pill" style="margin-left:14px">
+        <span class="sw">IK</span>
+        IMPACT KP · PEPFAR Q2
+      </div>
+      <div class="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input placeholder="Find activity, AR, voucher…" />
+        <kbd>⌘K</kbd>
+      </div>
+      <button class="icon-btn" title="Inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.5V19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7.5M22 11.5L12 17 2 11.5M22 11.5L12 5 2 11.5"/></svg><span class="dot"></span></button>
+      <button class="icon-btn" title="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>
+      <button class="new-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>
+        New
+      </button>
+    </header>
+
+    <main class="page">
+
+      <!-- ============== MY DAY ============== -->
+      <section class="view active" data-page="day">
+
+        <div class="hello">
+          <div class="hello-card">
+            <div>
+              <h1>Good morning, Tendai</h1>
+              <div class="sub">Friday · 8 May 2026 · 5 things need you today</div>
+            </div>
+            <div class="hello-stats">
+              <div class="hs alert"><span class="v">1</span><span class="l">Returned to me</span></div>
+              <div class="hs warn"><span class="v">2</span><span class="l">Liquidations due</span></div>
+              <div class="hs"><span class="v">3</span><span class="l">Active activities</span></div>
+              <div class="hs"><span class="v">MK 6.12M</span><span class="l">Held by me</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action queue + Quick actions -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-h">
+              <h3>Needs your action</h3>
+              <span class="pill red">5 open</span>
+              <span class="sub">sorted by urgency</span>
+              <div class="right"><button class="ghost">Filter</button></div>
+            </div>
+            <div class="inbox">
+
+              <div class="ix urgent">
+                <div class="ico">FM<br/>RTN</div>
+                <div>
+                  <div class="t">Advance Request <b>AR-2026-0179</b> returned by Finance Manager</div>
+                  <div class="m"><span><b>Reason:</b> DSA rate exceeds policy (MK 95k vs MK 85k cap)</span><span><b>Activity:</b> Index Testing Refresher · Mzuzu</span><span><b>Returned by:</b> C. Mvula 09:14</span></div>
+                </div>
+                <div>
+                  <button class="actbtn red">Revise &amp; resubmit</button>
+                  <div class="age" style="margin-top:8px"><b>26m</b>9:14</div>
+                </div>
+              </div>
+
+              <div class="ix warn">
+                <div class="ico">PV<br/>OVR</div>
+                <div>
+                  <div class="t">Liquidation overdue · <b>AR-2026-0166</b> · Mobile Clinic Kasungu</div>
+                  <div class="m"><span><b>Held since:</b> 19 Apr 2026 (19 days)</span><span><b>Held amount:</b> MK 2,840,000</span><span><b>Receipts received:</b> 7 of 11</span></div>
+                </div>
+                <div>
+                  <button class="actbtn warn">Submit voucher</button>
+                  <div class="age" style="margin-top:8px"><b>5d</b>over</div>
+                </div>
+              </div>
+
+              <div class="ix due">
+                <div class="ico">AP<br/>DUE</div>
+                <div>
+                  <div class="t">Action Point <b>AP-0480</b> · Q1 narrative report — donor portal upload</div>
+                  <div class="m"><span><b>Due:</b> Today, 17:00 CAT</span><span><b>Assigned by:</b> S. Mtonga (HoP)</span><span><b>Linked:</b> AR-2026-0166, AR-2026-0171</span></div>
+                </div>
+                <div>
+                  <button class="actbtn">Open report</button>
+                  <div class="age" style="margin-top:8px"><b>8h</b>today</div>
+                </div>
+              </div>
+
+              <div class="ix">
+                <div class="ico">SOW<br/>DRF</div>
+                <div>
+                  <div class="t">Scope of Work draft · HTS Quarterly Outreach — Area 25</div>
+                  <div class="m"><span><b>Status:</b> Saved 06 May · awaiting your finalisation</span><span><b>DIP:</b> 2.4.1 (overdraft - revise budget line)</span></div>
+                </div>
+                <div>
+                  <button class="actbtn">Continue draft</button>
+                  <div class="age" style="margin-top:8px"><b>2d</b>Wed</div>
+                </div>
+              </div>
+
+              <div class="ix">
+                <div class="ico">ATT<br/>UPL</div>
+                <div>
+                  <div class="t">Upload remaining attendance scans · KP Peer Educator Training</div>
+                  <div class="m"><span><b>Activity:</b> AR-2026-0180 (closed)</span><span><b>Missing:</b> Day 2 sign-in sheet (1 of 3)</span></div>
+                </div>
+                <div>
+                  <button class="actbtn">Upload</button>
+                  <div class="age" style="margin-top:8px"><b>1d</b>Thu</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div>
+            <div class="card" style="margin-bottom:14px">
+              <div class="card-h">
+                <h3>Quick actions</h3>
+              </div>
+              <div class="qa">
+                <button class="qa-btn">
+                  <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg></span>
+                  <b>New Activity</b>
+                  <small>Concept note &amp; SOW</small>
+                </button>
+                <button class="qa-btn">
+                  <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg></span>
+                  <b>Request Advance</b>
+                  <small>From approved activity</small>
+                </button>
+                <button class="qa-btn">
+                  <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 4h11l3 3v13H5z"/></svg></span>
+                  <b>Submit Voucher</b>
+                  <small>Liquidate held funds</small>
+                </button>
+                <button class="qa-btn">
+                  <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg></span>
+                  <b>Update Action</b>
+                  <small>Close or comment AP</small>
+                </button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <h3>My budget envelope</h3>
+                <span class="sub">DIP lines I'm responsible for</span>
+              </div>
+              <div class="env">
+
+                <div class="env-row">
+                  <div class="env-top">
+                    <span class="code">DIP-3.1.2</span><span class="nm">Peer Educator Training (KP)</span>
+                    <span class="amt">MK 3.3M <small>/ 22M</small></span>
+                  </div>
+                  <div class="ebar warn"><div style="width:85%"></div></div>
+                  <div class="env-meta"><span>Disbursed <b>17.2M</b></span><span>Committed <b>1.5M</b></span><span>Available <b>3.3M</b></span></div>
+                </div>
+
+                <div class="env-row">
+                  <div class="env-top">
+                    <span class="code">DIP-1.2.1</span><span class="nm">HTS Outreach Activities</span>
+                    <span class="amt">MK 35.8M <small>/ 120M</small></span>
+                  </div>
+                  <div class="ebar"><div style="width:70%"></div></div>
+                  <div class="env-meta"><span>Disbursed <b>74.3M</b></span><span>Committed <b>9.9M</b></span><span>Available <b>35.8M</b></span></div>
+                </div>
+
+                <div class="env-row">
+                  <div class="env-top">
+                    <span class="code">DIP-2.4.3</span><span class="nm">Community Outreach — Mzuzu</span>
+                    <span class="amt">MK 17.0M <small>/ 28M</small></span>
+                  </div>
+                  <div class="ebar"><div style="width:39%"></div></div>
+                  <div class="env-meta"><span>Disbursed <b>9.3M</b></span><span>Committed <b>1.7M</b></span><span>Available <b>17.0M</b></span></div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active activities funnel -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-h">
+            <h3>My active activities</h3>
+            <span class="pill">3 in progress</span>
+            <div class="right"><button class="ghost">View all activities →</button></div>
+          </div>
+          <div class="act-list">
+
+            <div class="act">
+              <div class="act-top">
+                <div>
+                  <h4>Index Testing Refresher · Mzuzu</h4>
+                  <div class="meta"><span><b>Ref</b> ACT-2026-0142</span><span><b>DIP</b> 3.1.2</span><span><b>Dates</b> 13–15 May 2026</span><span><b>Site</b> Mzuzu HTS Hub</span></div>
+                </div>
+                <div class="right">
+                  <div class="amt">MK 4,820,000<small>budgeted</small></div>
+                </div>
+              </div>
+              <div class="funnel">
+                <div class="fnl done"><span class="nub">✓</span><b>Concept note</b><small>Approved 04 May</small></div>
+                <div class="fnl done"><span class="nub">✓</span><b>SOW &amp; HoP</b><small>Recommended 05 May</small></div>
+                <div class="fnl blocked"><span class="nub">!</span><b>Advance request</b><small>AR-0179 returned by FM</small></div>
+                <div class="fnl"><b>Execute</b><small>Scheduled 13 May</small></div>
+                <div class="fnl"><b>Liquidate</b><small>—</small></div>
+              </div>
+            </div>
+
+            <div class="act">
+              <div class="act-top">
+                <div>
+                  <h4>KP Peer Educator Training · Lilongwe</h4>
+                  <div class="meta"><span><b>Ref</b> ACT-2026-0138</span><span><b>DIP</b> 3.1.2</span><span><b>Dates</b> 02–04 May 2026</span><span><b>Participants</b> 40 of 40</span></div>
+                </div>
+                <div class="right">
+                  <div class="amt">MK 6,120,000<small>advance held</small></div>
+                </div>
+              </div>
+              <div class="funnel">
+                <div class="fnl done"><span class="nub">✓</span><b>Concept note</b><small>Approved 28 Apr</small></div>
+                <div class="fnl done"><span class="nub">✓</span><b>SOW &amp; HoP</b><small>Recommended 29 Apr</small></div>
+                <div class="fnl done"><span class="nub">✓</span><b>Advance approved</b><small>AR-0180 · 02 May</small></div>
+                <div class="fnl done"><span class="nub">✓</span><b>Executed</b><small>Closed 04 May</small></div>
+                <div class="fnl now"><span class="nub">→</span><b>Liquidate (PV-1248)</b><small>Voucher draft ready</small></div>
+              </div>
+            </div>
+
+            <div class="act">
+              <div class="act-top">
+                <div>
+                  <h4>HTS Outreach — Area 25 (Lilongwe)</h4>
+                  <div class="meta"><span><b>Ref</b> ACT-2026-0151 (draft)</span><span><b>DIP</b> 2.4.1 <span class="chip overdue">Overdraft</span></span><span><b>Proposed</b> 27–29 May 2026</span></div>
+                </div>
+                <div class="right">
+                  <div class="amt">MK 2,420,000<small>proposed</small></div>
+                </div>
+              </div>
+              <div class="funnel">
+                <div class="fnl warn"><span class="nub">⌃</span><b>Concept note</b><small>Draft · 80%</small></div>
+                <div class="fnl"><b>SOW &amp; HoP</b><small>—</small></div>
+                <div class="fnl"><b>Advance request</b><small>—</small></div>
+                <div class="fnl"><b>Execute</b><small>—</small></div>
+                <div class="fnl"><b>Liquidate</b><small>—</small></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="card">
+          <div class="card-h">
+            <h3>This week</h3>
+            <span class="sub">11–17 May 2026 · CAT</span>
+            <div class="right"><button class="ghost">‹ Last week</button><button class="ghost">Next week ›</button></div>
+          </div>
+          <div class="cal">
+            <div class="day"><div class="dh"><span>Mon</span><span class="dn">11</span></div>
+              <div class="ev tr">Travel · Lilongwe → Mzuzu<small>09:00 · pool veh.</small></div>
+            </div>
+            <div class="day"><div class="dh"><span>Tue</span><span class="dn">12</span></div>
+              <div class="ev act">Pre-brief · Mzuzu HTS<small>14:00 · 1.5h</small></div>
+              <div class="ev due">AR-0179 resubmit<small>before 17:00</small></div>
+            </div>
+            <div class="day today"><div class="dh"><span>Wed</span><span class="dn">13</span></div>
+              <div class="ev act">Index Refresher · D1<small>08:30–17:00</small></div>
+            </div>
+            <div class="day"><div class="dh"><span>Thu</span><span class="dn">14</span></div>
+              <div class="ev act">Index Refresher · D2<small>08:30–17:00</small></div>
+            </div>
+            <div class="day"><div class="dh"><span>Fri</span><span class="dn">15</span></div>
+              <div class="ev act">Index Refresher · D3<small>08:30–13:00</small></div>
+              <div class="ev tr">Return Mzuzu → LL<small>14:00</small></div>
+            </div>
+            <div class="day"><div class="dh"><span>Sat</span><span class="dn">16</span></div></div>
+            <div class="day"><div class="dh"><span>Sun</span><span class="dn">17</span></div>
+              <div class="ev due">PV-1248 final due<small>auto-overdue +30d</small></div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ============== MY ACTIVITIES ============== -->
+      <section class="view" data-page="activities">
+        <div class="page-head">
+          <div>
+            <div class="page-title">My Activities</div>
+            <div class="page-sub">All activities you own across IMPACT KP · stage funnel and amounts</div>
+          </div>
+          <div class="actions">
+            <button class="btn">Export CSV</button>
+            <button class="btn primary">+ New Activity</button>
+          </div>
+        </div>
+
+        <form class="qadd" id="actForm">
+          <div class="qa-title"><span class="lbl">Quick add</span>Create a test activity · saved to this browser</div>
+          <label class="grow">Activity title<input name="title" required placeholder="e.g. PrEP Outreach Drive — Mzimba"/></label>
+          <label>DIP line<select name="dip"><option>1.2.1</option><option>1.4.0</option><option>2.4.1</option><option>2.4.3</option><option selected>3.1.2</option><option>4.2.0</option><option>5.1.4</option></select></label>
+          <label>Dates<input name="dates" required placeholder="21–23 May"/></label>
+          <label>Budget (MWK)<input name="amount" required type="text" placeholder="3,200,000"/></label>
+          <button class="add-btn" type="submit">+ Add activity</button>
+        </form>
+
+        <div class="card">
+          <div class="card-h">
+            <h3>12 activities</h3>
+            <span class="pill">3 in flight</span>
+            <span class="pill green">7 closed</span>
+            <span class="pill warn">1 returned</span>
+            <span class="pill red">1 overdue liq.</span>
+            <div class="right">
+              <button class="ghost">All stages ▾</button>
+              <button class="ghost">All DIP lines ▾</button>
+              <button class="ghost">FY 2026 ▾</button>
+            </div>
+          </div>
+          <table class="tbl">
+            <thead><tr>
+              <th>Ref</th><th>Activity</th><th>DIP</th><th>Dates</th><th>Stage</th><th class="num" style="text-align:right">Budget (MWK)</th>
+            </tr></thead>
+            <tbody id="actBody">
+              <tr><td><span class="ref">ACT-0151</span></td><td><b>HTS Outreach — Area 25</b><div style="font-size:11px;color:var(--ink-3)">Lilongwe · concept note draft</div></td><td><span class="cat" style="background:#FFE2E2;color:var(--red);font:700 11px JetBrains Mono;padding:2px 7px;border-radius:5px">2.4.1</span></td><td>27–29 May</td><td><span class="chip draft">Concept · 80%</span></td><td class="num">2,420,000</td></tr>
+              <tr><td><span class="ref">ACT-0142</span></td><td><b>Index Testing Refresher</b><div style="font-size:11px;color:var(--ink-3)">Mzuzu · returned by FM</div></td><td><span class="cat" style="background:var(--blue-50);color:var(--blue);font:700 11px JetBrains Mono;padding:2px 7px;border-radius:5px">3.1.2</span></td><td>13–15 May</td><td><span class="chip overdue">AR returned</span></td><td class="num">4,820,000</td></tr>
+              <tr><td><span class="ref">ACT-0138</span></td><td><b>KP Peer Educator Training</b><div style="font-size:11px;color:var(--ink-3)">Lilongwe · executed</div></td><td><span class="cat" style="background:var(--blue-50);color:var(--blue);font:700 11px JetBrains Mono;padding:2px 7px;border-radius:5px">3.1.2</span></td><td>02–04 May</td><td><span class="chip review">Voucher draft</span></td><td class="num">6,120,000</td></tr>
+              <tr><td><span class="ref">ACT-0124</span></td><td><b>Mobile Clinic — Kasungu</b><div style="font-size:11px;color:var(--ink-3)">Kasungu · liquidation overdue</div></td><td><span class="cat" style="background:var(--blue-50);color:var(--blue);font:700 11px JetBrains Mono;padding:2px 7px;border-radius:5px">1.2.1</span></td><td>18–19 Apr</td><td><span class="chip overdue">Liq. 19d</span></td><td class="num">2,840,000</td></tr>
+              <tr><td><span class="ref">ACT-0118</span></td><td><b>HTS Quarterly Review</b><div style="font-size:11px;color:var(--ink-3)">Lilongwe · pending FM closure</div></td><td><span class="cat" style="background:var(--blue-50);color:var(--blue);font:700 11px JetBrains Mono;padding:2px 7px;border-radius:5px">5.1.4</span></td><td>22–24 Apr</td><td><span class="chip warn">Variance review</span></td><td class="num">1,680,000</td></tr>
+              <tr><td><span class="ref">ACT-0109</span></td><td><b>BT Moonlight Testing — Q1</b><div style="font-size:11px;color:var(--ink-3)">Blantyre</div></td><td><span class="cat" style="background:var(--blue-50);color:var(--blue);font:700 11px JetBrains Mono;padding:2px 7px;border-radius:5px">1.2.1</span></td><td>10–12 Apr</td><td><span class="chip paid">Closed</span></td><td class="num">3,180,000</td></tr>
+              <tr><td><span class="ref">ACT-0102</span></td><td><b>PrEP Distribution Drive</b><div style="font-size:11px;color:var(--ink-3)">Lilongwe · Q1</div></td><td><span class="cat" style="background:var(--blue-50);color:var(--blue);font:700 11px JetBrains Mono;padding:2px 7px;border-radius:5px">1.4.0</span></td><td>26–28 Mar</td><td><span class="chip paid">Closed</span></td><td class="num">2,250,000</td></tr>
+              <tr><td><span class="ref">ACT-0098</span></td><td><b>Peer Mentor Onboarding</b><div style="font-size:11px;color:var(--ink-3)">Lilongwe · KP cohort 4</div></td><td><span class="cat" style="background:var(--blue-50);color:var(--blue);font:700 11px JetBrains Mono;padding:2px 7px;border-radius:5px">3.1.2</span></td><td>15–17 Mar</td><td><span class="chip paid">Closed</span></td><td class="num">1,940,000</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============== ADVANCES ============== -->
+      <section class="view" data-page="advances">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Advance Requests</div>
+            <div class="page-sub">Funds requested for activities · status tracked through ED approval</div>
+          </div>
+          <div class="actions"><button class="btn primary">+ New Advance Request</button></div>
+        </div>
+
+        <form class="qadd" id="arForm">
+          <div class="qa-title"><span class="lbl">Quick add</span>Submit a test advance request</div>
+          <label class="grow">Activity<input name="activity" required placeholder="Index Refresher — Lilongwe"/></label>
+          <label>DIP<select name="dip"><option>1.2.1</option><option>1.4.0</option><option>2.4.1</option><option>2.4.3</option><option selected>3.1.2</option><option>5.1.4</option></select></label>
+          <label>Amount (MWK)<input name="amount" required placeholder="2,840,000"/></label>
+          <button class="add-btn" type="submit">+ Submit AR</button>
+        </form>
+
+        <div class="card">
+          <div class="card-h">
+            <h3>My Advance Requests</h3>
+            <span class="pill">FY 2026</span>
+            <div class="right"><button class="ghost">All status ▾</button></div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>Ref</th><th>Activity</th><th>DIP</th><th>Submitted</th><th>Stage</th><th>Status</th><th class="num" style="text-align:right">Amount (MWK)</th></tr></thead>
+            <tbody id="arBody">
+              <tr><td><span class="ref">AR-2026-0179</span></td><td><b>Index Testing Refresher</b></td><td>3.1.2</td><td>06 May 09:31</td><td>FM review</td><td><span class="chip overdue">Returned · DSA</span></td><td class="num">4,820,000</td></tr>
+              <tr><td><span class="ref">AR-2026-0180</span></td><td><b>KP Peer Educator Training</b></td><td>3.1.2</td><td>02 May 11:08</td><td>ED approved</td><td><span class="chip approved">Disbursed</span></td><td class="num">6,120,000</td></tr>
+              <tr><td><span class="ref">AR-2026-0166</span></td><td><b>Mobile Clinic — Kasungu</b></td><td>1.2.1</td><td>15 Apr 14:22</td><td>Liquidation overdue</td><td><span class="chip overdue">Held · 19d</span></td><td class="num">2,840,000</td></tr>
+              <tr><td><span class="ref">AR-2026-0152</span></td><td><b>HTS Quarterly Review</b></td><td>5.1.4</td><td>20 Apr 10:14</td><td>Closed</td><td><span class="chip paid">Liquidated</span></td><td class="num">1,680,000</td></tr>
+              <tr><td><span class="ref">AR-2026-0144</span></td><td><b>BT Moonlight Testing</b></td><td>1.2.1</td><td>06 Apr 16:50</td><td>Closed</td><td><span class="chip paid">Liquidated</span></td><td class="num">3,180,000</td></tr>
+              <tr><td><span class="ref">AR-2026-0131</span></td><td><b>PrEP Distribution Drive</b></td><td>1.4.0</td><td>22 Mar 08:55</td><td>Closed</td><td><span class="chip paid">Liquidated</span></td><td class="num">2,250,000</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============== LIQUIDATIONS ============== -->
+      <section class="view" data-page="vouchers">
+        <div class="page-head">
+          <div>
+            <div class="page-title">My Liquidations</div>
+            <div class="page-sub">Payment vouchers and retirements for advances held by you</div>
+          </div>
+          <div class="actions"><button class="btn primary">+ New Voucher</button></div>
+        </div>
+
+        <form class="qadd" id="pvForm">
+          <div class="qa-title"><span class="lbl">Quick add</span>Liquidate an advance</div>
+          <label>Against AR<input name="ar" required placeholder="AR-0166"/></label>
+          <label class="grow">Activity<input name="activity" required placeholder="Mobile Clinic — Kasungu"/></label>
+          <label>Net (MWK)<input name="amount" required placeholder="2,840,000"/></label>
+          <button class="add-btn" type="submit">+ Submit voucher</button>
+        </form>
+
+        <div class="grid-3" style="margin-bottom:18px">
+          <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:11.5px;font-weight:700;color:var(--ink-3);letter-spacing:.04em;text-transform:uppercase">Held by me</div>
+            <div style="font-size:24px;font-weight:800;letter-spacing:-.02em">MK 8.96M</div>
+            <div style="font-size:12px;color:var(--ink-3)">Across 2 active advances</div>
+          </div>
+          <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:6px;border-left:3px solid var(--amber)">
+            <div style="font-size:11.5px;font-weight:700;color:var(--amber);letter-spacing:.04em;text-transform:uppercase">Overdue</div>
+            <div style="font-size:24px;font-weight:800;letter-spacing:-.02em">MK 2.84M</div>
+            <div style="font-size:12px;color:var(--amber)">AR-0166 · 19 days · escalates Wed</div>
+          </div>
+          <div class="card" style="padding:18px;display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:11.5px;font-weight:700;color:var(--ink-3);letter-spacing:.04em;text-transform:uppercase">Liquidated FY26</div>
+            <div style="font-size:24px;font-weight:800;letter-spacing:-.02em">MK 14.7M</div>
+            <div style="font-size:12px;color:var(--green)">7 vouchers · 100% receipts on file</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <h3>Vouchers</h3>
+            <div class="right"><button class="ghost">Status ▾</button></div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>PV Ref</th><th>Against advance</th><th>Activity</th><th>Submitted</th><th>Status</th><th class="num" style="text-align:right">Net (MWK)</th></tr></thead>
+            <tbody id="pvBody">
+              <tr><td><span class="ref">PV-2026-1248</span></td><td>AR-0180</td><td><b>KP Peer Educator Training</b></td><td>Draft · 80%</td><td><span class="chip draft">Draft</span></td><td class="num">6,120,000</td></tr>
+              <tr><td><span class="ref">PV-2026-—</span></td><td>AR-0166</td><td><b>Mobile Clinic — Kasungu</b></td><td>Not started</td><td><span class="chip overdue">Overdue 19d</span></td><td class="num">2,840,000</td></tr>
+              <tr><td><span class="ref">PV-2026-1219</span></td><td>AR-0152</td><td><b>HTS Quarterly Review</b></td><td>26 Apr</td><td><span class="chip warn">Variance MK 84k</span></td><td class="num">1,596,000</td></tr>
+              <tr><td><span class="ref">PV-2026-1196</span></td><td>AR-0144</td><td><b>BT Moonlight Testing</b></td><td>14 Apr</td><td><span class="chip paid">Closed</span></td><td class="num">3,180,000</td></tr>
+              <tr><td><span class="ref">PV-2026-1172</span></td><td>AR-0131</td><td><b>PrEP Distribution Drive</b></td><td>30 Mar</td><td><span class="chip paid">Closed</span></td><td class="num">2,250,000</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============== ACTION POINTS ============== -->
+      <section class="view" data-page="actions">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Action Points</div>
+            <div class="page-sub">Tasks assigned to you from meetings, reviews, and audit findings</div>
+          </div>
+          <div class="actions"><button class="btn">Filter ▾</button><button class="btn primary">+ Log AP</button></div>
+        </div>
+
+        <form class="qadd" id="apForm">
+          <div class="qa-title"><span class="lbl">Quick add</span>Log an action point</div>
+          <label class="grow">Description<input name="desc" required placeholder="Submit narrative for AR-0179"/></label>
+          <label>Due<input name="due" required placeholder="15 May"/></label>
+          <label>Priority<select name="prio"><option>High</option><option selected>Med</option><option>Low</option></select></label>
+          <button class="add-btn" type="submit">+ Log AP</button>
+        </form>
+
+        <div class="card">
+          <div class="card-h">
+            <h3>Open · 2</h3>
+            <span class="pill red">1 due today</span>
+            <div class="right"><button class="ghost">Show closed</button></div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>AP</th><th>Description</th><th>Assigned by</th><th>Due</th><th>Priority</th><th>Status</th><th>Linked</th></tr></thead>
+            <tbody id="apBody">
+              <tr><td><span class="ref">AP-0480</span></td><td><b>Q1 narrative report — donor portal upload</b><div style="font-size:11px;color:var(--ink-3)">PEPFAR Q1 reporting deadline</div></td><td>S. Mtonga · HoP</td><td>08 May (today)</td><td><span class="chip overdue">High</span></td><td><span class="chip review">In progress</span></td><td>AR-0166, AR-0171</td></tr>
+              <tr><td><span class="ref">AP-0489</span></td><td><b>Submit attendance scans · KP Peer Educator Training</b><div style="font-size:11px;color:var(--ink-3)">Day 2 sign-in sheet missing</div></td><td>Y. Banda · GFO</td><td>10 May</td><td><span class="chip warn">Med</span></td><td><span class="chip draft">Open</span></td><td>AR-0180, PV-1248</td></tr>
+              <tr><td><span class="ref">AP-0473</span></td><td><b>Q1 SBV variance memo — DIP-2.4.1</b><div style="font-size:11px;color:var(--ink-3)">Justify Mzuzu vs Lilongwe spread</div></td><td>C. Mvula · FM</td><td>02 May</td><td><span class="chip warn">Med</span></td><td><span class="chip approved">Closed 01 May</span></td><td>AR-0166</td></tr>
+              <tr><td><span class="ref">AP-0461</span></td><td><b>Train Mzuzu staff on offline attendance sync</b></td><td>R. Nyirenda · ICT</td><td>24 May</td><td><span class="chip draft">Low</span></td><td><span class="chip approved">Closed 28 Apr</span></td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============== NEW ACTIVITY WIZARD ============== -->
+      <section class="view" data-page="newact">
+        <div class="page-head">
+          <div>
+            <div class="page-title">New Activity</div>
+            <div class="page-sub">5 steps · auto-saves every 30s · last save 09:46:22 CAT</div>
+          </div>
+          <div class="actions"><button class="btn">Save &amp; close</button><button class="btn primary">Submit for HoP recommendation</button></div>
+        </div>
+
+        <div class="card">
+          <div class="wiz">
+            <div class="wiz-steps">
+              <div class="wiz-st done"><span class="nb">✓</span><div><b>Activity basics</b><small>Title · type · location · dates</small></div></div>
+              <div class="wiz-st active"><span class="nb">2</span><div><b>Budget linkage</b><small>Pick DIP line · check balance</small></div></div>
+              <div class="wiz-st"><span class="nb">3</span><div><b>Cost build-up</b><small>Itemised line items by category</small></div></div>
+              <div class="wiz-st"><span class="nb">4</span><div><b>Justification &amp; KPIs</b><small>Concept note narrative</small></div></div>
+              <div class="wiz-st"><span class="nb">5</span><div><b>Review &amp; submit</b><small>Approval routing preview</small></div></div>
+            </div>
+
+            <div class="wiz-body">
+              <h2>Step 2 · Budget linkage</h2>
+              <div class="lead">Map this activity to one or more DIP budget lines. Real-time balance is shown — overdrafts require written justification at submission.</div>
+
+              <div class="row2">
+                <div class="field">
+                  <label>Project</label>
+                  <select><option>IMPACT KP — PEPFAR Q2 2026</option></select>
+                  <div class="hint">Auto-locked from concept note step 1</div>
+                </div>
+                <div class="field">
+                  <label>Activity reference</label>
+                  <input type="text" value="ACT-2026-0151 (auto)" readonly style="background:#fafbfc;color:var(--ink-3)" />
+                  <div class="hint">Generated on first save · system-managed</div>
+                </div>
+              </div>
+
+              <div class="field">
+                <label>Pick a DIP line</label>
+                <div class="budget-pick">
+                  <div class="bh"><span style="flex:1">Code · Description</span><span style="width:140px;text-align:right">Available</span><span style="width:24px"></span></div>
+                  <label class="bp"><input type="radio" name="dip"/><span class="code">DIP-1.2.1</span><span class="nm">HTS Outreach Activities</span><span class="av">35,800,000<small>of 120M</small></span></label>
+                  <label class="bp warn"><input type="radio" name="dip"/><span class="code">DIP-2.4.1</span><span class="nm">Community Outreach — Lilongwe</span><span class="av bad">−1,420,000<small>overdraft</small></span></label>
+                  <label class="bp"><input type="radio" name="dip"/><span class="code">DIP-2.4.3</span><span class="nm">Community Outreach — Mzuzu</span><span class="av">17,000,000<small>of 28M</small></span></label>
+                  <label class="bp selected"><input type="radio" name="dip" checked/><span class="code">DIP-3.1.2</span><span class="nm">Peer Educator Training (KP)</span><span class="av warn">3,300,000<small>of 22M (15%)</small></span></label>
+                  <label class="bp"><input type="radio" name="dip"/><span class="code">DIP-4.5.1</span><span class="nm">Office Supplies &amp; Utilities</span><span class="av">2,200,000<small>of 6M</small></span></label>
+                </div>
+                <div class="hint" style="color:var(--amber);margin-top:8px"><b>Watch:</b> DIP-3.1.2 is below 15% — FM may flag commitments above MK 1.5M.</div>
+              </div>
+
+              <div class="row3">
+                <div class="field">
+                  <label>Proposed amount (MWK)</label>
+                  <input type="text" value="2,420,000" />
+                </div>
+                <div class="field">
+                  <label>FY / Quarter</label>
+                  <select><option>FY 2026 · Q3 (Apr–Jun)</option></select>
+                </div>
+                <div class="field">
+                  <label>Funding source</label>
+                  <select><option>PEPFAR · CoAg #72050924CA00010</option></select>
+                </div>
+              </div>
+
+              <div class="wiz-foot">
+                <button class="btn">‹ Back · Activity basics</button>
+                <div style="display:flex;gap:8px"><button class="btn">Save &amp; continue later</button><button class="btn primary">Continue · Cost build-up ›</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== NEW VOUCHER COMPOSER ============== -->
+      <section class="view" data-page="newvch">
+        <div class="page-head">
+          <div>
+            <div class="page-title">New Voucher · liquidate AR-2026-0180</div>
+            <div class="page-sub">KP Peer Educator Training · 02–04 May 2026 · advance MK 6,120,000 held</div>
+          </div>
+          <div class="actions"><button class="btn">Save draft</button><button class="btn primary">Submit to GFO</button></div>
+        </div>
+
+        <div class="card">
+          <div class="vc">
+            <div>
+              <div class="vc-h">
+                <div>
+                  <h3>Payment Voucher PV-2026-1248 · DRAFT</h3>
+                  <div class="sub">Liquidating against advance AR-2026-0180 · payee Y. Banda · DIP-3.1.2</div>
+                </div>
+                <div class="right"><span class="chip draft">Draft</span></div>
+              </div>
+
+              <table class="line-tbl">
+                <thead><tr>
+                  <th style="width:80px">DIP</th>
+                  <th>Description</th>
+                  <th style="width:60px;text-align:right">Qty</th>
+                  <th style="width:90px;text-align:right">Rate</th>
+                  <th style="width:110px;text-align:right">Amount (MWK)</th>
+                  <th style="width:24px"></th>
+                </tr></thead>
+                <tbody>
+                  <tr><td>3.1.2</td><td><input value="DSA · 3 days × 4 facilitators"/></td><td><input class="num" value="12"/></td><td><input class="num" value="95,000"/></td><td class="num">1,140,000</td><td>×</td></tr>
+                  <tr><td>3.1.2</td><td><input value="Participant transport reimbursement (40)"/></td><td><input class="num" value="3"/></td><td><input class="num" value="12,500"/></td><td class="num">1,500,000</td><td>×</td></tr>
+                  <tr><td>3.1.2</td><td><input value="Conference room hire · Kalikuti Hotel"/></td><td><input class="num" value="3"/></td><td><input class="num" value="285,000"/></td><td class="num">855,000</td><td>×</td></tr>
+                  <tr><td>3.1.2</td><td><input value="Stationery &amp; printed materials"/></td><td><input class="num" value="—"/></td><td><input class="num" value="—"/></td><td class="num">325,000</td><td>×</td></tr>
+                  <tr><td>3.1.2</td><td><input value="Refreshments (lunch + tea)"/></td><td><input class="num" value="3"/></td><td><input class="num" value="766,667"/></td><td class="num">2,300,000</td><td>×</td></tr>
+                </tbody>
+                <tfoot>
+                  <tr><td colspan="4" style="text-align:right">Subtotal</td><td class="num">6,120,000</td><td></td></tr>
+                  <tr><td colspan="4" style="text-align:right">Withholding tax (WTEC valid)</td><td class="num">0</td><td></td></tr>
+                  <tr><td colspan="4" style="text-align:right;font-size:14px">Net payable</td><td class="num" style="font-size:14px;color:var(--blue)">6,120,000.00</td><td></td></tr>
+                </tfoot>
+              </table>
+              <button class="add-line">+ Add line item</button>
+
+              <h5 style="font-size:11.5px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin:18px 0 8px">Receipts &amp; supporting documents · 11 of 11 attached</h5>
+              <div class="att-list">
+                <div class="att"><span class="fi">PDF</span><span class="nm">Kalikuti Hotel · invoice INV-2026-0418.pdf</span><span class="sz">412 KB</span><span class="x">×</span></div>
+                <div class="att img"><span class="fi">JPG</span><span class="nm">DSA disbursement signatures · D1.jpg</span><span class="sz">2.1 MB</span><span class="x">×</span></div>
+                <div class="att img"><span class="fi">JPG</span><span class="nm">DSA disbursement signatures · D2.jpg</span><span class="sz">2.4 MB</span><span class="x">×</span></div>
+                <div class="att img"><span class="fi">JPG</span><span class="nm">DSA disbursement signatures · D3.jpg</span><span class="sz">2.0 MB</span><span class="x">×</span></div>
+                <div class="att"><span class="fi">PDF</span><span class="nm">Transport reimbursement schedule · 40 participants.pdf</span><span class="sz">186 KB</span><span class="x">×</span></div>
+                <div class="att"><span class="fi">PDF</span><span class="nm">Stationery receipt · Lilongwe Office Mart.pdf</span><span class="sz">91 KB</span><span class="x">×</span></div>
+                <div class="att img"><span class="fi">JPG</span><span class="nm">Attendance · Day 1 sign-in sheet.jpg</span><span class="sz">1.6 MB</span><span class="x">×</span></div>
+                <div class="att img"><span class="fi">JPG</span><span class="nm">Attendance · Day 2 sign-in sheet.jpg</span><span class="sz">1.7 MB</span><span class="x">×</span></div>
+                <div class="att img"><span class="fi">JPG</span><span class="nm">Attendance · Day 3 sign-in sheet.jpg</span><span class="sz">1.5 MB</span><span class="x">×</span></div>
+                <div class="att"><span class="fi">PDF</span><span class="nm">Activity report — narrative + outputs.pdf</span><span class="sz">724 KB</span><span class="x">×</span></div>
+                <div class="att"><span class="fi">PDF</span><span class="nm">Kalikuti WTEC certificate (current).pdf</span><span class="sz">203 KB</span><span class="x">×</span></div>
+                <div class="att dz">+ Drag files here or browse</div>
+              </div>
+            </div>
+
+            <div class="vc-side">
+              <div class="vc-card">
+                <h5>Pre-submission checks</h5>
+                <div class="check-row"><span class="ck">✓</span><div><b>Advance match</b><small>Sum equals AR-0180 (MK 6,120,000)</small></div></div>
+                <div class="check-row"><span class="ck">✓</span><div><b>DIP balance</b><small>3.1.2 has MK 3.3M available post-charge</small></div></div>
+                <div class="check-row"><span class="ck">✓</span><div><b>WTEC validity</b><small>Kalikuti certificate valid to Dec 2026</small></div></div>
+                <div class="check-row"><span class="ck">✓</span><div><b>Withholding</b><small>Auto-skipped · WTEC on file (rule WHT-EXEMPT)</small></div></div>
+                <div class="check-row warn"><span class="ck">!</span><div><b>Attendance variance</b><small>40 expected · 38 signed (95%) · acceptable per policy</small></div></div>
+                <div class="check-row"><span class="ck">✓</span><div><b>Period</b><small>Within FY 2026 Q3 reporting window</small></div></div>
+              </div>
+
+              <div class="vc-card">
+                <h5>Approval routing</h5>
+                <div style="font-size:12.5px;color:var(--ink-2);line-height:1.7">
+                  <div>1 · Y. Banda · <b>Grant Finance Officer</b> <span class="chip review" style="margin-left:4px">next</span></div>
+                  <div>2 · C. Mvula · Finance Manager</div>
+                  <div>3 · E. Chirwa · Executive Director</div>
+                  <div>4 · MACRO Finance · Disbursement</div>
+                </div>
+                <div style="font-size:11px;color:var(--ink-3);margin-top:10px">SLA · Standard route · 2 working days target</div>
+              </div>
+
+              <div class="vc-card" style="background:var(--blue-50);border-color:var(--blue-100)">
+                <h5 style="color:var(--blue)">After submission</h5>
+                <div style="font-size:12.5px;line-height:1.5;color:var(--ink-2)">Once GFO accepts the voucher, the activity moves to <b>closed</b> and AR-0180 is retired. You can no longer edit lines — corrections require a journal voucher.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="submit-bar">
+            <div class="meta">Auto-saved <b>09:46:22 CAT</b> · 1 collaborator viewing (Y. Banda)</div>
+            <div style="display:flex;gap:8px">
+              <button class="btn">Print preview</button>
+              <button class="btn">Save draft</button>
+              <button class="btn primary">Submit to GFO →</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== RESOURCES ============== -->
+      <section class="view" data-page="resources">
+        <div class="page-head">
+          <div>
+            <div class="page-title">Forms &amp; Templates</div>
+            <div class="page-sub">Latest approved templates · pulled from MACRO Document Management</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Most used by Project Officers</h3></div>
+          <div class="res-grid">
+            <div class="res"><div class="ri"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><b>Activity Concept Note · v3.2</b><small>5-page template · objectives, KPIs, budget summary, risks. Mandatory before SOW.</small><span class="lk">Open template →</span></div>
+            <div class="res"><div class="ri"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div><b>Scope of Work (SOW) · v2.8</b><small>Detailed deliverables, methodology, daily plan, facilitator list.</small><span class="lk">Open template →</span></div>
+            <div class="res"><div class="ri"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/></svg></div><b>Advance Request form · v4.1</b><small>Auto-filled from concept note. Required attachments: SOW, vendor quotes, transport schedule.</small><span class="lk">Open template →</span></div>
+            <div class="res"><div class="ri"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h11l3 3v13H5z"/></svg></div><b>Payment Voucher · v4.1</b><small>System-generated. WTEC and WHT auto-applied. Maximum 30 days from advance disbursement.</small><span class="lk">Open template →</span></div>
+            <div class="res"><div class="ri"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 17l5-5-5-5M21 12H9M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg></div><b>Travel Authorisation</b><small>Required for cross-district movement &gt; 200km or overnight. Pool vehicle bookings auto-link.</small><span class="lk">Open template →</span></div>
+            <div class="res"><div class="ri"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><b>Activity Closure Report</b><small>Narrative + outputs vs targets + photo log. Triggers liquidation eligibility.</small><span class="lk">Open template →</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== RATES ============== -->
+      <section class="view" data-page="rates">
+        <div class="page-head">
+          <div>
+            <div class="page-title">DSA &amp; Rates Reference</div>
+            <div class="page-sub">FY 2026 approved rates · effective 01 Oct 2025 · last updated 28 Apr 2026</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Daily Subsistence Allowance · MWK</h3><span class="pill">PEPFAR-aligned</span></div>
+          <table class="tbl">
+            <thead><tr><th>Location</th><th>Grade A (Director / HoP)</th><th>Grade B (FM / PO)</th><th>Grade C (Officer)</th><th>Grade D (Support)</th></tr></thead>
+            <tbody>
+              <tr><td><b>Lilongwe</b></td><td class="num">120,000</td><td class="num">85,000</td><td class="num">60,000</td><td class="num">40,000</td></tr>
+              <tr><td><b>Blantyre</b></td><td class="num">120,000</td><td class="num">85,000</td><td class="num">60,000</td><td class="num">40,000</td></tr>
+              <tr><td><b>Mzuzu</b></td><td class="num">110,000</td><td class="num">78,000</td><td class="num">55,000</td><td class="num">38,000</td></tr>
+              <tr><td><b>Districts (Tier 2)</b></td><td class="num">95,000</td><td class="num">68,000</td><td class="num">48,000</td><td class="num">32,000</td></tr>
+              <tr><td><b>Rural / field</b></td><td class="num">75,000</td><td class="num">55,000</td><td class="num">40,000</td><td class="num">28,000</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-3" style="margin-top:14px">
+          <div class="card"><div class="card-h"><h3>Transport reimbursement</h3></div><div style="padding:14px 18px;font-size:13px;color:var(--ink-2);line-height:1.7"><b>Participant transport</b><br/>Lilongwe in-city: MK 5,000 · cross-district: MK 12,500 · Mzuzu in-city: MK 4,500.</div></div>
+          <div class="card"><div class="card-h"><h3>Pool vehicle</h3></div><div style="padding:14px 18px;font-size:13px;color:var(--ink-2);line-height:1.7">Booking ≥ 48h ahead · MK 280/km internal billed · driver DSA same as Grade C.</div></div>
+          <div class="card"><div class="card-h"><h3>Refreshments</h3></div><div style="padding:14px 18px;font-size:13px;color:var(--ink-2);line-height:1.7">Lunch + tea (full day): MK 18,500/pax · Half-day: MK 9,500/pax · maximum 25% above hotel rate-card.</div></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  // ===== State + persistence =====
+  const KEY = 'macro_po_state_v1';
+  const today = '08 May';
+  const seq = (k, base) => { const v = (load()[k+'Seq']||base)+1; const s = load(); s[k+'Seq']=v; save(s); return v; };
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || {acts:[],ars:[],pvs:[],aps:[]}; }catch(e){ return {acts:[],ars:[],pvs:[],aps:[]}; } }
+  function save(s){ localStorage.setItem(KEY, JSON.stringify(s)); }
+  function fmt(n){ return Number(String(n).replace(/[^0-9.]/g,'')||0).toLocaleString(); }
+
+  // ===== Renderers =====
+  function renderActs(){
+    const body = document.getElementById('actBody'); if(!body) return;
+    const items = load().acts;
+    body.querySelectorAll('tr.fresh').forEach(r=>r.remove());
+    items.slice().reverse().forEach(a => {
+      const tr = document.createElement('tr'); tr.className='row fresh';
+      tr.innerHTML = `<td><span class="ref">${a.ref}</span> <span class="added-tag">NEW</span></td>
+        <td><b>${a.title}</b><div style="font-size:11px;color:var(--ink-3)">Lilongwe · saved ${a.created}</div></td>
+        <td><span style="background:var(--blue-50);color:var(--blue);font:700 11px JetBrains Mono;padding:2px 7px;border-radius:5px">${a.dip}</span></td>
+        <td>${a.dates}</td><td><span class="chip draft">Concept draft</span></td>
+        <td class="num">${fmt(a.amount)}</td>`;
+      body.prepend(tr);
+    });
+  }
+  function renderArs(){
+    const body = document.getElementById('arBody'); if(!body) return;
+    body.querySelectorAll('tr.fresh').forEach(r=>r.remove());
+    load().ars.slice().reverse().forEach(a => {
+      const tr = document.createElement('tr'); tr.className='row fresh';
+      tr.innerHTML = `<td><span class="ref">${a.ref}</span> <span class="added-tag">NEW</span></td>
+        <td><b>${a.activity}</b></td><td>${a.dip}</td><td>${a.created}</td>
+        <td>GFO review</td><td><span class="chip review">Pending GFO</span></td>
+        <td class="num">${fmt(a.amount)}</td>`;
+      body.prepend(tr);
+    });
+  }
+  function renderPvs(){
+    const body = document.getElementById('pvBody'); if(!body) return;
+    body.querySelectorAll('tr.fresh').forEach(r=>r.remove());
+    load().pvs.slice().reverse().forEach(p => {
+      const tr = document.createElement('tr'); tr.className='row fresh';
+      tr.innerHTML = `<td><span class="ref">${p.ref}</span> <span class="added-tag">NEW</span></td>
+        <td>${p.ar}</td><td><b>${p.activity}</b></td><td>${p.created}</td>
+        <td><span class="chip review">Submitted to GFO</span></td>
+        <td class="num">${fmt(p.amount)}</td>`;
+      body.prepend(tr);
+    });
+  }
+  function renderAps(){
+    const body = document.getElementById('apBody'); if(!body) return;
+    body.querySelectorAll('tr.fresh').forEach(r=>r.remove());
+    load().aps.slice().reverse().forEach(a => {
+      const tr = document.createElement('tr'); tr.className='row fresh';
+      const pCls = a.prio==='High'?'overdue':(a.prio==='Low'?'draft':'warn');
+      tr.innerHTML = `<td><span class="ref">${a.ref}</span> <span class="added-tag">NEW</span></td>
+        <td><b>${a.desc}</b></td><td>T. Phiri (self)</td><td>${a.due}</td>
+        <td><span class="chip ${pCls}">${a.prio}</span></td>
+        <td><span class="chip draft">Open</span></td><td>—</td>`;
+      body.prepend(tr);
+    });
+  }
+  function renderAll(){ renderActs(); renderArs(); renderPvs(); renderAps(); updateBadges(); }
+  function updateBadges(){
+    const s = load();
+    document.querySelectorAll('.nav button').forEach(b=>{
+      const v=b.dataset.view, badge=b.querySelector('.badge'); if(!badge) return;
+      if(v==='activities') badge.textContent = (3+s.acts.length);
+      if(v==='advances')   badge.textContent = (2+s.ars.length);
+      if(v==='vouchers')   badge.textContent = (1+s.pvs.length);
+      if(v==='actions')    badge.textContent = (2+s.aps.length);
+    });
+  }
+
+  // ===== Form wiring =====
+  function bindForm(id, kind, mapper, refFn){
+    const f = document.getElementById(id); if(!f) return;
+    f.addEventListener('submit', e => {
+      e.preventDefault();
+      const data = {}; new FormData(f).forEach((v,k)=>data[k]=v);
+      const s = load();
+      const item = { ...mapper(data), ref: refFn(s), created: today };
+      s[kind].push(item); save(s); renderAll(); f.reset();
+      showToast(`Saved · ${item.ref}`);
+    });
+  }
+  bindForm('actForm','acts', d => ({title:d.title,dip:'DIP-'+d.dip,dates:d.dates,amount:d.amount}),
+           s => 'ACT-2026-'+(160 + (s.acts.length+1)).toString().padStart(4,'0'));
+  bindForm('arForm','ars',  d => ({activity:d.activity,dip:'DIP-'+d.dip,amount:d.amount}),
+           s => 'AR-2026-'+(190 + (s.ars.length+1)).toString().padStart(4,'0'));
+  bindForm('pvForm','pvs',  d => ({ar:d.ar,activity:d.activity,amount:d.amount}),
+           s => 'PV-2026-'+(1250 + (s.pvs.length+1)));
+  bindForm('apForm','aps',  d => ({desc:d.desc,due:d.due,prio:d.prio}),
+           s => 'AP-'+(490 + (s.aps.length+1)));
+
+  // ===== Toast =====
+  const toast = document.getElementById('toast');
+  const toastMsg = document.getElementById('toastMsg');
+  function showToast(msg){ toastMsg.textContent = msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 2400); }
+
+  // ===== Bridge to shared MACRO store so other role workspaces see PO writes =====
+  function bridgeToShared(coll, rec){
+    try{
+      const SK='macro_pms_v1';
+      const raw=localStorage.getItem(SK); if(!raw) return;
+      const s=JSON.parse(raw); if(!s||!s[coll]) return;
+      s[coll].unshift(Object.assign({},rec));
+      s.audit = s.audit || [];
+      s.audit.unshift({id:rec.id,entity:coll==='pvs'?'PV':coll==='ars'?'AR':coll==='activities'?'ACT':'AP',action:'submit',who:'U-PO',at:new Date().toISOString(),note:'Submitted from PO workspace'});
+      localStorage.setItem(SK, JSON.stringify(s));
+    }catch(e){}
+  }
+
+  // ===== Reset demo =====
+  document.addEventListener('click', e => {
+    if(e.target.classList.contains('reset-btn')){
+      if(confirm('Clear all test entries you\u2019ve added? Mock data stays.')){
+        localStorage.removeItem(KEY); renderAll(); showToast('Test data cleared');
+      }
+    }
+  });
+  // Inject reset btn into each qadd form
+  document.querySelectorAll('.qadd').forEach(f => {
+    const r = document.createElement('button'); r.type='button'; r.className='reset-btn';
+    r.textContent='Reset all test data'; f.appendChild(r);
+  });
+
+  // ===== Wire wizard + voucher composer to also persist =====
+  document.querySelectorAll('.wiz-foot .btn.primary, .submit-bar .btn.primary').forEach(b => {
+    b.addEventListener('click', e => {
+      e.preventDefault();
+      const inWiz = b.closest('.wiz');
+      const inVc  = b.closest('.vc');
+      const s = load();
+      if(inWiz){
+        const amount = inWiz.querySelector('input[value*="2,420,000"]')?.value || '2,420,000';
+        const item = { title:'(from wizard) New activity draft', dip:'DIP-3.1.2', dates:'TBC', amount, ref:'ACT-2026-'+(160 + (s.acts.length+1)).toString().padStart(4,'0'), created:today };
+        s.acts.push(item); save(s); renderAll(); showToast('Activity '+item.ref+' submitted to HoP');
+        bridgeToShared('activities',{id:item.ref,title:item.title,dip:item.dip,owner:'U-PO',proj:'IMP',stage:'HoP Recommended',amount:Number(String(item.amount).replace(/,/g,''))||0});
+      } else if (inVc) {
+        const item = { ar:'AR-2026-0180', activity:'KP Peer Educator Training', amount:'6,120,000', ref:'PV-2026-'+(1250 + (s.pvs.length+1)), created:today };
+        s.pvs.push(item); save(s); renderAll(); showToast('Voucher '+item.ref+' submitted to GFO');
+        bridgeToShared('pvs',{id:item.ref,title:item.activity,dip:'DIP-3.1.2',proj:'IMP',gross:6120000,wht:612000,net:5508000,stage:'PO Submitted',submitted:new Date().toISOString().slice(0,10),payee:'KP Peer Educator pool'});
+      }
+    });
+  });
+
+  renderAll();
+
+  // ===== Sign-in =====
+  const signin = document.getElementById('signin');
+  const siForm = document.getElementById('siForm');
+  const siEye = document.getElementById('siEye');
+  const siPwd = document.getElementById('siPwd');
+  const siGo = document.getElementById('siGo');
+  const toast = document.getElementById('toast');
+  const toastMsg = document.getElementById('toastMsg');
+
+  siEye.addEventListener('click', () => {
+    const showing = siPwd.type === 'text';
+    siPwd.type = showing ? 'password' : 'text';
+    siEye.textContent = showing ? 'show' : 'hide';
+  });
+
+  document.querySelectorAll('.si-tab').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.si-tab').forEach(x => x.classList.toggle('active', x === t));
+  }));
+
+  function doSignIn(label){
+    siGo.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="animation:spin .8s linear infinite"><path d="M12 2a10 10 0 1 0 10 10"/></svg> Authenticating…';
+    siGo.disabled = true;
+    setTimeout(() => {
+      signin.classList.add('hide');
+      toastMsg.textContent = label || 'Signed in as Tendai Phiri · Project Officer';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2600);
+    }, 700);
+  }
+
+  siForm.addEventListener('submit', e => { e.preventDefault(); doSignIn(); });
+  document.getElementById('siSso').addEventListener('click', () => doSignIn('Signed in via Microsoft 365 · Tendai Phiri'));
+
+  const spinStyle = document.createElement('style');
+  spinStyle.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+  document.head.appendChild(spinStyle);
+
+  // ===== Nav =====
+  const navBtns = document.querySelectorAll('.nav button');
+  const views = document.querySelectorAll('.view');
+  const crumb = document.getElementById('crumb-leaf');
+  const labels = {
+    day:'My Day', activities:'My Activities', advances:'Advance Requests',
+    vouchers:'Liquidations', actions:'Action Points',
+    newact:'New Activity', newvch:'New Voucher',
+    resources:'Forms & Templates', rates:'DSA & Rates'
+  };
+  navBtns.forEach(b => b.addEventListener('click', () => {
+    const v = b.dataset.view;
+    if (!v) return;
+    navBtns.forEach(x => x.classList.toggle('active', x === b));
+    views.forEach(s => s.classList.toggle('active', s.dataset.page === v));
+    crumb.textContent = labels[v] || '';
+    window.scrollTo({top:0});
+  }));
+</script>
+</body>
+</html>

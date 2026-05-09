@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MACRO PMS · Finance Manager</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="shared/macro-styles.css" />
+</head>
+<body>
+<div class="app" id="app"></div>
+<script src="shared/macro-core.js"></script>
+<script src="shared/macro-shell.js"></script>
+<script>
+const ME = 'U-FM';
+const VIEWS = [
+  {id:'queue',     icon:'inbox', label:'Approval queue'},
+  {id:'ars',       icon:'flag',  label:'Advance requests'},
+  {id:'pvs',       icon:'file',  label:'Vouchers'},
+  {id:'budget',    icon:'chart', label:'Budget & DIP'},
+  {id:'realloc',   icon:'edit',  label:'Reallocations'},
+  {id:'aps',       icon:'pin',   label:'Action points'},
+];
+let currentView='queue';
+
+function counts(){
+  return {
+    arQ:  MACRO.list('ars', r=>r.stage==='HoP Recommended').length,
+    pvQ:  MACRO.list('pvs', r=>r.stage==='GFO Reviewed').length,
+    over: MACRO.DIP.filter(d=>(d.spent+d.committed)>d.budget).length,
+    aps:  MACRO.list('aps', a=>a.owner===ME && a.stage!=='Closed').length
+  };
+}
+
+function render(){
+  const c=counts();
+  const items=VIEWS.map(v=>Object.assign({},v,
+    v.id==='queue'?{badge:(c.arQ+c.pvQ)||null}:
+    v.id==='ars'?{badge:c.arQ||null}:
+    v.id==='pvs'?{badge:c.pvQ||null}:
+    v.id==='budget'?{badge:c.over||null,badgeQ:true}:
+    v.id==='aps'?{badge:c.aps||null,badgeQ:true}:{}));
+  document.getElementById('app').innerHTML=
+    UI.sidebar({userId:ME,label:'Finance Manager · HQ',cls:'fm'},items,currentView,'v4.0 · Sandbox')+
+    `<div class="main">${UI.topbar({},['Finance',label(currentView)],'IMP')}<div class="page">${pageBody()}</div></div>`;
+  UI.bindNav(id=>{currentView=id;render();});
+  bindActions();
+}
+function label(id){return (VIEWS.find(v=>v.id===id)||{}).label||'';}
+
+function pageBody(){
+  return ({queue:viewQueue,ars:viewArs,pvs:viewPvs,budget:viewBudget,realloc:viewRealloc,aps:viewAps}[currentView]||(()=>'')) ();
+}
+
+function viewQueue(){
+  const me=MACRO.user(ME);
+  const ars=MACRO.list('ars',r=>r.stage==='HoP Recommended');
+  const pvs=MACRO.list('pvs',r=>r.stage==='GFO Reviewed');
+  const c=counts();
+  return `
+    <div class="hello"><div class="hello-card">
+      <div><h1>${greet()} ${me.name.split(' ')[0]} — ${ars.length+pvs.length} item${(ars.length+pvs.length)===1?'':'s'} for FM approval.</h1>
+        <div class="sub">Recommended ARs from HoP and reviewed vouchers from GFO are routed here for budget &amp; compliance approval.</div></div>
+      <div class="hello-stats">
+        <div class="hs ${ars.length?'warn':'good'}"><div class="v">${ars.length}</div><div class="l">ARs to approve</div></div>
+        <div class="hs ${pvs.length?'warn':'good'}"><div class="v">${pvs.length}</div><div class="l">Vouchers to approve</div></div>
+        <div class="hs ${c.over?'alert':'good'}"><div class="v">${c.over}</div><div class="l">DIP lines over</div></div>
+      </div></div></div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-h"><h3>Advance requests · HoP recommended</h3><div class="right"><span class="pill">${ars.length}</span></div></div>
+      <div>${ars.map(r=>arRow(r)).join('')||empty('No ARs awaiting FM approval.')}</div>
+    </div>
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-h"><h3>Vouchers · GFO reviewed</h3><div class="right"><span class="pill">${pvs.length}</span></div></div>
+      <div>${pvs.map(r=>pvRow(r)).join('')||empty('No vouchers awaiting FM approval.')}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>Budget watch</h3><span class="sub">DIP utilisation snapshot</span></div>
+      <div style="padding:14px 18px">${dipBars(MACRO.DIP.slice(0,6))}</div>
+    </div>
+  `;
+}
+
+function arRow(r){
+  const dip=MACRO.dip(r.dip);
+  const remaining=dip?dip.budget-dip.committed-dip.spent:0;
+  const over = remaining < r.amount;
+  return `<div class="ix ${over?'urgent':''}"><div class="ico">AR</div>
+    <div><div class="t">${r.title}</div>
+      <div class="m"><span class="ref mono">${r.id}</span><span>·</span><span class="mono">${r.dip}</span><span>·</span><b>${MACRO.fmt.mwk(r.amount)}</b><span>·</span><span>requested by ${(MACRO.user(r.requestedBy)||{}).name}</span><span>·</span>${UI.pill(over?'DIP overdraft':'DIP balance OK', over?'red':'green')}<span>·</span><span>remaining ${MACRO.fmt.short(remaining)}</span></div>
+    </div>
+    <div class="row">
+      <button class="btn sm" data-act="ar-return" data-id="${r.id}">Return</button>
+      <button class="actbtn green" data-act="ar-approve" data-id="${r.id}">Approve</button>
+    </div></div>`;
+}
+function pvRow(r){
+  return `<div class="ix"><div class="ico">PV</div>
+    <div><div class="t">${r.title}</div>
+      <div class="m"><span class="ref mono">${r.id}</span><span>·</span><span>${r.payee}</span><span>·</span><span class="mono">${r.dip}</span><span>·</span><b>${MACRO.fmt.mwk(r.gross)}</b><span>·</span><span>net ${MACRO.fmt.short(r.net)} · WHT ${MACRO.fmt.short(r.wht)}</span></div>
+    </div>
+    <div class="row">
+      <button class="btn sm" data-act="pv-return" data-id="${r.id}">Return</button>
+      <button class="actbtn green" data-act="pv-approve" data-id="${r.id}">Approve</button>
+    </div></div>`;
+}
+
+function dipBars(dips){
+  return dips.map(d=>{
+    const used=d.spent+d.committed, pct=Math.min(100,Math.round(used/d.budget*100));
+    const tone=pct>=100?'red':pct>=85?'amber':'green';
+    return `<div style="margin-bottom:12px">
+      <div class="row" style="justify-content:space-between;margin-bottom:6px"><div><b class="mono small">${d.code}</b> <span class="muted small">${d.label}</span></div><div class="mono small">${MACRO.fmt.short(used)} / ${MACRO.fmt.short(d.budget)} · <b class="${tone==='red'?'':''}" style="color:var(--${tone})">${pct}%</b></div></div>
+      <div class="shimmer-bar"><div class="${tone}" style="width:${pct}%"></div></div></div>`;
+  }).join('');
+}
+
+function viewArs(){
+  const all=MACRO.list('ars');
+  return `<div class="page-head"><h1 class="page-title">Advance requests</h1></div>
+    ${kpiStrip(all,'ars')}
+    <div class="card"><table class="tbl"><thead><tr><th>AR</th><th>Activity</th><th>DIP</th><th class="num">Amount</th><th>Submitted</th><th>Stage</th><th></th></tr></thead><tbody>
+      ${all.map(r=>`<tr>
+        <td><span class="ref">${r.id}</span></td><td>${r.title}</td><td class="mono">${r.dip}</td>
+        <td class="num">${MACRO.fmt.mwk(r.amount)}</td><td class="muted">${MACRO.fmt.since(r.submitted)}</td>
+        <td>${UI.pill(r.stage,MACRO.stageTone('AR',r.stage))}</td>
+        <td>${r.stage==='HoP Recommended'?`<button class="btn sm" data-act="ar-return" data-id="${r.id}">Return</button> <button class="btn sm primary" data-act="ar-approve" data-id="${r.id}">Approve</button>`:`<span class="muted small">—</span>`}</td>
+      </tr>`).join('')}
+    </tbody></table></div>`;
+}
+function viewPvs(){
+  const all=MACRO.list('pvs');
+  return `<div class="page-head"><h1 class="page-title">Vouchers</h1></div>
+    <div class="card"><table class="tbl"><thead><tr><th>PV</th><th>Payee</th><th>DIP</th><th class="num">Gross</th><th class="num">Net</th><th>Stage</th><th></th></tr></thead><tbody>
+      ${all.map(r=>`<tr><td><span class="ref">${r.id}</span><div class="muted small">${r.title}</div></td>
+        <td>${r.payee}</td><td class="mono">${r.dip}</td>
+        <td class="num">${MACRO.fmt.mwk(r.gross)}</td><td class="num">${MACRO.fmt.mwk(r.net)}</td>
+        <td>${UI.pill(r.stage,MACRO.stageTone('PV',r.stage))}</td>
+        <td>${r.stage==='GFO Reviewed'?`<button class="btn sm primary" data-act="pv-approve" data-id="${r.id}">Approve</button>`:`<span class="muted small">—</span>`}</td>
+      </tr>`).join('')}
+    </tbody></table></div>`;
+}
+function kpiStrip(arr,kind){
+  if (kind==='ars'){
+    const total=arr.reduce((s,r)=>s+r.amount,0);
+    const queued=arr.filter(r=>['PO Submitted','HoP Recommended','FM Approved','ED Approved'].includes(r.stage)).length;
+    const liq=arr.filter(r=>r.stage==='Liquidation Pending').length;
+    const overdueLiq=arr.filter(r=>r.stage==='Liquidation Pending' && r.dueLiq && new Date(r.dueLiq)<new Date('2026-05-08')).length;
+    return `<div class="kpis">
+      <div class="kpi"><div class="l">Total ARs</div><div class="v">${arr.length}</div></div>
+      <div class="kpi blue"><div class="l">In flight</div><div class="v">${queued}</div></div>
+      <div class="kpi amber"><div class="l">Awaiting liquidation</div><div class="v">${liq}</div></div>
+      <div class="kpi"><div class="l">Total committed</div><div class="v">${MACRO.fmt.short(total)}</div></div>
+    </div>`;
+  }
+  return '';
+}
+function viewBudget(){
+  return `<div class="page-head"><h1 class="page-title">Budget &amp; DIP</h1>
+    <div class="actions"><button class="btn">Export · CSV</button><button class="btn primary" data-act="open-realloc">Reallocate</button></div></div>
+    <div class="kpis">
+      <div class="kpi"><div class="l">DIP lines</div><div class="v">${MACRO.DIP.length}</div></div>
+      <div class="kpi green"><div class="l">Healthy</div><div class="v">${MACRO.DIP.filter(d=>(d.spent+d.committed)/d.budget<.85).length}</div></div>
+      <div class="kpi amber"><div class="l">Watch (≥85%)</div><div class="v">${MACRO.DIP.filter(d=>{const u=(d.spent+d.committed)/d.budget;return u>=.85 && u<1;}).length}</div></div>
+      <div class="kpi red"><div class="l">Over</div><div class="v">${MACRO.DIP.filter(d=>(d.spent+d.committed)>d.budget).length}</div></div>
+    </div>
+    <div class="card"><div class="card-b">${dipBars(MACRO.DIP)}</div></div>`;
+}
+function viewRealloc(){
+  return `<div class="page-head"><h1 class="page-title">Reallocations</h1>
+    <div class="actions"><button class="btn primary" data-act="open-realloc">New reallocation</button></div></div>
+    <div class="card"><div class="empty"><div class="ico">↔</div>Reallocations let you move uncommitted budget between DIP lines on the same project.<br/><br/><button class="btn primary" data-act="open-realloc">New reallocation</button></div></div>`;
+}
+function viewAps(){
+  const aps=MACRO.list('aps',a=>a.owner===ME);
+  return `<div class="page-head"><h1 class="page-title">Action points</h1></div>
+    <div class="card"><table class="tbl"><thead><tr><th>Ref</th><th>Title</th><th>Source</th><th>Priority</th><th>Due</th><th>Stage</th><th></th></tr></thead><tbody>
+      ${aps.map(a=>`<tr><td><span class="ref">${a.id}</span></td><td>${a.title}</td><td>${a.source}</td>
+        <td>${UI.pill(a.priority,a.priority==='High'?'red':a.priority==='Medium'?'amber':'gray')}</td>
+        <td>${MACRO.fmt.until(a.due)}</td><td>${UI.pill(a.stage,MACRO.stageTone('AP',a.stage))}</td>
+        <td>${a.stage==='Closed'?'':`<button class="btn sm" data-act="ap-resolve" data-id="${a.id}">Resolve</button>`}</td></tr>`).join('')||`<tr><td colspan="7" class="empty">No items.</td></tr>`}
+    </tbody></table></div>`;
+}
+
+function greet(){const h=new Date().getHours();return h<12?'Good morning,':h<17?'Hi':'Good evening,';}
+function empty(msg){return `<div class="empty"><div class="ico">✓</div>${msg}</div>`;}
+
+function bindActions(){
+  document.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',async()=>{
+    const act=b.getAttribute('data-act'),id=b.getAttribute('data-id');
+    if (act==='ar-approve'){
+      MACRO.transition('AR','ars',id,'fm-approve',ME,'Approved by FM');
+      MACRO.notify('U-ED', id+' awaiting ED approval', id);
+      UI.toast(id+' approved → ED','green'); render();
+    } else if (act==='ar-return'){
+      const c=await UI.confirm({title:'Return AR',body:'Send back for clarification.',note:'Reason',ok:'Return',tone:'amber'});
+      if (!c.ok) return;
+      MACRO.transition('AR','ars',id,'return',ME,c.note||'Returned',{returnedBy:ME,returnReason:c.note||''});
+      const r=MACRO.get('ars',id); MACRO.notify(r.requestedBy, id+' returned by FM', id);
+      UI.toast(id+' returned','amber'); render();
+    } else if (act==='pv-approve'){
+      MACRO.transition('PV','pvs',id,'fm-approve',ME,'Approved by FM');
+      MACRO.notify('U-ED', id+' awaiting ED approval', id);
+      UI.toast(id+' approved → ED','green'); render();
+    } else if (act==='pv-return'){
+      const c=await UI.confirm({title:'Return voucher',body:'Send back to GFO/PO.',note:'Reason',ok:'Return',tone:'amber'});
+      if (!c.ok) return;
+      MACRO.transition('PV','pvs',id,'return',ME,c.note||'Returned',{returnedBy:ME,returnReason:c.note||''});
+      UI.toast(id+' returned','amber'); render();
+    } else if (act==='ap-resolve'){
+      MACRO.update('aps',id,{stage:'Resolved'}); MACRO.audit('AP',id,'resolve',ME,'Resolved');
+      UI.toast(id+' resolved','green'); render();
+    } else if (act==='open-realloc'){
+      const opts=MACRO.DIP.map(d=>`<option value="${d.code}">${d.code} · ${d.label} · ${MACRO.fmt.short(d.budget-d.spent-d.committed)} avail</option>`).join('');
+      const m=UI.modal({title:'Reallocate budget',body:`
+        <div class="fld"><label>From DIP line</label><select id="r-from">${opts}</select></div>
+        <div class="fld"><label>To DIP line</label><select id="r-to">${opts}</select></div>
+        <div class="fld"><label>Amount (MK)</label><input id="r-amt" type="number" placeholder="e.g. 1500000"/></div>
+        <div class="fld"><label>Justification</label><textarea id="r-note" placeholder="Reason for reallocation"></textarea></div>`,
+        footer:`<button class="btn" data-close>Cancel</button><button class="btn primary" id="r-ok">Submit reallocation</button>`});
+      m.el.querySelector('#r-ok').addEventListener('click',()=>{
+        const a=parseFloat(m.el.querySelector('#r-amt').value)||0;
+        const fr=m.el.querySelector('#r-from').value,to=m.el.querySelector('#r-to').value;
+        if (!a || fr===to){ UI.toast('Pick distinct lines and a positive amount','red'); return; }
+        const F=MACRO.dip(fr),T=MACRO.dip(to);
+        F.budget-=a; T.budget+=a;
+        MACRO.save();
+        MACRO.audit('DIP',fr,'realloc',ME,`Moved ${MACRO.fmt.mwk(a)} → ${to}`);
+        m.close(); UI.toast('Reallocated '+MACRO.fmt.short(a)+' '+fr+' → '+to,'green'); render();
+      });
+    }
+  }));
+}
+
+MACRO.subscribe(()=>render());
+render();
+</script>
+</body>
+</html>
