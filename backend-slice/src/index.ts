@@ -1,4 +1,5 @@
 import express from 'express';
+import 'express-async-errors'; // patches Express 4 to forward async throws to next(err)
 import type { Request, Response, NextFunction } from 'express';
 import authRoutes from './routes/auth.js';
 import arRoutes from './routes/advance-requests.js';
