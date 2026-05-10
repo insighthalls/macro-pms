@@ -2,14 +2,14 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../lib/db.js';
 import { ok } from '../lib/json.js';
-import { NotFound, ValidationFailed, RuleViolation } from '../lib/errors.js';
+import { NotFound, ValidationFailed, RuleViolation, asyncHandler } from '../lib/errors.js';
 import { requireAuth } from '../middleware/auth.js';
 import { record as audit } from '../services/audit.js';
 
 const router = Router();
 router.use(requireAuth);
 
-router.get('/', async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const { status, ownerId, raisedById, projId } = req.query;
   const where: Record<string, unknown> = {};
   if (status) where['status'] = status;
@@ -21,13 +21,13 @@ router.get('/', async (req, res) => {
     where['OR'] = [{ ownerId: req.auth!.sub }, { raisedById: req.auth!.sub }];
   }
   res.json(ok(await db.actionPoint.findMany({ where, orderBy: [{ status: 'asc' }, { dueDate: 'asc' }], take: 200 })));
-});
+}));
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', asyncHandler(async (req, res) => {
   const ap = await db.actionPoint.findUnique({ where: { id: req.params.id! } });
   if (!ap) throw NotFound();
   res.json(ok(ap));
-});
+}));
 
 const Create = z.object({
   title: z.string().min(3), description: z.string().optional(),
@@ -38,7 +38,7 @@ const Create = z.object({
   linkedEntityId: z.string().optional(),
   projId: z.string().optional(),
 });
-router.post('/', async (req, res) => {
+router.post('/', asyncHandler(async (req, res) => {
   const p = Create.safeParse(req.body);
   if (!p.success) throw ValidationFailed(Object.fromEntries(p.error.issues.map(i => [i.path.join('.'), i.message])));
   const last = await db.actionPoint.findFirst({ where: { id: { startsWith: 'AP-' } }, orderBy: { id: 'desc' } });
@@ -52,9 +52,9 @@ router.post('/', async (req, res) => {
     return created;
   });
   res.status(201).json(ok(ap));
-});
+}));
 
-const setStatus = (status: 'OPEN'|'IN_PROGRESS'|'CLOSED'|'REOPENED') => async (req: import('express').Request, res: import('express').Response) => {
+const setStatus = (status: 'OPEN'|'IN_PROGRESS'|'CLOSED'|'REOPENED') => asyncHandler(async (req: import('express').Request, res: import('express').Response) => {
   const ap = await db.actionPoint.findUnique({ where: { id: req.params.id! } });
   if (!ap) throw NotFound();
   if (status === 'CLOSED' && ap.ownerId !== req.auth!.sub && ap.raisedById !== req.auth!.sub)
@@ -69,7 +69,7 @@ const setStatus = (status: 'OPEN'|'IN_PROGRESS'|'CLOSED'|'REOPENED') => async (r
     return u;
   });
   res.json(ok(updated));
-};
+});
 
 router.post('/:id/start',   setStatus('IN_PROGRESS'));
 router.post('/:id/close',   setStatus('CLOSED'));

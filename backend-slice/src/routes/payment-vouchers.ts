@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../lib/db.js';
 import { ok } from '../lib/json.js';
-import { NotFound, ValidationFailed } from '../lib/errors.js';
+import { NotFound, ValidationFailed, asyncHandler } from '../lib/errors.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { transition, nextApproverRole, nextPvId, assertWtecValid } from '../services/payment-vouchers.js';
 import { record as audit } from '../services/audit.js';
@@ -10,7 +10,7 @@ import { record as audit } from '../services/audit.js';
 const router = Router();
 router.use(requireAuth);
 
-router.get('/', async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const { stage, projId, vendorId, arId } = req.query;
   const where: Record<string, unknown> = {};
   if (stage) where['stage'] = stage;
@@ -21,13 +21,13 @@ router.get('/', async (req, res) => {
   if (req.auth!.role === 'PROJECT_OFFICER') where['raisedById'] = req.auth!.sub;
   const rows = await db.paymentVoucher.findMany({ where, orderBy: { createdAt: 'desc' }, take: 200 });
   res.json(ok(rows));
-});
+}));
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', asyncHandler(async (req, res) => {
   const pv = await db.paymentVoucher.findUnique({ where: { id: req.params.id! } });
   if (!pv || !req.auth!.projects.includes(pv.projId)) throw NotFound();
   res.json(ok(pv));
-});
+}));
 
 const Item = z.object({ description: z.string(), qty: z.number().nonnegative(), unitPrice: z.union([z.number(), z.string()]) });
 const Create = z.object({
@@ -41,7 +41,7 @@ const Create = z.object({
   items: z.array(Item).default([]),
   attachments: z.array(z.string()).default([]),
 });
-router.post('/', requireRole('PROJECT_OFFICER'), async (req, res) => {
+router.post('/', requireRole('PROJECT_OFFICER'), asyncHandler(async (req, res) => {
   const p = Create.safeParse(req.body);
   if (!p.success) throw ValidationFailed(Object.fromEntries(p.error.issues.map(i => [i.path.join('.'), i.message])));
   await assertWtecValid(p.data.vendorId ?? null);
@@ -62,24 +62,24 @@ router.post('/', requireRole('PROJECT_OFFICER'), async (req, res) => {
     return created;
   });
   res.status(201).json(ok(pv));
-});
+}));
 
-router.post('/:id/gfo-review', requireRole('GRANT_FINANCE_OFFICER'), async (req, res) =>
-  res.json(ok(await transition({ pvId: req.params.id!, to: 'GFO_REVIEWED', actor: req.auth!, patch: { threeWayMatchOk: !!req.body?.threeWayMatchOk } }))));
-router.post('/:id/fm-approve', requireRole('FINANCE_MANAGER'), async (req, res) =>
-  res.json(ok(await transition({ pvId: req.params.id!, to: 'FM_APPROVED', actor: req.auth! }))));
-router.post('/:id/ed-approve', requireRole('EXECUTIVE_DIRECTOR'), async (req, res) =>
-  res.json(ok(await transition({ pvId: req.params.id!, to: 'ED_APPROVED', actor: req.auth! }))));
-router.post('/:id/schedule', requireRole('GRANT_FINANCE_OFFICER'), async (req, res) =>
-  res.json(ok(await transition({ pvId: req.params.id!, to: 'SCHEDULED', actor: req.auth! }))));
-router.post('/:id/mark-paid', requireRole('GRANT_FINANCE_OFFICER'), async (req, res) => {
+router.post('/:id/gfo-review', requireRole('GRANT_FINANCE_OFFICER'), asyncHandler(async (req, res) =>
+  res.json(ok(await transition({ pvId: req.params.id!, to: 'GFO_REVIEWED', actor: req.auth!, patch: { threeWayMatchOk: !!req.body?.threeWayMatchOk } })))));
+router.post('/:id/fm-approve', requireRole('FINANCE_MANAGER'), asyncHandler(async (req, res) =>
+  res.json(ok(await transition({ pvId: req.params.id!, to: 'FM_APPROVED', actor: req.auth! })))));
+router.post('/:id/ed-approve', requireRole('EXECUTIVE_DIRECTOR'), asyncHandler(async (req, res) =>
+  res.json(ok(await transition({ pvId: req.params.id!, to: 'ED_APPROVED', actor: req.auth! })))));
+router.post('/:id/schedule', requireRole('GRANT_FINANCE_OFFICER'), asyncHandler(async (req, res) =>
+  res.json(ok(await transition({ pvId: req.params.id!, to: 'SCHEDULED', actor: req.auth! })))));
+router.post('/:id/mark-paid', requireRole('GRANT_FINANCE_OFFICER'), asyncHandler(async (req, res) => {
   const eftRef = String(req.body?.eftRef ?? '');
   if (!eftRef) throw ValidationFailed({ eftRef: 'required' });
   res.json(ok(await transition({ pvId: req.params.id!, to: 'PAID', actor: req.auth!, patch: { eftRef, paidOn: new Date() }, note: `EFT ${eftRef}` })));
-});
-router.post('/:id/return', requireRole('GRANT_FINANCE_OFFICER', 'FINANCE_MANAGER'), async (req, res) => {
+}));
+router.post('/:id/return', requireRole('GRANT_FINANCE_OFFICER', 'FINANCE_MANAGER'), asyncHandler(async (req, res) => {
   const note = String(req.body?.note ?? 'Returned without comment');
   res.json(ok(await transition({ pvId: req.params.id!, to: 'RETURNED', actor: req.auth!, note, patch: { returnReason: note } })));
-});
+}));
 
 export default router;
